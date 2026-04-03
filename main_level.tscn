@@ -1,8 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://bh1e5rgutq38q"]
+[gd_scene load_steps=10 format=3 uid="uid://bh1e5rgutq38q"]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_hmhd3"]
 [ext_resource type="Script" path="res://scripts/enemy.gd" id="2_uylta"]
 [ext_resource type="Texture2D" path="res://icon.svg" id="3_6o5e2"]
+[ext_resource type="Script" path="res://scripts/components/health_component.gd" id="4_health"]
+[ext_resource type="Script" path="res://scripts/components/shooter_component.gd" id="5_shooter"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_player"]
 radius = 24.0
@@ -17,7 +19,7 @@ radius = 140.0
 
 [node name="Player" type="CharacterBody2D" parent="."]
 position = Vector2(240, 300)
-collision_layer = 0
+collision_layer = 1
 script = ExtResource("1_hmhd3")
 team_color = Color(0.35, 0.75, 1, 1)
 
@@ -38,7 +40,6 @@ shape = SubResource("CircleShape2D_range")
 [node name="Enemy" type="StaticBody2D" parent="."]
 position = Vector2(520, 300)
 script = ExtResource("2_uylta")
-shield_color = Color(0.35, 0.75, 1, 1)
 collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="Enemy"]
@@ -49,17 +50,16 @@ texture = ExtResource("3_6o5e2")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Enemy"]
 shape = SubResource("CircleShape2D_enemy")
 
-[node name="LifeLabel" type="Label" parent="Enemy"]
-offset_left = -34.0
-offset_top = -56.0
-offset_right = 38.0
-offset_bottom = -30.0
-horizontal_alignment = 1
-text = "Life: 3.0"
+[node name="HealthComponent" type="Node2D" parent="Enemy"]
+script = ExtResource("4_health")
+shield_color = Color(0.35, 0.75, 1, 1)
+
+[node name="ShooterComponent" type="Node" parent="Enemy"]
+script = ExtResource("5_shooter")
 
 [node name="Player2" type="CharacterBody2D" parent="."]
 position = Vector2(240, 470)
-collision_layer = 0
+collision_layer = 1
 script = ExtResource("1_hmhd3")
 team_color = Color(1, 0.6, 0.2, 1)
 move_left_action = &"p2_left"
@@ -85,7 +85,6 @@ shape = SubResource("CircleShape2D_range")
 [node name="Enemy2" type="StaticBody2D" parent="."]
 position = Vector2(520, 470)
 script = ExtResource("2_uylta")
-shield_color = Color(1, 0.6, 0.2, 1)
 collision_layer = 4
 
 [node name="Sprite2D" type="Sprite2D" parent="Enemy2"]
@@ -96,13 +95,12 @@ texture = ExtResource("3_6o5e2")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Enemy2"]
 shape = SubResource("CircleShape2D_enemy")
 
-[node name="LifeLabel" type="Label" parent="Enemy2"]
-offset_left = -34.0
-offset_top = -56.0
-offset_right = 38.0
-offset_bottom = -30.0
-horizontal_alignment = 1
-text = "Life: 3.0"
+[node name="HealthComponent" type="Node2D" parent="Enemy2"]
+script = ExtResource("4_health")
+shield_color = Color(1, 0.6, 0.2, 1)
+
+[node name="ShooterComponent" type="Node" parent="Enemy2"]
+script = ExtResource("5_shooter")
 
 [node name="HelpLabel" type="Label" parent="."]
 offset_left = 20.0

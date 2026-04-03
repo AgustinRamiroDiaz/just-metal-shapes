@@ -4,13 +4,13 @@
 
 With invincibility frames.
 
-## Add projectiles to enemies
-
 ## Add setup screen for selecting players and colors
 
 ## Remove collisions between players
 
 ## Movable enemies
+
+## Create more enemy types
 
 ## Schedule enemies to spawn
 

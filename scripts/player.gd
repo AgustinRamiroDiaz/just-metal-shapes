@@ -17,6 +17,13 @@ extends CharacterBody2D
 
 var targets_in_range: Array[Node2D] = []
 
+const MAX_LIVES: int = 3
+const INVINCIBILITY_DURATION: float = 3.0
+
+var lives: int = MAX_LIVES
+var invincible_timer: float = 0.0
+var _lives_label: Label
+
 
 func _apply_deadzone(value: float) -> float:
 	if absf(value) < joystick_deadzone:
@@ -25,13 +32,26 @@ func _apply_deadzone(value: float) -> float:
 
 
 func _ready() -> void:
+	add_to_group("players")
 	_update_range_shape()
 	queue_redraw()
 	range_area.body_entered.connect(_on_range_body_entered)
 	range_area.body_exited.connect(_on_range_body_exited)
+	_lives_label = Label.new()
+	_lives_label.position = Vector2(-24.0, -56.0)
+	_lives_label.size = Vector2(48.0, 20.0)
+	_lives_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_lives_label)
+	_update_lives_label()
 
 
 func _physics_process(delta: float) -> void:
+	if invincible_timer > 0.0:
+		invincible_timer -= delta
+		modulate.a = 0.3 if fmod(invincible_timer * 6.0, 1.0) > 0.5 else 1.0
+		if invincible_timer <= 0.0:
+			modulate.a = 1.0
+
 	var input_dir: Vector2
 	if use_right_stick:
 		input_dir = Vector2(
@@ -80,6 +100,23 @@ func _on_range_body_entered(body: Node) -> void:
 func _on_range_body_exited(body: Node) -> void:
 	if body is Node2D:
 		targets_in_range.erase(body)
+
+
+func take_damage(amount: int) -> void:
+	if invincible_timer > 0.0 or lives <= 0:
+		return
+	lives -= amount
+	invincible_timer = INVINCIBILITY_DURATION
+	_update_lives_label()
+	if lives <= 0:
+		lives = 0
+		modulate = Color(0.5, 0.5, 0.5, 1.0)
+
+
+func _update_lives_label() -> void:
+	if _lives_label == null:
+		return
+	_lives_label.text = "Lives: %d" % lives
 
 
 func _apply_continuous_damage(delta: float) -> void:
