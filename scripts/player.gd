@@ -9,11 +9,19 @@ extends CharacterBody2D
 @export var move_right_action: StringName = &"ui_right"
 @export var move_up_action: StringName = &"ui_up"
 @export var move_down_action: StringName = &"ui_down"
+@export var use_right_stick: bool = false
+@export var joystick_deadzone: float = 0.2
 
 @onready var range_area: Area2D = $RangeArea
 @onready var range_shape: CollisionShape2D = $RangeArea/CollisionShape2D
 
 var targets_in_range: Array[Node2D] = []
+
+
+func _apply_deadzone(value: float) -> float:
+	if absf(value) < joystick_deadzone:
+		return 0.0
+	return signf(value) * (absf(value) - joystick_deadzone) / (1.0 - joystick_deadzone)
 
 
 func _ready() -> void:
@@ -24,12 +32,19 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var input_dir := Input.get_vector(
-		move_left_action,
-		move_right_action,
-		move_up_action,
-		move_down_action
-	)
+	var input_dir: Vector2
+	if use_right_stick:
+		input_dir = Vector2(
+			_apply_deadzone(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)),
+			_apply_deadzone(Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
+		)
+	else:
+		input_dir = Input.get_vector(
+			move_left_action,
+			move_right_action,
+			move_up_action,
+			move_down_action
+		)
 	velocity = input_dir * speed
 	move_and_slide()
 	_apply_continuous_damage(delta)
