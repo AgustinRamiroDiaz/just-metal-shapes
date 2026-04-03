@@ -3,7 +3,7 @@ extends Node
 
 signal moved(amount: float)
 
-@export var move_speed: float = 50.0
+@export var move_speed: float = 30.0
 @export var target_group: StringName = &"players"
 
 

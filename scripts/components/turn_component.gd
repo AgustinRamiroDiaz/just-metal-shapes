@@ -14,13 +14,7 @@ func _process(delta: float) -> void:
 	
 	var sprite: Sprite2D = (get_parent() as Node2D).get_node("Sprite2D")
 	var target_angle := (nearest.global_position - origin).angle()
-	var current_angle := sprite.rotation
-	var angle_diff := target_angle - current_angle
-	while angle_diff > PI:
-		angle_diff -= TAU
-	while angle_diff < -PI:
-		angle_diff += TAU
-	sprite.rotation += sign(angle_diff) * min(abs(angle_diff), turn_speed * delta)
+	sprite.rotation = lerp_angle(sprite.rotation, target_angle, turn_speed * delta)
 
 
 func _get_nearest_target(targets: Array, origin: Vector2) -> Node2D:

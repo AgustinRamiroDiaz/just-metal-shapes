@@ -1,45 +1,38 @@
-[gd_scene load_steps=8 format=3 uid="uid://shotgun_enemy"]
+[gd_scene format=3 uid="uid://dmj0ol8d38aoh"]
 
-[ext_resource type="Script" path="res://scripts/shotgun_enemy.gd" id="1_shotgun"]
-[ext_resource type="Texture2D" path="res://icon.svg" id="2_icon"]
-[ext_resource type="Script" path="res://scripts/components/health_component.gd" id="3_health"]
-[ext_resource type="Script" path="res://scripts/components/shotgun_shooter_component.gd" id="4_shotgun_shooter"]
-[ext_resource type="Script" path="res://scripts/components/chaser_component.gd" id="5_chaser"]
-[ext_resource type="Script" path="res://scripts/components/turn_component.gd" id="6_turn"]
+[ext_resource type="Script" uid="uid://do03jimx88myu" path="res://scripts/shotgun_enemy.gd" id="1_shotgun"]
+[ext_resource type="Texture2D" uid="uid://dx60ovk85ckyh" path="res://icon.svg" id="2_icon"]
+[ext_resource type="Script" uid="uid://b8213fec7gt7m" path="res://scripts/components/health_component.gd" id="3_health"]
+[ext_resource type="Script" uid="uid://cj0rlemobwci7" path="res://scripts/components/shotgun_shooter_component.gd" id="4_shotgun_shooter"]
+[ext_resource type="Script" uid="uid://cstgj6w4m6oyo" path="res://scripts/components/chaser_component.gd" id="5_chaser"]
+[ext_resource type="Script" uid="uid://baibtnk3m4nge" path="res://scripts/components/turn_component.gd" id="6_turn"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_shotgun"]
 radius = 32.0
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_range"]
-radius = 200.0
-
-[node name="ShotgunEnemy" type="StaticBody2D"]
-script = ExtResource("1_shotgun")
+[node name="ShotgunEnemy" type="StaticBody2D" unique_id=597421633]
 collision_layer = 2
+script = ExtResource("1_shotgun")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=658582241]
 modulate = Color(0.8, 0.2, 0.2, 1)
 scale = Vector2(0.3, 0.3)
 texture = ExtResource("2_icon")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=12647215]
 shape = SubResource("CircleShape2D_shotgun")
 
-[node name="HealthComponent" type="Node2D" parent="."]
+[node name="HealthComponent" type="Node2D" parent="." unique_id=632148012]
 script = ExtResource("3_health")
-max_life = 3.0
 shield_color = Color(0.8, 0.2, 0.2, 1)
 
-[node name="ShotgunShooterComponent" type="Node" parent="."]
+[node name="ShotgunShooterComponent" type="Node" parent="." unique_id=1226956249]
 script = ExtResource("4_shotgun_shooter")
 shoot_interval = 3.0
-shot_count = 8
-spread_angle = 45.0
 
-[node name="ChaserComponent" type="Node" parent="."]
+[node name="ChaserComponent" type="Node" parent="." unique_id=915578384]
 script = ExtResource("5_chaser")
-move_speed = 50.0
 
-[node name="TurnComponent" type="Node" parent="."]
+[node name="TurnComponent" type="Node" parent="." unique_id=2090137885]
 script = ExtResource("6_turn")
 turn_speed = 1.0

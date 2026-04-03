@@ -6,13 +6,9 @@ extends ShooterComponent
 
 
 func _shoot() -> void:
-	var targets := get_tree().get_nodes_in_group(target_group)
 	var origin := (get_parent() as Node2D).global_position
-	var nearest := _get_nearest_target(targets, origin)
-	if nearest == null:
-		return
-	
-	var base_direction := (nearest.global_position - origin).normalized()
+	var sprite: Sprite2D = (get_parent() as Node2D).get_node("Sprite2D")
+	var base_direction := Vector2.RIGHT.rotated(sprite.rotation)
 	var start_angle := -spread_angle / 2
 	var angle_step := spread_angle / (shot_count - 1) if shot_count > 1 else 0.0
 	
