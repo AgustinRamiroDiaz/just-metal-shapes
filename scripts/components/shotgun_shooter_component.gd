@@ -1,7 +1,7 @@
 class_name ShotgunShooterComponent
 extends ShooterComponent
 
-@export var shot_count: int = 8
+@export var shot_count: int = 3
 @export var spread_angle: float = 45.0
 
 
