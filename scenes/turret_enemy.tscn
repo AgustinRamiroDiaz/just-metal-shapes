@@ -1,0 +1,32 @@
+[gd_scene load_steps=6 format=3 uid="uid://turret_enemy"]
+
+[ext_resource type="Script" path="res://scripts/turret_enemy.gd" id="1_turret"]
+[ext_resource type="Texture2D" path="res://icon.svg" id="2_icon"]
+[ext_resource type="Script" path="res://scripts/components/health_component.gd" id="3_health"]
+[ext_resource type="Script" path="res://scripts/components/turret_shooter_component.gd" id="4_turret_shooter"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_turret"]
+radius = 24.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_range"]
+radius = 150.0
+
+[node name="TurretEnemy" type="StaticBody2D"]
+script = ExtResource("1_turret")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(0.6, 0.2, 0.8, 1)
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("2_icon")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_turret")
+
+[node name="HealthComponent" type="Node2D" parent="."]
+script = ExtResource("3_health")
+max_life = 2.0
+shield_color = Color(0.6, 0.2, 0.8, 1)
+
+[node name="TurretShooterComponent" type="Node" parent="."]
+script = ExtResource("4_turret_shooter")
+shoot_interval = 2.0

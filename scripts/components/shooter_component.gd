@@ -27,6 +27,13 @@ func _process(delta: float) -> void:
 func _shoot() -> void:
 	var targets := get_tree().get_nodes_in_group(target_group)
 	var origin := (get_parent() as Node2D).global_position
+	var nearest: Node2D = _get_nearest_target(targets, origin)
+	if nearest == null:
+		return
+	_spawn_projectile(origin, (nearest.global_position - origin).normalized())
+
+
+func _get_nearest_target(targets: Array, origin: Vector2) -> Node2D:
 	var nearest: Node2D = null
 	var min_dist: float = INF
 	for t in targets:
@@ -36,10 +43,12 @@ func _shoot() -> void:
 		if d < min_dist:
 			min_dist = d
 			nearest = t as Node2D
-	if nearest == null:
-		return
+	return nearest
+
+
+func _spawn_projectile(origin: Vector2, direction: Vector2) -> void:
 	var proj: Area2D = _projectile_scene.instantiate()
 	proj.global_position = origin
-	proj.direction = (nearest.global_position - origin).normalized()
+	proj.direction = direction
 	get_tree().current_scene.add_child(proj)
 	fired.emit(proj)

@@ -1,0 +1,44 @@
+[gd_scene load_steps=8 format=3 uid="uid://shotgun_enemy"]
+
+[ext_resource type="Script" path="res://scripts/shotgun_enemy.gd" id="1_shotgun"]
+[ext_resource type="Texture2D" path="res://icon.svg" id="2_icon"]
+[ext_resource type="Script" path="res://scripts/components/health_component.gd" id="3_health"]
+[ext_resource type="Script" path="res://scripts/components/shotgun_shooter_component.gd" id="4_shotgun_shooter"]
+[ext_resource type="Script" path="res://scripts/components/chaser_component.gd" id="5_chaser"]
+[ext_resource type="Script" path="res://scripts/components/turn_component.gd" id="6_turn"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_shotgun"]
+radius = 32.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_range"]
+radius = 200.0
+
+[node name="ShotgunEnemy" type="StaticBody2D"]
+script = ExtResource("1_shotgun")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(0.8, 0.2, 0.2, 1)
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("2_icon")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_shotgun")
+
+[node name="HealthComponent" type="Node2D" parent="."]
+script = ExtResource("3_health")
+max_life = 3.0
+shield_color = Color(0.8, 0.2, 0.2, 1)
+
+[node name="ShotgunShooterComponent" type="Node" parent="."]
+script = ExtResource("4_shotgun_shooter")
+shoot_interval = 3.0
+shot_count = 8
+spread_angle = 45.0
+
+[node name="ChaserComponent" type="Node" parent="."]
+script = ExtResource("5_chaser")
+move_speed = 50.0
+
+[node name="TurnComponent" type="Node" parent="."]
+script = ExtResource("6_turn")
+turn_speed = 1.0
