@@ -3,11 +3,16 @@ extends CharacterBody2D
 @export var speed: float = 220.0
 @export var range_radius: float = 140.0:
 	set = set_range_radius
+@export var team_color: Color = Color(0.35, 0.75, 1.0, 1.0)
+@export var move_left_action: StringName = &"ui_left"
+@export var move_right_action: StringName = &"ui_right"
+@export var move_up_action: StringName = &"ui_up"
+@export var move_down_action: StringName = &"ui_down"
 
 @onready var range_area: Area2D = $RangeArea
 @onready var range_shape: CollisionShape2D = $RangeArea/CollisionShape2D
 
-var target_enemy: Node = null
+var targets_in_range: Array[Node2D] = []
 
 
 func _ready() -> void:
@@ -18,14 +23,21 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	var input_dir := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	var input_dir := Input.get_vector(
+		move_left_action,
+		move_right_action,
+		move_up_action,
+		move_down_action
+	)
 	velocity = input_dir * speed
 	move_and_slide()
 
 
 func _draw() -> void:
-	draw_arc(Vector2.ZERO, range_radius, 0.0, TAU, 64, Color(0.4, 0.8, 1.0, 0.9), 2.5)
-	draw_circle(Vector2.ZERO, range_radius, Color(0.4, 0.8, 1.0, 0.08))
+	var ring_color := Color(team_color.r, team_color.g, team_color.b, 0.9)
+	var fill_color := Color(team_color.r, team_color.g, team_color.b, 0.08)
+	draw_arc(Vector2.ZERO, range_radius, 0.0, TAU, 64, ring_color, 2.5)
+	draw_circle(Vector2.ZERO, range_radius, fill_color)
 
 
 func set_range_radius(value: float) -> void:
@@ -44,15 +56,16 @@ func _update_range_shape() -> void:
 
 
 func _on_range_body_entered(body: Node) -> void:
-	if body.has_method("take_damage"):
-		target_enemy = body
+	if body is Node2D and body.has_method("take_damage"):
+		targets_in_range.append(body)
 
 
 func _on_range_body_exited(body: Node) -> void:
-	if body == target_enemy:
-		target_enemy = null
+	if body is Node2D:
+		targets_in_range.erase(body)
 
 
 func _on_damage_timer_timeout() -> void:
-	if target_enemy != null and is_instance_valid(target_enemy):
-		target_enemy.take_damage(1)
+	for target in targets_in_range:
+		if is_instance_valid(target) and target.has_method("take_damage"):
+			target.take_damage(1)

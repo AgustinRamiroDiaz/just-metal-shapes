@@ -18,6 +18,7 @@ radius = 140.0
 [node name="Player" type="CharacterBody2D" parent="."]
 position = Vector2(240, 300)
 script = ExtResource("1_hmhd3")
+team_color = Color(0.35, 0.75, 1, 1)
 
 [node name="Sprite2D" type="Sprite2D" parent="Player"]
 modulate = Color(0.35, 0.75, 1, 1)
@@ -28,6 +29,7 @@ texture = ExtResource("3_6o5e2")
 shape = SubResource("CircleShape2D_player")
 
 [node name="RangeArea" type="Area2D" parent="Player"]
+collision_mask = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player/RangeArea"]
 shape = SubResource("CircleShape2D_range")
@@ -39,9 +41,11 @@ autostart = true
 [node name="Enemy" type="StaticBody2D" parent="."]
 position = Vector2(520, 300)
 script = ExtResource("2_uylta")
+shield_color = Color(0.35, 0.75, 1, 1)
+collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="Enemy"]
-modulate = Color(1, 0.35, 0.35, 1)
+modulate = Color(0.35, 0.75, 1, 1)
 scale = Vector2(0.2, 0.2)
 texture = ExtResource("3_6o5e2")
 
@@ -56,11 +60,61 @@ offset_bottom = -30.0
 horizontal_alignment = 1
 text = "Life: 3"
 
+[node name="Player2" type="CharacterBody2D" parent="."]
+position = Vector2(240, 470)
+script = ExtResource("1_hmhd3")
+team_color = Color(1, 0.6, 0.2, 1)
+move_left_action = &"p2_left"
+move_right_action = &"p2_right"
+move_up_action = &"p2_up"
+move_down_action = &"p2_down"
+
+[node name="Sprite2D" type="Sprite2D" parent="Player2"]
+modulate = Color(1, 0.6, 0.2, 1)
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("3_6o5e2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player2"]
+shape = SubResource("CircleShape2D_player")
+
+[node name="RangeArea" type="Area2D" parent="Player2"]
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player2/RangeArea"]
+shape = SubResource("CircleShape2D_range")
+
+[node name="DamageTimer" type="Timer" parent="Player2"]
+wait_time = 1.0
+autostart = true
+
+[node name="Enemy2" type="StaticBody2D" parent="."]
+position = Vector2(520, 470)
+script = ExtResource("2_uylta")
+shield_color = Color(1, 0.6, 0.2, 1)
+collision_layer = 4
+
+[node name="Sprite2D" type="Sprite2D" parent="Enemy2"]
+modulate = Color(1, 0.6, 0.2, 1)
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("3_6o5e2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Enemy2"]
+shape = SubResource("CircleShape2D_enemy")
+
+[node name="LifeLabel" type="Label" parent="Enemy2"]
+offset_left = -34.0
+offset_top = -56.0
+offset_right = 38.0
+offset_bottom = -30.0
+horizontal_alignment = 1
+text = "Life: 3"
+
 [node name="HelpLabel" type="Label" parent="."]
 offset_left = 20.0
 offset_top = 16.0
-offset_right = 430.0
-offset_bottom = 44.0
-text = "Move with arrow keys / WASD. Enemy loses 1 life/sec inside blue circle."
+offset_right = 760.0
+offset_bottom = 52.0
+text = "P1: arrows/WASD (blue). P2: IJKL (orange). Each player only damages same-color enemy at 1 life/sec."
 
 [connection signal="timeout" from="Player/DamageTimer" to="Player" method="_on_damage_timer_timeout"]
+[connection signal="timeout" from="Player2/DamageTimer" to="Player2" method="_on_damage_timer_timeout"]
