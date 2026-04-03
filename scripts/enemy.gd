@@ -14,6 +14,4 @@ func take_damage(amount: float) -> void:
 
 
 func _on_died() -> void:
-	sprite.modulate = Color(0.35, 0.35, 0.35, 1.0)
-	health._life_label.text = "Defeated"
-	shooter.set_process(false)
+	queue_free()

@@ -7,6 +7,9 @@ var lifetime: float = 5.0
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
+	var notifier := VisibleOnScreenNotifier2D.new()
+	notifier.screen_exited.connect(queue_free)
+	add_child(notifier)
 	queue_redraw()
 
 

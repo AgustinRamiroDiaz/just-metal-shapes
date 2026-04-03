@@ -6,8 +6,6 @@ With invincibility frames.
 
 ## Add setup screen for selecting players and colors
 
-## Remove collisions between players
-
 ## Movable enemies
 
 ## Create more enemy types
