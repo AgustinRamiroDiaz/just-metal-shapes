@@ -1,5 +1,7 @@
 extends StaticBody2D
 
+signal died
+
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var health: HealthComponent = $HealthComponent
 @onready var shooter: TurretShooterComponent = $TurretShooterComponent
@@ -14,4 +16,5 @@ func take_damage(amount: float) -> void:
 
 
 func _on_died() -> void:
+	died.emit()
 	queue_free()

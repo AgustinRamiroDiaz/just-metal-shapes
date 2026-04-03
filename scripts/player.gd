@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+signal died
+
 @export var speed: float = 220.0
 @export var range_radius: float = 140.0:
 	set = set_range_radius
@@ -67,7 +69,14 @@ func _physics_process(delta: float) -> void:
 		)
 	velocity = input_dir * speed
 	move_and_slide()
+	_clamp_to_viewport()
 	_apply_continuous_damage(delta)
+
+
+func _clamp_to_viewport() -> void:
+	var rect := get_viewport().get_visible_rect()
+	global_position.x = clampf(global_position.x, rect.position.x, rect.end.x)
+	global_position.y = clampf(global_position.y, rect.position.y, rect.end.y)
 
 
 func _draw() -> void:
@@ -111,6 +120,7 @@ func take_damage(amount: int) -> void:
 	if lives <= 0:
 		lives = 0
 		modulate = Color(0.5, 0.5, 0.5, 1.0)
+		died.emit()
 
 
 func _update_lives_label() -> void:

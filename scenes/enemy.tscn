@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://enemy"]
+
+[ext_resource type="Script" path="res://scripts/enemy.gd" id="1_enemy"]
+[ext_resource type="Texture2D" path="res://icon.svg" id="2_icon"]
+[ext_resource type="Script" path="res://scripts/components/health_component.gd" id="3_health"]
+[ext_resource type="Script" path="res://scripts/components/shooter_component.gd" id="4_shooter"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_enemy"]
+radius = 24.0
+
+[node name="Enemy" type="StaticBody2D"]
+script = ExtResource("1_enemy")
+collision_layer = 2
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("2_icon")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_enemy")
+
+[node name="HealthComponent" type="Node2D" parent="."]
+script = ExtResource("3_health")
+
+[node name="ShooterComponent" type="Node" parent="."]
+script = ExtResource("4_shooter")

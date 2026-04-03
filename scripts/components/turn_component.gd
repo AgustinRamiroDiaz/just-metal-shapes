@@ -1,7 +1,7 @@
 class_name TurnComponent
 extends Node
 
-@export var turn_speed: float = 1.0
+@export var turn_speed: float = 0.5
 @export var target_group: StringName = &"players"
 
 
