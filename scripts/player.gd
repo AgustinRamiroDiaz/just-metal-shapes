@@ -24,7 +24,6 @@ const INVINCIBILITY_DURATION: float = 3.0
 
 var lives: int = MAX_LIVES
 var invincible_timer: float = 0.0
-var _lives_label: Label
 
 
 func _apply_deadzone(value: float) -> float:
@@ -39,12 +38,6 @@ func _ready() -> void:
 	queue_redraw()
 	range_area.body_entered.connect(_on_range_body_entered)
 	range_area.body_exited.connect(_on_range_body_exited)
-	_lives_label = Label.new()
-	_lives_label.position = Vector2(-24.0, -56.0)
-	_lives_label.size = Vector2(48.0, 20.0)
-	_lives_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_child(_lives_label)
-	_update_lives_label()
 
 
 func _physics_process(delta: float) -> void:
@@ -116,17 +109,10 @@ func take_damage(amount: int) -> void:
 		return
 	lives -= amount
 	invincible_timer = INVINCIBILITY_DURATION
-	_update_lives_label()
 	if lives <= 0:
 		lives = 0
 		modulate = Color(0.5, 0.5, 0.5, 1.0)
 		died.emit()
-
-
-func _update_lives_label() -> void:
-	if _lives_label == null:
-		return
-	_lives_label.text = "Lives: %d" % lives
 
 
 func _apply_continuous_damage(delta: float) -> void:

@@ -16,17 +16,9 @@ const DAMAGE_FLASH_DURATION: float = 0.4
 const PULSE_SPEED: float = 4.0
 const GLOW_INTENSITY: float = 0.4
 
-var _life_label: Label
-
 
 func _ready() -> void:
 	life = max_life
-	_life_label = Label.new()
-	_life_label.position = Vector2(-34.0, -56.0)
-	_life_label.size = Vector2(72.0, 26.0)
-	_life_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_child(_life_label)
-	_update_life_label()
 	queue_redraw()
 
 
@@ -45,7 +37,6 @@ func take_damage(amount: float, damage_color: Color = Color.WHITE) -> void:
 		damage_flash_timer = DAMAGE_FLASH_DURATION
 		damaged.emit(amount)
 		queue_redraw()
-		_update_life_label()
 		return
 	
 	if has_shield and shield > 0.0:
@@ -53,7 +44,6 @@ func take_damage(amount: float, damage_color: Color = Color.WHITE) -> void:
 	
 	life = max(life - amount, 0.0)
 	damage_flash_timer = DAMAGE_FLASH_DURATION
-	_update_life_label()
 	damaged.emit(amount)
 	queue_redraw()
 	if life == 0:
@@ -91,9 +81,3 @@ func _draw() -> void:
 	if health_ratio > 0.0:
 		var health_color := Color(0.3, 0.8, 0.3, base_alpha)
 		draw_arc(Vector2.ZERO, 28.0, -PI / 2.0, -PI / 2.0 + (TAU * health_ratio), 32, health_color, 4.0)
-
-
-func _update_life_label() -> void:
-	if _life_label == null:
-		return
-	_life_label.text = "Shield: %.0f%%\nLife: %.1f" % [shield * 100.0, life]
