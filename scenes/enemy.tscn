@@ -21,6 +21,7 @@ shape = SubResource("CircleShape2D_enemy")
 
 [node name="HealthComponent" type="Node2D" parent="."]
 script = ExtResource("3_health")
+has_shield = true
 
 [node name="ShooterComponent" type="Node" parent="."]
 script = ExtResource("4_shooter")

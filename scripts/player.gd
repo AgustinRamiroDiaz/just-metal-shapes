@@ -136,4 +136,4 @@ func _apply_continuous_damage(delta: float) -> void:
 	var damage_amount := damage_per_second * delta
 	for target in targets_in_range:
 		if is_instance_valid(target) and target.has_method("take_damage"):
-			target.take_damage(damage_amount)
+			target.take_damage(damage_amount, team_color)

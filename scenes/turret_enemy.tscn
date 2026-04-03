@@ -26,7 +26,8 @@ shape = SubResource("CircleShape2D_turret")
 [node name="HealthComponent" type="Node2D" parent="."]
 script = ExtResource("3_health")
 max_life = 2.0
-shield_color = Color(0.6, 0.2, 0.8, 1)
+has_shield = true
+shield_color = Color(1, 0.6, 0.2, 1)
 
 [node name="TurretShooterComponent" type="Node" parent="."]
 script = ExtResource("4_turret_shooter")

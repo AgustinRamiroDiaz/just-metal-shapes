@@ -6,8 +6,10 @@ signal died
 
 @export var max_life: float = 3.0
 @export var shield_color: Color = Color(1.0, 0.35, 0.35, 1.0)
+@export var has_shield: bool = true
 
 var life: float = 0.0
+var shield: float = 1.0
 var damage_flash_timer: float = 0.0
 
 const DAMAGE_FLASH_DURATION: float = 0.4
@@ -34,10 +36,22 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, damage_color: Color = Color.WHITE) -> void:
 	if life <= 0:
 		return
-	life = max(life - amount, 0)
+	
+	if has_shield and shield > 0.0 and _colors_match(shield_color, damage_color):
+		shield = max(shield - amount, 0.0)
+		damage_flash_timer = DAMAGE_FLASH_DURATION
+		damaged.emit(amount)
+		queue_redraw()
+		_update_life_label()
+		return
+	
+	if has_shield and shield > 0.0:
+		return
+	
+	life = max(life - amount, 0.0)
 	damage_flash_timer = DAMAGE_FLASH_DURATION
 	_update_life_label()
 	damaged.emit(amount)
@@ -46,8 +60,11 @@ func take_damage(amount: float) -> void:
 		died.emit()
 
 
+func _colors_match(c1: Color, c2: Color) -> bool:
+	return c1.r == c2.r and c1.g == c2.g and c1.b == c2.b
+
+
 func _draw() -> void:
-	var ratio := float(life) / float(max(max_life, 1))
 	var pulse := sin(Time.get_ticks_msec() / 1000.0 * PULSE_SPEED) * 0.5 + 0.5
 	var base_alpha := 0.5 + pulse * GLOW_INTENSITY
 
@@ -63,13 +80,20 @@ func _draw() -> void:
 
 	var inner_color := Color(shield_color.r, shield_color.g, shield_color.b, base_alpha)
 	var outer_color := Color(shield_color.r, shield_color.g, shield_color.b, shield_alpha)
-	draw_arc(Vector2.ZERO, 34.0, -PI / 2.0, -PI / 2.0 + (TAU * ratio), 64, inner_color, 6.0)
-	draw_arc(Vector2.ZERO, 34.0, -PI / 2.0, -PI / 2.0 + (TAU * ratio), 64, outer_color, shield_width)
+	draw_arc(Vector2.ZERO, 34.0, -PI / 2.0, -PI / 2.0 + (TAU * shield), 64, inner_color, 6.0)
+	draw_arc(Vector2.ZERO, 34.0, -PI / 2.0, -PI / 2.0 + (TAU * shield), 64, outer_color, shield_width)
 
-	if ratio > 0.0:
+	if shield > 0.0:
 		var glow_color := Color(shield_color.r, shield_color.g, shield_color.b, base_alpha * 0.3)
-		draw_arc(Vector2.ZERO, 38.0, -PI / 2.0, -PI / 2.0 + (TAU * ratio), 64, glow_color, 2.0)
+		draw_arc(Vector2.ZERO, 38.0, -PI / 2.0, -PI / 2.0 + (TAU * shield), 64, glow_color, 2.0)
+
+	var health_ratio := float(life) / float(max(max_life, 1))
+	if health_ratio > 0.0:
+		var health_color := Color(0.3, 0.8, 0.3, base_alpha)
+		draw_arc(Vector2.ZERO, 28.0, -PI / 2.0, -PI / 2.0 + (TAU * health_ratio), 32, health_color, 4.0)
 
 
 func _update_life_label() -> void:
-	_life_label.text = "Life: %.1f" % life
+	if _life_label == null:
+		return
+	_life_label.text = "Shield: %.0f%%\nLife: %.1f" % [shield * 100.0, life]
