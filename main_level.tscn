@@ -34,10 +34,6 @@ collision_mask = 2
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player/RangeArea"]
 shape = SubResource("CircleShape2D_range")
 
-[node name="DamageTimer" type="Timer" parent="Player"]
-wait_time = 1.0
-autostart = true
-
 [node name="Enemy" type="StaticBody2D" parent="."]
 position = Vector2(520, 300)
 script = ExtResource("2_uylta")
@@ -58,7 +54,7 @@ offset_top = -56.0
 offset_right = 38.0
 offset_bottom = -30.0
 horizontal_alignment = 1
-text = "Life: 3"
+text = "Life: 3.0"
 
 [node name="Player2" type="CharacterBody2D" parent="."]
 position = Vector2(240, 470)
@@ -83,10 +79,6 @@ collision_mask = 4
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player2/RangeArea"]
 shape = SubResource("CircleShape2D_range")
 
-[node name="DamageTimer" type="Timer" parent="Player2"]
-wait_time = 1.0
-autostart = true
-
 [node name="Enemy2" type="StaticBody2D" parent="."]
 position = Vector2(520, 470)
 script = ExtResource("2_uylta")
@@ -107,14 +99,11 @@ offset_top = -56.0
 offset_right = 38.0
 offset_bottom = -30.0
 horizontal_alignment = 1
-text = "Life: 3"
+text = "Life: 3.0"
 
 [node name="HelpLabel" type="Label" parent="."]
 offset_left = 20.0
 offset_top = 16.0
 offset_right = 760.0
 offset_bottom = 52.0
-text = "P1: arrows/WASD (blue). P2: IJKL (orange). Each player only damages same-color enemy at 1 life/sec."
-
-[connection signal="timeout" from="Player/DamageTimer" to="Player" method="_on_damage_timer_timeout"]
-[connection signal="timeout" from="Player2/DamageTimer" to="Player2" method="_on_damage_timer_timeout"]
+text = "P1: arrows/WASD (blue). P2: IJKL (orange). Same-color DPS is continuous while inside radius."

@@ -1,12 +1,12 @@
 extends StaticBody2D
 
-@export var max_life: int = 3
+@export var max_life: float = 3.0
 @export var shield_color: Color = Color(1.0, 0.35, 0.35, 1.0)
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var life_label: Label = $LifeLabel
 
-var life: int = 0
+var life: float = 0.0
 
 
 func _ready() -> void:
@@ -15,7 +15,7 @@ func _ready() -> void:
 	queue_redraw()
 
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: float) -> void:
 	if life <= 0:
 		return
 
@@ -43,4 +43,4 @@ func _draw() -> void:
 
 
 func _update_life_label() -> void:
-	life_label.text = "Life: %d" % life
+	life_label.text = "Life: %.1f" % life

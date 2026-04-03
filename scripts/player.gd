@@ -3,6 +3,7 @@ extends CharacterBody2D
 @export var speed: float = 220.0
 @export var range_radius: float = 140.0:
 	set = set_range_radius
+@export var damage_per_second: float = 1.0
 @export var team_color: Color = Color(0.35, 0.75, 1.0, 1.0)
 @export var move_left_action: StringName = &"ui_left"
 @export var move_right_action: StringName = &"ui_right"
@@ -22,7 +23,7 @@ func _ready() -> void:
 	range_area.body_exited.connect(_on_range_body_exited)
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	var input_dir := Input.get_vector(
 		move_left_action,
 		move_right_action,
@@ -31,6 +32,7 @@ func _physics_process(_delta: float) -> void:
 	)
 	velocity = input_dir * speed
 	move_and_slide()
+	_apply_continuous_damage(delta)
 
 
 func _draw() -> void:
@@ -65,7 +67,11 @@ func _on_range_body_exited(body: Node) -> void:
 		targets_in_range.erase(body)
 
 
-func _on_damage_timer_timeout() -> void:
+func _apply_continuous_damage(delta: float) -> void:
+	if damage_per_second <= 0.0:
+		return
+
+	var damage_amount := damage_per_second * delta
 	for target in targets_in_range:
 		if is_instance_valid(target) and target.has_method("take_damage"):
-			target.take_damage(1)
+			target.take_damage(damage_amount)
