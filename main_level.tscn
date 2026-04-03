@@ -1,0 +1,66 @@
+[gd_scene load_steps=8 format=3 uid="uid://bh1e5rgutq38q"]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_hmhd3"]
+[ext_resource type="Script" path="res://scripts/enemy.gd" id="2_uylta"]
+[ext_resource type="Texture2D" path="res://icon.svg" id="3_6o5e2"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 24.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_enemy"]
+radius = 24.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_range"]
+radius = 140.0
+
+[node name="Main Level" type="Node2D" unique_id=886601202]
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(240, 300)
+script = ExtResource("1_hmhd3")
+
+[node name="Sprite2D" type="Sprite2D" parent="Player"]
+modulate = Color(0.35, 0.75, 1, 1)
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("3_6o5e2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("CircleShape2D_player")
+
+[node name="RangeArea" type="Area2D" parent="Player"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player/RangeArea"]
+shape = SubResource("CircleShape2D_range")
+
+[node name="DamageTimer" type="Timer" parent="Player"]
+wait_time = 1.0
+autostart = true
+
+[node name="Enemy" type="StaticBody2D" parent="."]
+position = Vector2(520, 300)
+script = ExtResource("2_uylta")
+
+[node name="Sprite2D" type="Sprite2D" parent="Enemy"]
+modulate = Color(1, 0.35, 0.35, 1)
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("3_6o5e2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Enemy"]
+shape = SubResource("CircleShape2D_enemy")
+
+[node name="LifeLabel" type="Label" parent="Enemy"]
+offset_left = -34.0
+offset_top = -56.0
+offset_right = 38.0
+offset_bottom = -30.0
+horizontal_alignment = 1
+text = "Life: 3"
+
+[node name="HelpLabel" type="Label" parent="."]
+offset_left = 20.0
+offset_top = 16.0
+offset_right = 430.0
+offset_bottom = 44.0
+text = "Move with arrow keys / WASD. Enemy loses 1 life/sec inside blue circle."
+
+[connection signal="timeout" from="Player/DamageTimer" to="Player" method="_on_damage_timer_timeout"]
