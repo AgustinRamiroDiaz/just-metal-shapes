@@ -56,7 +56,12 @@ func _spawn_players() -> void:
 		p.position = spawn_positions[i]
 		p.team_color = cfg.color
 		p.input_type = cfg.input_type
-		if cfg.input_type == GameConfig.InputType.KEYBOARD2:
+		if cfg.input_type == GameConfig.InputType.KEYBOARD1:
+			p.move_left_action  = &"p1_left"
+			p.move_right_action = &"p1_right"
+			p.move_up_action    = &"p1_up"
+			p.move_down_action  = &"p1_down"
+		elif cfg.input_type == GameConfig.InputType.KEYBOARD2:
 			p.move_left_action  = &"p2_left"
 			p.move_right_action = &"p2_right"
 			p.move_up_action    = &"p2_up"
