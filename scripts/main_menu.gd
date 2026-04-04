@@ -1,4 +1,4 @@
-extends Node2D
+extends Control
 
 const SCENE_GAME := "res://main_level.tscn"
 
