@@ -19,6 +19,10 @@ const GLOW_INTENSITY: float = 0.4
 
 func _ready() -> void:
 	life = max_life
+	if has_shield:
+		var players := get_tree().get_nodes_in_group("players")
+		if players.size() > 0:
+			shield_color = players.pick_random().team_color
 	queue_redraw()
 
 

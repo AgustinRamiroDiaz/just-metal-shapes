@@ -31,7 +31,6 @@ func _ready() -> void:
 		spawn_intervals.append(base_spawn_interval * (1.0 + i * 0.5))
 	
 	_spawn_players()
-	_spawn_initial_enemies()
 
 
 func _process(delta: float) -> void:
@@ -63,11 +62,6 @@ func _spawn_players() -> void:
 	p2.add_to_group("players")
 	add_child(p2)
 	p2.died.connect(_on_player_died)
-
-
-func _spawn_initial_enemies() -> void:
-	for i in range(3):
-		_spawn_enemy(0)
 
 
 func _update_spawn_intervals() -> void:
