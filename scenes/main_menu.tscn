@@ -1,0 +1,62 @@
+[gd_scene format=3 uid="uid://dqnm3x7y5kr2w"]
+
+[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_menu"]
+
+[node name="MainMenu" type="Node2D"]
+script = ExtResource("1_menu")
+
+[node name="Stage1" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Stage1"]
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="Stage1/VBox"]
+text = "JUST METAL SHAPES"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="Stage1/VBox"]
+text = "Press Enter or A to join.  Left/Right to toggle split."
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="Stage1/VBox"]
+custom_minimum_size = Vector2(0, 16)
+
+[node name="DeviceList" type="VBoxContainer" parent="Stage1/VBox"]
+
+[node name="Spacer2" type="Control" parent="Stage1/VBox"]
+custom_minimum_size = Vector2(0, 16)
+
+[node name="ContinueButton" type="Button" parent="Stage1/VBox"]
+text = "Continue  →"
+disabled = true
+
+[node name="Stage2" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+visible = false
+
+[node name="VBox" type="VBoxContainer" parent="Stage2"]
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="Stage2/VBox"]
+text = "Players Ready"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="Stage2/VBox"]
+custom_minimum_size = Vector2(0, 16)
+
+[node name="PlayerList" type="VBoxContainer" parent="Stage2/VBox"]
+
+[node name="Spacer2" type="Control" parent="Stage2/VBox"]
+custom_minimum_size = Vector2(0, 16)
+
+[node name="StartButton" type="Button" parent="Stage2/VBox"]
+text = "Start Game"

@@ -44,24 +44,25 @@ func _process(delta: float) -> void:
 
 
 func _spawn_players() -> void:
-	var p1: CharacterBody2D = player_scene.instantiate()
-	p1.position = Vector2(240, 300)
-	p1.team_color = Color(0.35, 0.75, 1, 1)
-	p1.add_to_group("players")
-	add_child(p1)
-	p1.died.connect(_on_player_died)
-	
-	var p2: CharacterBody2D = player_scene.instantiate()
-	p2.position = Vector2(240, 470)
-	p2.team_color = Color(1, 0.6, 0.2, 1)
-	p2.move_left_action = &"p2_left"
-	p2.move_right_action = &"p2_right"
-	p2.move_up_action = &"p2_up"
-	p2.move_down_action = &"p2_down"
-	p2.use_right_stick = true
-	p2.add_to_group("players")
-	add_child(p2)
-	p2.died.connect(_on_player_died)
+	var spawn_positions := [
+		Vector2(240, 300), Vector2(240, 470),
+		Vector2(480, 300), Vector2(480, 470),
+		Vector2(360, 200), Vector2(360, 540),
+		Vector2(120, 385), Vector2(600, 385),
+	]
+	for i in GameConfig.players.size():
+		var cfg: Variant = GameConfig.players[i]
+		var p: CharacterBody2D = player_scene.instantiate()
+		p.position = spawn_positions[i]
+		p.team_color = cfg.color
+		p.input_type = cfg.input_type
+		if cfg.input_type == GameConfig.InputType.KEYBOARD2:
+			p.move_left_action  = &"p2_left"
+			p.move_right_action = &"p2_right"
+			p.move_up_action    = &"p2_up"
+			p.move_down_action  = &"p2_down"
+		add_child(p)
+		p.died.connect(_on_player_died)
 
 
 func _update_spawn_intervals() -> void:
