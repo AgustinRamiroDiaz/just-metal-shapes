@@ -6,7 +6,7 @@ var phase: int = 0
 
 func _shoot() -> void:
 	var origin := (get_parent() as Node2D).global_position
-	
+
 	if phase == 0:
 		_spawn_projectile(origin, Vector2.RIGHT)
 		_spawn_projectile(origin, Vector2.LEFT)
@@ -17,5 +17,5 @@ func _shoot() -> void:
 		_spawn_projectile(origin, Vector2(1, -1).normalized())
 		_spawn_projectile(origin, Vector2(-1, 1).normalized())
 		_spawn_projectile(origin, Vector2(-1, -1).normalized())
-	
+
 	phase = 1 - phase

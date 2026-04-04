@@ -23,10 +23,3 @@ theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
 theme_override_font_sizes/font_size = 48
 text = "GAME OVER"
 horizontal_alignment = 1
-
-[node name="HelpLabel" type="Label" parent="."]
-offset_left = 20.0
-offset_top = 750.0
-offset_right = 760.0
-offset_bottom = 786.0
-text = "P1: arrows/WASD (blue). P2: IJKL (orange). Same-color DPS is continuous while inside radius."
