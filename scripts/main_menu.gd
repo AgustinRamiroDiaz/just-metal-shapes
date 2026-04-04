@@ -2,6 +2,7 @@ extends Control
 
 const SCENE_GAME := "res://main_level.tscn"
 
+
 class DeviceSlot:
 	var display_name: String
 	var is_keyboard: bool
@@ -20,6 +21,7 @@ class DeviceSlot:
 			if split:
 				return [left, right]
 			return [left]
+
 
 var device_slots: Array = []
 var device_rows: Array = []  # Array of {name_label, status_label}
@@ -194,7 +196,9 @@ func _on_continue_pressed() -> void:
 		if not s.joined:
 			continue
 		for input_type in s.get_input_types():
-			var color: Color = GameConfig.PLAYER_COLORS[color_index % GameConfig.PLAYER_COLORS.size()]
+			var color: Color = GameConfig.PLAYER_COLORS[
+				color_index % GameConfig.PLAYER_COLORS.size()
+			]
 			GameConfig.players.append(GameConfig.PlayerConfig.new(input_type, color))
 			color_index += 1
 	_build_stage2()

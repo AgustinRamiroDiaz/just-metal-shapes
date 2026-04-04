@@ -11,7 +11,7 @@ func _shoot() -> void:
 	var base_direction := Vector2.RIGHT.rotated(sprite.rotation)
 	var start_angle := -spread_angle / 2
 	var angle_step := spread_angle / (shot_count - 1) if shot_count > 1 else 0.0
-	
+
 	for i in shot_count:
 		var angle := deg_to_rad(start_angle + angle_step * i)
 		var direction := base_direction.rotated(angle)

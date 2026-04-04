@@ -62,10 +62,7 @@ func _physics_process(delta: float) -> void:
 		)
 	else:
 		input_dir = Input.get_vector(
-			move_left_action,
-			move_right_action,
-			move_up_action,
-			move_down_action
+			move_left_action, move_right_action, move_up_action, move_down_action
 		)
 	velocity = input_dir * speed
 	move_and_slide()

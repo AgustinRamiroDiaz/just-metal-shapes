@@ -35,17 +35,17 @@ func _process(delta: float) -> void:
 func take_damage(amount: float, damage_color: Color = Color.WHITE) -> void:
 	if life <= 0:
 		return
-	
+
 	if has_shield and shield > 0.0 and _colors_match(shield_color, damage_color):
 		shield = max(shield - amount, 0.0)
 		damage_flash_timer = DAMAGE_FLASH_DURATION
 		damaged.emit(amount)
 		queue_redraw()
 		return
-	
+
 	if has_shield and shield > 0.0:
 		return
-	
+
 	life = max(life - amount, 0.0)
 	damage_flash_timer = DAMAGE_FLASH_DURATION
 	damaged.emit(amount)
@@ -75,7 +75,9 @@ func _draw() -> void:
 	var inner_color := Color(shield_color.r, shield_color.g, shield_color.b, base_alpha)
 	var outer_color := Color(shield_color.r, shield_color.g, shield_color.b, shield_alpha)
 	draw_arc(Vector2.ZERO, 34.0, -PI / 2.0, -PI / 2.0 + (TAU * shield), 64, inner_color, 6.0)
-	draw_arc(Vector2.ZERO, 34.0, -PI / 2.0, -PI / 2.0 + (TAU * shield), 64, outer_color, shield_width)
+	draw_arc(
+		Vector2.ZERO, 34.0, -PI / 2.0, -PI / 2.0 + (TAU * shield), 64, outer_color, shield_width
+	)
 
 	if shield > 0.0:
 		var glow_color := Color(shield_color.r, shield_color.g, shield_color.b, base_alpha * 0.3)
@@ -84,4 +86,6 @@ func _draw() -> void:
 	var health_ratio := float(life) / float(max(max_life, 1))
 	if health_ratio > 0.0:
 		var health_color := Color(0.3, 0.8, 0.3, base_alpha)
-		draw_arc(Vector2.ZERO, 28.0, -PI / 2.0, -PI / 2.0 + (TAU * health_ratio), 32, health_color, 4.0)
+		draw_arc(
+			Vector2.ZERO, 28.0, -PI / 2.0, -PI / 2.0 + (TAU * health_ratio), 32, health_color, 4.0
+		)

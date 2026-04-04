@@ -25,18 +25,18 @@ func _ready() -> void:
 		load("res://scenes/shotgun_enemy.tscn"),
 		load("res://scenes/turret_enemy.tscn")
 	]
-	
+
 	for i in enemy_scenes.size():
 		spawn_timers.append(randf_range(0.0, base_spawn_interval))
 		spawn_intervals.append(base_spawn_interval * (1.0 + i * 0.5))
-	
+
 	_spawn_players()
 
 
 func _process(delta: float) -> void:
 	if is_game_over:
 		return
-	
+
 	game_time += delta
 	_update_spawn_intervals()
 	_handle_spawning(delta)
@@ -45,10 +45,14 @@ func _process(delta: float) -> void:
 
 func _spawn_players() -> void:
 	var spawn_positions := [
-		Vector2(240, 300), Vector2(240, 470),
-		Vector2(480, 300), Vector2(480, 470),
-		Vector2(360, 200), Vector2(360, 540),
-		Vector2(120, 385), Vector2(600, 385),
+		Vector2(240, 300),
+		Vector2(240, 470),
+		Vector2(480, 300),
+		Vector2(480, 470),
+		Vector2(360, 200),
+		Vector2(360, 540),
+		Vector2(120, 385),
+		Vector2(600, 385),
 	]
 	for i in GameConfig.players.size():
 		var cfg: Variant = GameConfig.players[i]
@@ -57,15 +61,15 @@ func _spawn_players() -> void:
 		p.team_color = cfg.color
 		p.input_type = cfg.input_type
 		if cfg.input_type == GameConfig.InputType.KEYBOARD1:
-			p.move_left_action  = &"p1_left"
+			p.move_left_action = &"p1_left"
 			p.move_right_action = &"p1_right"
-			p.move_up_action    = &"p1_up"
-			p.move_down_action  = &"p1_down"
+			p.move_up_action = &"p1_up"
+			p.move_down_action = &"p1_down"
 		elif cfg.input_type == GameConfig.InputType.KEYBOARD2:
-			p.move_left_action  = &"p2_left"
+			p.move_left_action = &"p2_left"
 			p.move_right_action = &"p2_right"
-			p.move_up_action    = &"p2_up"
-			p.move_down_action  = &"p2_down"
+			p.move_up_action = &"p2_up"
+			p.move_down_action = &"p2_down"
 		add_child(p)
 		p.died.connect(_on_player_died)
 
@@ -87,12 +91,12 @@ func _handle_spawning(delta: float) -> void:
 func _spawn_enemy(index: int) -> void:
 	var enemy: StaticBody2D = enemy_scenes[index].instantiate()
 	var spawn_pos: Vector2
-	
+
 	if index == 2:
 		spawn_pos = _get_spawn_inside_viewport()
 	else:
 		spawn_pos = _get_spawn_on_circle()
-	
+
 	enemy.global_position = spawn_pos
 	add_child(enemy)
 	enemy.died.connect(_on_enemy_died)
@@ -122,7 +126,7 @@ func _on_player_died() -> void:
 	for p in players:
 		if is_instance_valid(p):
 			alive_count += 1
-	
+
 	if alive_count == 0:
 		_game_over()
 
