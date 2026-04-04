@@ -4,6 +4,10 @@ extends Node2D
 signal damaged(amount: float)
 signal died
 
+const DAMAGE_FLASH_DURATION: float = 0.4
+const PULSE_SPEED: float = 4.0
+const GLOW_INTENSITY: float = 0.4
+
 @export var max_life: float = 3.0
 @export var shield_color: Color = Color(1.0, 0.35, 0.35, 1.0)
 @export var has_shield: bool = true
@@ -11,10 +15,6 @@ signal died
 var life: float = 0.0
 var shield: float = 1.0
 var damage_flash_timer: float = 0.0
-
-const DAMAGE_FLASH_DURATION: float = 0.4
-const PULSE_SPEED: float = 4.0
-const GLOW_INTENSITY: float = 0.4
 
 
 func _ready() -> void:

@@ -15,12 +15,12 @@ class DeviceSlot:
 			if split:
 				return [GameConfig.InputType.KEYBOARD1, GameConfig.InputType.KEYBOARD2]
 			return [GameConfig.InputType.KEYBOARD1]
-		else:
-			var left: int = GameConfig.InputType.GAMEPAD_LEFT_0 + device_index
-			var right: int = GameConfig.InputType.GAMEPAD_RIGHT_0 + device_index
-			if split:
-				return [left, right]
-			return [left]
+
+		var left: int = GameConfig.InputType.GAMEPAD_LEFT_0 + device_index
+		var right: int = GameConfig.InputType.GAMEPAD_RIGHT_0 + device_index
+		if split:
+			return [left, right]
+		return [left]
 
 
 var device_slots: Array = []

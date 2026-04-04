@@ -2,6 +2,9 @@ extends CharacterBody2D
 
 signal died
 
+const MAX_LIVES: int = 3
+const INVINCIBILITY_DURATION: float = 3.0
+
 @export var speed: float = 220.0
 @export var range_radius: float = 140.0:
 	set = set_range_radius
@@ -14,16 +17,12 @@ signal died
 @export var input_type: int = 0
 @export var joystick_deadzone: float = 0.2
 
-@onready var range_area: Area2D = $RangeArea
-@onready var range_shape: CollisionShape2D = $RangeArea/CollisionShape2D
-
 var targets_in_range: Array[Node2D] = []
-
-const MAX_LIVES: int = 3
-const INVINCIBILITY_DURATION: float = 3.0
-
 var lives: int = MAX_LIVES
 var invincible_timer: float = 0.0
+
+@onready var range_area: Area2D = $RangeArea
+@onready var range_shape: CollisionShape2D = $RangeArea/CollisionShape2D
 
 
 func _apply_deadzone(value: float) -> float:
