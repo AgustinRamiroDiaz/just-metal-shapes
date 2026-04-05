@@ -1,7 +1,5 @@
 # Features
 
-## Enemies with life multiplied by the number of players
-
 ## More damage the closer you are to the enemy
 
 ## Add dodge roll

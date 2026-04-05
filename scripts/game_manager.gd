@@ -133,6 +133,10 @@ func _place_enemy(cfg: EnemyConfig, spawn_pos: Vector2) -> void:
 		return
 	var enemy: StaticBody2D = cfg.scene.instantiate()
 	enemy.global_position = spawn_pos
+	var player_count := GameConfig.players.size()
+	if player_count > 1:
+		var health: HealthComponent = enemy.get_node("HealthComponent")
+		health.max_life *= player_count
 	add_child(enemy)
 	enemy.died.connect(_on_enemy_died)
 
