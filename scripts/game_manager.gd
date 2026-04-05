@@ -25,6 +25,7 @@ var score: int = 0
 var game_time: float = 0.0
 var is_game_over: bool = false
 var viewport_rect: Rect2
+var _spawn_effect_scene: PackedScene = preload("res://scenes/spawn_effect.tscn")
 @onready var score_label: Label = $ScoreLabel
 
 
@@ -112,12 +113,25 @@ func _handle_spawning(delta: float) -> void:
 
 
 func _spawn_enemy(cfg: EnemyConfig) -> void:
-	var enemy: StaticBody2D = cfg.scene.instantiate()
 	var spawn_pos := (
 		_get_spawn_inside_viewport()
 		if cfg.spawn_type == SpawnType.INSIDE
 		else _get_spawn_on_circle()
 	)
+
+	if cfg.spawn_type == SpawnType.INSIDE:
+		var effect: GPUParticles2D = _spawn_effect_scene.instantiate()
+		effect.global_position = spawn_pos
+		add_child(effect)
+		effect.spawn_ready.connect(_place_enemy.bind(cfg, spawn_pos))
+	else:
+		_place_enemy(cfg, spawn_pos)
+
+
+func _place_enemy(cfg: EnemyConfig, spawn_pos: Vector2) -> void:
+	if is_game_over:
+		return
+	var enemy: StaticBody2D = cfg.scene.instantiate()
 	enemy.global_position = spawn_pos
 	add_child(enemy)
 	enemy.died.connect(_on_enemy_died)
