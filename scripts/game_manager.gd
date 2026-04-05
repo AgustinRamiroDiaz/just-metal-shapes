@@ -55,6 +55,16 @@ func _process(delta: float) -> void:
 
 
 func _spawn_players() -> void:
+	if GameConfig.players.is_empty():
+		GameConfig.players = [
+			GameConfig.PlayerConfig.new(
+				GameConfig.InputType.GAMEPAD_LEFT_0, GameConfig.PLAYER_COLORS[0]
+			),
+			GameConfig.PlayerConfig.new(
+				GameConfig.InputType.GAMEPAD_RIGHT_0, GameConfig.PLAYER_COLORS[1]
+			),
+		]
+
 	var r := viewport_rect
 	var spawn_positions := [
 		r.position + r.size * Vector2(0.333, 0.390),
