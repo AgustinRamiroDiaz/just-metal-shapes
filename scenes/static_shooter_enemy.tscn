@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://enemy"]
 
-[ext_resource type="Script" uid="uid://bd54175ddgat4" path="res://scripts/enemies/enemy.gd" id="1_enemy"]
+[ext_resource type="Script" uid="uid://bd54175ddgat4" path="res://scripts/enemies/static_shooter_enemy.gd" id="1_enemy"]
 [ext_resource type="Texture2D" uid="uid://dx60ovk85ckyh" path="res://icon.svg" id="2_icon"]
 [ext_resource type="Script" uid="uid://b8213fec7gt7m" path="res://scripts/enemies/components/health_component.gd" id="3_health"]
 [ext_resource type="Script" uid="uid://dftj7krg34y3b" path="res://scripts/enemies/components/shooter_component.gd" id="4_shooter"]

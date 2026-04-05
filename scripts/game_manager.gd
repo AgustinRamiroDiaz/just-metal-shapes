@@ -32,7 +32,7 @@ func _ready() -> void:
 	viewport_rect = get_viewport().get_visible_rect()
 	player_scene = load("res://scenes/player.tscn")
 	enemy_configs = [
-		EnemyConfig.new(load("res://scenes/enemy.tscn"), SpawnType.INSIDE, 1.0),
+		EnemyConfig.new(load("res://scenes/static_shooter_enemy.tscn"), SpawnType.INSIDE, 1.0),
 		EnemyConfig.new(load("res://scenes/shotgun_enemy.tscn"), SpawnType.OUTSIDE, 1.5),
 		EnemyConfig.new(load("res://scenes/turret_enemy.tscn"), SpawnType.INSIDE, 2.0),
 	]
