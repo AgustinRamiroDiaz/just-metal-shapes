@@ -6,8 +6,8 @@ signal died
 const MAX_LIVES: int = 3
 const INVINCIBILITY_DURATION: float = 3.0
 const LIGHTNING_TEXTURES: Array[Texture2D] = [
-	preload("res://assets/PNG (Transparent)/Rotated/spark_05_rotated.png"),
-	preload("res://assets/PNG (Transparent)/Rotated/spark_06_rotated.png"),
+	preload("res://assets/kenney-particles/Rotated/spark_05_rotated.png"),
+	preload("res://assets/kenney-particles/Rotated/spark_06_rotated.png"),
 ]
 const LIGHTNING_FPS: float = 12.0
 const LIGHTNING_WIDTH: float = 80.0
