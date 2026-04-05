@@ -1,27 +1,27 @@
 [gd_scene format=3 uid="uid://player"]
 
-[ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
-[ext_resource type="Texture2D" path="res://icon.svg" id="2_icon"]
+[ext_resource type="Script" uid="uid://btkqdvaijbr61" path="res://scripts/player.gd" id="1_player"]
+[ext_resource type="Texture2D" uid="uid://dx60ovk85ckyh" path="res://icon.svg" id="2_icon"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
-radius = 24.0
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(22, 22)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_range"]
 radius = 140.0
 
-[node name="Player" type="CharacterBody2D"]
-collision_layer = 1
+[node name="Player" type="CharacterBody2D" unique_id=743564121]
 script = ExtResource("1_player")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1031474399]
 scale = Vector2(0.2, 0.2)
 texture = ExtResource("2_icon")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("CircleShape2D_player")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1075342262]
+position = Vector2(-4.7683716e-07, 4.7683716e-07)
+shape = SubResource("RectangleShape2D_player")
 
-[node name="RangeArea" type="Area2D" parent="."]
+[node name="RangeArea" type="Area2D" parent="." unique_id=1917969162]
 collision_mask = 2
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="RangeArea"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RangeArea" unique_id=2145317157]
 shape = SubResource("CircleShape2D_range")

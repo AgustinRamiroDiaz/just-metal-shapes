@@ -4,6 +4,8 @@ var direction: Vector2 = Vector2.RIGHT
 var speed: float = 100.0
 var lifetime: float = 30.0
 
+@onready var _radius: float = ($CollisionShape2D.shape as CircleShape2D).radius
+
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
@@ -21,8 +23,8 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 10.0, Color(1.0, 0.9, 0.2, 1.0))
-	draw_arc(Vector2.ZERO, 10.0, 0.0, TAU, 16, Color(1.0, 0.6, 0.0, 1.0), 1.5)
+	draw_circle(Vector2.ZERO, _radius, Color(1.0, 0.9, 0.2, 1.0))
+	draw_arc(Vector2.ZERO, _radius, 0.0, TAU, 16, Color(1.0, 0.6, 0.0, 1.0), 1.5)
 
 
 func _on_body_entered(body: Node) -> void:
