@@ -10,54 +10,34 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
 
-[node name="Stage1" type="CenterContainer" parent="."]
+[node name="CenterContainer" type="CenterContainer" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBox" type="VBoxContainer" parent="Stage1"]
+[node name="VBox" type="VBoxContainer" parent="CenterContainer"]
 alignment = 1
 
-[node name="TitleLabel" type="Label" parent="Stage1/VBox"]
+[node name="TitleLabel" type="Label" parent="CenterContainer/VBox"]
 text = "JUST METAL SHAPES"
 horizontal_alignment = 1
 
-[node name="SubtitleLabel" type="Label" parent="Stage1/VBox"]
-text = "Press Enter or A to join  ·  ← → or L-stick to toggle split  ·  Hold to continue"
+[node name="SubtitleLabel" type="Label" parent="CenterContainer/VBox"]
+text = "Press Enter or A to join  ·  ← → or L-stick to toggle split"
 horizontal_alignment = 1
+modulate = Color(0.55, 0.55, 0.55, 1)
 
-[node name="Spacer" type="Control" parent="Stage1/VBox"]
+[node name="Spacer" type="Control" parent="CenterContainer/VBox"]
 custom_minimum_size = Vector2(0, 16)
 
-[node name="DeviceList" type="VBoxContainer" parent="Stage1/VBox"]
+[node name="DeviceList" type="VBoxContainer" parent="CenterContainer/VBox"]
 
-[node name="Spacer2" type="Control" parent="Stage1/VBox"]
+[node name="Spacer2" type="Control" parent="CenterContainer/VBox"]
 custom_minimum_size = Vector2(0, 16)
 
-[node name="Stage2" type="CenterContainer" parent="."]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-visible = false
-
-[node name="VBox" type="VBoxContainer" parent="Stage2"]
-alignment = 1
-
-[node name="TitleLabel" type="Label" parent="Stage2/VBox"]
-text = "Players Ready"
+[node name="HoldHintLabel" type="Label" parent="CenterContainer/VBox"]
+text = "Hold Enter or A to start"
 horizontal_alignment = 1
-
-[node name="Spacer" type="Control" parent="Stage2/VBox"]
-custom_minimum_size = Vector2(0, 16)
-
-[node name="PlayerList" type="VBoxContainer" parent="Stage2/VBox"]
-
-[node name="Spacer2" type="Control" parent="Stage2/VBox"]
-custom_minimum_size = Vector2(0, 16)
-
-[node name="StartButton" type="Button" parent="Stage2/VBox"]
-text = "Start Game"
+modulate = Color(0.35, 0.35, 0.35, 1)
