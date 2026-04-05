@@ -1,11 +1,20 @@
 class_name GameManager
 extends Node2D
 
+enum SpawnType { INSIDE, OUTSIDE }
+
+class EnemyConfig:
+	var scene: PackedScene
+	var spawn_type: SpawnType
+
+	func _init(p_scene: PackedScene, p_spawn_type: SpawnType) -> void:
+		scene = p_scene
+		spawn_type = p_spawn_type
+
 @export var player_scene: PackedScene
 @export var base_spawn_interval: float = 2.0
-@export var spawn_circle_radius: float = 500.0
 
-var enemy_scenes: Array[PackedScene] = []
+var enemy_configs: Array[EnemyConfig] = []
 var spawn_timers: Array[float] = []
 var spawn_intervals: Array[float] = []
 var score: int = 0
@@ -20,13 +29,13 @@ var viewport_rect: Rect2
 func _ready() -> void:
 	viewport_rect = get_viewport().get_visible_rect()
 	player_scene = load("res://scenes/player.tscn")
-	enemy_scenes = [
-		load("res://scenes/enemy.tscn"),
-		load("res://scenes/shotgun_enemy.tscn"),
-		load("res://scenes/turret_enemy.tscn")
+	enemy_configs = [
+		EnemyConfig.new(load("res://scenes/enemy.tscn"), SpawnType.INSIDE),
+		EnemyConfig.new(load("res://scenes/shotgun_enemy.tscn"), SpawnType.OUTSIDE),
+		EnemyConfig.new(load("res://scenes/turret_enemy.tscn"), SpawnType.INSIDE),
 	]
 
-	for i in enemy_scenes.size():
+	for i in enemy_configs.size():
 		spawn_timers.append(randf_range(0.0, base_spawn_interval))
 		spawn_intervals.append(base_spawn_interval * (1.0 + i * 0.5))
 
@@ -44,15 +53,16 @@ func _process(delta: float) -> void:
 
 
 func _spawn_players() -> void:
+	var r := viewport_rect
 	var spawn_positions := [
-		Vector2(240, 300),
-		Vector2(240, 470),
-		Vector2(480, 300),
-		Vector2(480, 470),
-		Vector2(360, 200),
-		Vector2(360, 540),
-		Vector2(120, 385),
-		Vector2(600, 385),
+		r.position + r.size * Vector2(0.333, 0.390),
+		r.position + r.size * Vector2(0.333, 0.612),
+		r.position + r.size * Vector2(0.667, 0.390),
+		r.position + r.size * Vector2(0.667, 0.612),
+		r.position + r.size * Vector2(0.500, 0.260),
+		r.position + r.size * Vector2(0.500, 0.703),
+		r.position + r.size * Vector2(0.167, 0.502),
+		r.position + r.size * Vector2(0.833, 0.502),
 	]
 	for i in GameConfig.players.size():
 		var cfg: Variant = GameConfig.players[i]
@@ -81,22 +91,16 @@ func _update_spawn_intervals() -> void:
 
 
 func _handle_spawning(delta: float) -> void:
-	for i in enemy_scenes.size():
+	for i in enemy_configs.size():
 		spawn_timers[i] += delta
 		if spawn_timers[i] >= spawn_intervals[i]:
 			spawn_timers[i] = 0.0
-			_spawn_enemy(i)
+			_spawn_enemy(enemy_configs[i])
 
 
-func _spawn_enemy(index: int) -> void:
-	var enemy: StaticBody2D = enemy_scenes[index].instantiate()
-	var spawn_pos: Vector2
-
-	if index == 2:
-		spawn_pos = _get_spawn_inside_viewport()
-	else:
-		spawn_pos = _get_spawn_on_circle()
-
+func _spawn_enemy(cfg: EnemyConfig) -> void:
+	var enemy: StaticBody2D = cfg.scene.instantiate()
+	var spawn_pos := _get_spawn_inside_viewport() if cfg.spawn_type == SpawnType.INSIDE else _get_spawn_on_circle()
 	enemy.global_position = spawn_pos
 	add_child(enemy)
 	enemy.died.connect(_on_enemy_died)
@@ -105,7 +109,8 @@ func _spawn_enemy(index: int) -> void:
 func _get_spawn_on_circle() -> Vector2:
 	var center := viewport_rect.get_center()
 	var angle := randf() * TAU
-	return center + Vector2(cos(angle), sin(angle)) * spawn_circle_radius
+	var radius := viewport_rect.size.length() / 2.0 + 50.0
+	return center + Vector2(cos(angle), sin(angle)) * radius
 
 
 func _get_spawn_inside_viewport() -> Vector2:

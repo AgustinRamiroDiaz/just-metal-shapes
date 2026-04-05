@@ -70,6 +70,13 @@ p2_down={
 
 3d/physics_engine="Jolt Physics"
 
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=768
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
 [rendering]
 
 rendering_device/driver.windows="d3d12"
