@@ -6,17 +6,19 @@ enum SpawnType { INSIDE, OUTSIDE }
 class EnemyConfig:
 	var scene: PackedScene
 	var spawn_type: SpawnType
+	var interval_multiplier: float
+	var timer: float
+	var spawn_interval: float
 
-	func _init(p_scene: PackedScene, p_spawn_type: SpawnType) -> void:
+	func _init(p_scene: PackedScene, p_spawn_type: SpawnType, p_interval_multiplier: float) -> void:
 		scene = p_scene
 		spawn_type = p_spawn_type
+		interval_multiplier = p_interval_multiplier
 
 @export var player_scene: PackedScene
 @export var base_spawn_interval: float = 2.0
 
 var enemy_configs: Array[EnemyConfig] = []
-var spawn_timers: Array[float] = []
-var spawn_intervals: Array[float] = []
 var score: int = 0
 var game_time: float = 0.0
 var is_game_over: bool = false
@@ -30,14 +32,14 @@ func _ready() -> void:
 	viewport_rect = get_viewport().get_visible_rect()
 	player_scene = load("res://scenes/player.tscn")
 	enemy_configs = [
-		EnemyConfig.new(load("res://scenes/enemy.tscn"), SpawnType.INSIDE),
-		EnemyConfig.new(load("res://scenes/shotgun_enemy.tscn"), SpawnType.OUTSIDE),
-		EnemyConfig.new(load("res://scenes/turret_enemy.tscn"), SpawnType.INSIDE),
+		EnemyConfig.new(load("res://scenes/enemy.tscn"), SpawnType.INSIDE, 1.0),
+		EnemyConfig.new(load("res://scenes/shotgun_enemy.tscn"), SpawnType.OUTSIDE, 1.5),
+		EnemyConfig.new(load("res://scenes/turret_enemy.tscn"), SpawnType.INSIDE, 2.0),
 	]
 
-	for i in enemy_configs.size():
-		spawn_timers.append(randf_range(0.0, base_spawn_interval))
-		spawn_intervals.append(base_spawn_interval * (1.0 + i * 0.5))
+	for cfg in enemy_configs:
+		cfg.timer = randf_range(0.0, base_spawn_interval)
+		cfg.spawn_interval = base_spawn_interval * cfg.interval_multiplier
 
 	_spawn_players()
 
@@ -64,10 +66,11 @@ func _spawn_players() -> void:
 		r.position + r.size * Vector2(0.167, 0.502),
 		r.position + r.size * Vector2(0.833, 0.502),
 	]
-	for i in GameConfig.players.size():
-		var cfg: Variant = GameConfig.players[i]
+	var spawn_index := 0
+	for cfg in GameConfig.players:
 		var p: CharacterBody2D = player_scene.instantiate()
-		p.position = spawn_positions[i]
+		p.position = spawn_positions[spawn_index]
+		spawn_index += 1
 		p.team_color = cfg.color
 		p.input_type = cfg.input_type
 		if cfg.input_type == GameConfig.InputType.KEYBOARD1:
@@ -86,16 +89,16 @@ func _spawn_players() -> void:
 
 func _update_spawn_intervals() -> void:
 	var difficulty_factor: float = 1.0 - min(game_time / 300.0, 0.7)
-	for i in spawn_intervals.size():
-		spawn_intervals[i] = base_spawn_interval * (1.0 + i * 0.5) * difficulty_factor
+	for cfg in enemy_configs:
+		cfg.spawn_interval = base_spawn_interval * cfg.interval_multiplier * difficulty_factor
 
 
 func _handle_spawning(delta: float) -> void:
-	for i in enemy_configs.size():
-		spawn_timers[i] += delta
-		if spawn_timers[i] >= spawn_intervals[i]:
-			spawn_timers[i] = 0.0
-			_spawn_enemy(enemy_configs[i])
+	for cfg in enemy_configs:
+		cfg.timer += delta
+		if cfg.timer >= cfg.spawn_interval:
+			cfg.timer = 0.0
+			_spawn_enemy(cfg)
 
 
 func _spawn_enemy(cfg: EnemyConfig) -> void:

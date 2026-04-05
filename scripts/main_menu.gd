@@ -132,17 +132,20 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _keyboard_slot_index() -> int:
-	for i in device_slots.size():
-		if (device_slots[i] as DeviceSlot).is_keyboard:
+	var i := 0
+	for slot: DeviceSlot in device_slots:
+		if slot.is_keyboard:
 			return i
+		i += 1
 	return -1
 
 
 func _gamepad_slot_index(device_index: int) -> int:
-	for i in device_slots.size():
-		var s: DeviceSlot = device_slots[i]
-		if not s.is_keyboard and s.device_index == device_index:
+	var i := 0
+	for slot: DeviceSlot in device_slots:
+		if not slot.is_keyboard and slot.device_index == device_index:
 			return i
+		i += 1
 	return -1
 
 
@@ -167,13 +170,14 @@ func _set_split(slot_idx: int, enable_split: bool) -> void:
 
 
 func _refresh_stage1() -> void:
-	for i in device_slots.size():
-		var s: DeviceSlot = device_slots[i]
+	var i := 0
+	for slot: DeviceSlot in device_slots:
 		var status_lbl: Label = device_rows[i]["status"]
-		if not s.joined:
+		i += 1
+		if not slot.joined:
 			status_lbl.text = "— not joined —"
 			status_lbl.modulate = Color(0.45, 0.45, 0.45)
-		elif s.split:
+		elif slot.split:
 			status_lbl.text = "◀ SPLIT (2P) ▶"
 			status_lbl.modulate = Color(1.0, 0.88, 0.35)
 		else:
@@ -209,8 +213,8 @@ func _on_continue_pressed() -> void:
 func _build_stage2() -> void:
 	for child in player_list.get_children():
 		child.queue_free()
-	for i in GameConfig.players.size():
-		var cfg: Variant = GameConfig.players[i]
+	var player_number := 1
+	for cfg in GameConfig.players:
 		var row := HBoxContainer.new()
 		row.custom_minimum_size = Vector2(0, 36)
 
@@ -219,12 +223,13 @@ func _build_stage2() -> void:
 		dot.color = cfg.color
 
 		var lbl := Label.new()
-		lbl.text = "  Player %d  —  %s" % [i + 1, GameConfig.INPUT_LABELS[cfg.input_type]]
+		lbl.text = "  Player %d  —  %s" % [player_number, GameConfig.INPUT_LABELS[cfg.input_type]]
 		lbl.modulate = cfg.color
 
 		row.add_child(dot)
 		row.add_child(lbl)
 		player_list.add_child(row)
+		player_number += 1
 
 
 func _on_start_pressed() -> void:
