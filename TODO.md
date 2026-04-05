@@ -6,11 +6,13 @@ With invincibility frames.
 
 ## Add setup screen for selecting players and colors
 
-## Movable enemies
+## Game over
 
-## Create more enemy types
+- Game over screen
+- Player death
+- Allow reviving players
 
-## Schedule enemies to spawn
+## Spawn animations
 
 # UI
 
@@ -23,3 +25,8 @@ With invincibility frames.
 - bigger range
 - more dps
 - more health
+
+## Make damage constant for all enemies
+
+It's OP to be able to deal 1 DPS damage to all enemies at the same time.
+You should do 1 DPS divided by the number of enemies.
