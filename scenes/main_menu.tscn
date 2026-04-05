@@ -25,7 +25,7 @@ text = "JUST METAL SHAPES"
 horizontal_alignment = 1
 
 [node name="SubtitleLabel" type="Label" parent="Stage1/VBox"]
-text = "Press Enter or A to join.  Left/Right to toggle split."
+text = "Press Enter or A to join  ·  ← → or L-stick to toggle split  ·  Hold to continue"
 horizontal_alignment = 1
 
 [node name="Spacer" type="Control" parent="Stage1/VBox"]
@@ -35,10 +35,6 @@ custom_minimum_size = Vector2(0, 16)
 
 [node name="Spacer2" type="Control" parent="Stage1/VBox"]
 custom_minimum_size = Vector2(0, 16)
-
-[node name="ContinueButton" type="Button" parent="Stage1/VBox"]
-text = "Continue  →"
-disabled = true
 
 [node name="Stage2" type="CenterContainer" parent="."]
 anchors_preset = 15
