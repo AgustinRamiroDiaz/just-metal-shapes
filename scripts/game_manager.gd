@@ -18,7 +18,7 @@ class EnemyConfig:
 
 
 @export var player_scene: PackedScene
-@export var base_spawn_interval: float = 2.0
+@export var base_spawn_interval: float = 7.0
 
 var enemy_configs: Array[EnemyConfig] = []
 var score: int = 0
