@@ -3,6 +3,7 @@ extends Node2D
 
 enum SpawnType { INSIDE, OUTSIDE }
 
+
 class EnemyConfig:
 	var scene: PackedScene
 	var spawn_type: SpawnType
@@ -14,6 +15,7 @@ class EnemyConfig:
 		scene = p_scene
 		spawn_type = p_spawn_type
 		interval_multiplier = p_interval_multiplier
+
 
 @export var player_scene: PackedScene
 @export var base_spawn_interval: float = 2.0
@@ -103,7 +105,11 @@ func _handle_spawning(delta: float) -> void:
 
 func _spawn_enemy(cfg: EnemyConfig) -> void:
 	var enemy: StaticBody2D = cfg.scene.instantiate()
-	var spawn_pos := _get_spawn_inside_viewport() if cfg.spawn_type == SpawnType.INSIDE else _get_spawn_on_circle()
+	var spawn_pos := (
+		_get_spawn_inside_viewport()
+		if cfg.spawn_type == SpawnType.INSIDE
+		else _get_spawn_on_circle()
+	)
 	enemy.global_position = spawn_pos
 	add_child(enemy)
 	enemy.died.connect(_on_enemy_died)
