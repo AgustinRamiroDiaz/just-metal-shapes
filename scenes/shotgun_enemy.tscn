@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://cj0rlemobwci7" path="res://scripts/enemies/components/shotgun_shooter_component.gd" id="4_shotgun_shooter"]
 [ext_resource type="Script" uid="uid://cstgj6w4m6oyo" path="res://scripts/enemies/components/chaser_component.gd" id="5_chaser"]
 [ext_resource type="Script" uid="uid://baibtnk3m4nge" path="res://scripts/enemies/components/turn_component.gd" id="6_turn"]
+[ext_resource type="Script" uid="uid://contact_dmg" path="res://scripts/enemies/components/contact_damage_component.gd" id="7_contact"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_shotgun"]
 radius = 32.0
@@ -36,3 +37,9 @@ script = ExtResource("5_chaser")
 [node name="TurnComponent" type="Node" parent="." unique_id=2090137885]
 script = ExtResource("6_turn")
 turn_speed = 1.0
+
+[node name="ContactDamageComponent" type="Area2D" parent="." unique_id=998877665]
+script = ExtResource("7_contact")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactDamageComponent" unique_id=998877666]
+shape = SubResource("CircleShape2D_shotgun")

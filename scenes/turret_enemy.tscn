@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://dx60ovk85ckyh" path="res://icon.svg" id="2_icon"]
 [ext_resource type="Script" uid="uid://b8213fec7gt7m" path="res://scripts/enemies/components/health_component.gd" id="3_health"]
 [ext_resource type="Script" uid="uid://e5tbhplpde37" path="res://scripts/enemies/components/turret_shooter_component.gd" id="4_turret_shooter"]
+[ext_resource type="Script" uid="uid://contact_dmg" path="res://scripts/enemies/components/contact_damage_component.gd" id="5_contact"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_turret"]
 radius = 24.0
@@ -32,3 +33,9 @@ shield_color = Color(1, 0.6, 0.2, 1)
 [node name="TurretShooterComponent" type="Node" parent="."]
 script = ExtResource("4_turret_shooter")
 shoot_interval = 2.0
+
+[node name="ContactDamageComponent" type="Area2D" parent="."]
+script = ExtResource("5_contact")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactDamageComponent"]
+shape = SubResource("CircleShape2D_turret")
