@@ -32,19 +32,19 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
-func take_damage(amount: float, damage_color: Color = Color.WHITE) -> void:
+func take_damage(amount: float, damage_color: Color = Color.WHITE) -> bool:
 	if life <= 0:
-		return
+		return false
 
 	if has_shield and shield > 0.0 and _colors_match(shield_color, damage_color):
 		shield = max(shield - amount, 0.0)
 		damage_flash_timer = DAMAGE_FLASH_DURATION
 		damaged.emit(amount)
 		queue_redraw()
-		return
+		return true
 
 	if has_shield and shield > 0.0:
-		return
+		return false
 
 	life = max(life - amount, 0.0)
 	damage_flash_timer = DAMAGE_FLASH_DURATION
@@ -52,6 +52,7 @@ func take_damage(amount: float, damage_color: Color = Color.WHITE) -> void:
 	queue_redraw()
 	if life == 0:
 		died.emit()
+	return true
 
 
 func _colors_match(c1: Color, c2: Color) -> bool:

@@ -5,6 +5,12 @@ signal died
 
 const MAX_LIVES: int = 3
 const INVINCIBILITY_DURATION: float = 3.0
+const LIGHTNING_TEXTURES: Array[Texture2D] = [
+	preload("res://assets/PNG (Transparent)/Rotated/spark_05_rotated.png"),
+	preload("res://assets/PNG (Transparent)/Rotated/spark_06_rotated.png"),
+]
+const LIGHTNING_FPS: float = 12.0
+const LIGHTNING_WIDTH: float = 80.0
 
 @export var speed: float = 220.0
 @export var range_radius: float = 140.0:
@@ -23,6 +29,9 @@ var lives: int = MAX_LIVES
 var invincible_timer: float = 0.0
 var is_dead: bool = false
 var revival_progress: float = 0.0
+var _lightning_lines: Dictionary = {}
+var _lightning_frame_timer: float = 0.0
+var _lightning_frame_index: int = 0
 
 @onready var range_area: Area2D = $RangeArea
 @onready var range_shape: CollisionShape2D = $RangeArea/CollisionShape2D
@@ -116,6 +125,10 @@ func _on_range_body_entered(body: Node) -> void:
 func _on_range_body_exited(body: Node) -> void:
 	if body is Node2D:
 		targets_in_range.erase(body)
+		var target_id := body.get_instance_id()
+		if target_id in _lightning_lines:
+			_lightning_lines[target_id].queue_free()
+			_lightning_lines.erase(target_id)
 
 
 func take_damage(amount: int) -> void:
@@ -126,6 +139,7 @@ func take_damage(amount: int) -> void:
 	if lives <= 0:
 		lives = 0
 		is_dead = true
+		_clear_lightning()
 		modulate = Color(0.4, 0.4, 0.4, 1.0)
 		queue_redraw()
 		died.emit()
@@ -142,9 +156,58 @@ func revive() -> void:
 
 func _apply_continuous_damage(delta: float) -> void:
 	if damage_per_second <= 0.0:
+		_clear_lightning()
 		return
 
+	# Cycle lightning animation frame
+	_lightning_frame_timer += delta
+	if _lightning_frame_timer >= 1.0 / LIGHTNING_FPS:
+		_lightning_frame_timer -= 1.0 / LIGHTNING_FPS
+		_lightning_frame_index = (_lightning_frame_index + 1) % LIGHTNING_TEXTURES.size()
+		for line: Line2D in _lightning_lines.values():
+			line.texture = LIGHTNING_TEXTURES[_lightning_frame_index]
+
+	var active_targets: Array[Node2D] = []
 	var damage_amount := damage_per_second * delta
 	for target in targets_in_range:
 		if is_instance_valid(target) and target.has_method("take_damage"):
-			target.take_damage(damage_amount, team_color)
+			var did_damage: bool = target.take_damage(damage_amount, team_color)
+			if did_damage:
+				active_targets.append(target)
+				_update_lightning(target)
+
+	# Remove lightning for targets no longer being damaged
+	for target_id in _lightning_lines.keys():
+		var found := false
+		for t in active_targets:
+			if t.get_instance_id() == target_id:
+				found = true
+				break
+		if not found:
+			_lightning_lines[target_id].queue_free()
+			_lightning_lines.erase(target_id)
+
+
+func _update_lightning(target: Node2D) -> void:
+	var target_id := target.get_instance_id()
+	var line: Line2D
+	if target_id in _lightning_lines:
+		line = _lightning_lines[target_id]
+	else:
+		line = Line2D.new()
+		line.texture = LIGHTNING_TEXTURES[_lightning_frame_index]
+		line.texture_mode = Line2D.LINE_TEXTURE_TILE
+		line.width = LIGHTNING_WIDTH
+		line.default_color = Color(team_color, 0.8)
+		line.z_index = -1
+		add_child(line)
+		_lightning_lines[target_id] = line
+	line.clear_points()
+	line.add_point(to_local(target.global_position))
+	line.add_point(Vector2.ZERO)
+
+
+func _clear_lightning() -> void:
+	for line: Line2D in _lightning_lines.values():
+		line.queue_free()
+	_lightning_lines.clear()
