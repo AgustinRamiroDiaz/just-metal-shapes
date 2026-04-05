@@ -206,13 +206,23 @@ func _show_game_over_screen() -> void:
 	spacer.custom_minimum_size = Vector2(0.0, 32.0)
 	vbox.add_child(spacer)
 
+	var restart_btn := Button.new()
+	restart_btn.text = "Restart"
+	restart_btn.add_theme_font_size_override("font_size", 24)
+	restart_btn.pressed.connect(
+		func() -> void: get_tree().change_scene_to_file("res://main_level.tscn")
+	)
+	vbox.add_child(restart_btn)
+
 	var menu_btn := Button.new()
 	menu_btn.text = "Main Menu"
-	menu_btn.focus_mode = Control.FOCUS_NONE
+	menu_btn.add_theme_font_size_override("font_size", 24)
 	menu_btn.pressed.connect(
 		func() -> void: get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 	)
 	vbox.add_child(menu_btn)
+
+	restart_btn.grab_focus()
 
 
 func _update_ui() -> void:

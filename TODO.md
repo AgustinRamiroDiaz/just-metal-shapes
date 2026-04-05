@@ -1,5 +1,9 @@
 # Features
 
+## Enemies with life multiplied by the number of players
+
+## More damage the closer you are to the enemy
+
 ## Add dodge roll
 
 With invincibility frames.
@@ -15,6 +19,11 @@ With invincibility frames.
 ## Lightning effect for damaging enemies
 
 # Ideas for later
+
+## More enemy types
+
+- A runner that goes towards a player with a different color
+- One that drops mines
 
 ## Make enemies drop powerups
 
