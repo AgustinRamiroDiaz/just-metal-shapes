@@ -25,9 +25,7 @@ var score: int = 0
 var game_time: float = 0.0
 var is_game_over: bool = false
 var viewport_rect: Rect2
-
 @onready var score_label: Label = $ScoreLabel
-@onready var game_over_label: Label = $GameOverLabel
 
 
 func _ready() -> void:
@@ -138,7 +136,7 @@ func _on_player_died() -> void:
 	var players := get_tree().get_nodes_in_group("players")
 	var alive_count := 0
 	for p in players:
-		if is_instance_valid(p):
+		if is_instance_valid(p) and not p.is_dead:
 			alive_count += 1
 
 	if alive_count == 0:
@@ -147,7 +145,50 @@ func _on_player_died() -> void:
 
 func _game_over() -> void:
 	is_game_over = true
-	game_over_label.visible = true
+	_show_game_over_screen()
+
+
+func _show_game_over_screen() -> void:
+	var canvas := CanvasLayer.new()
+	add_child(canvas)
+
+	var overlay := ColorRect.new()
+	overlay.color = Color(0.0, 0.0, 0.0, 0.75)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	canvas.add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	canvas.add_child(center)
+
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "GAME OVER"
+	title.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2, 1.0))
+	title.add_theme_font_size_override("font_size", 64)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	var score_lbl := Label.new()
+	score_lbl.text = "Score: %d" % score
+	score_lbl.add_theme_font_size_override("font_size", 32)
+	score_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(score_lbl)
+
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0.0, 32.0)
+	vbox.add_child(spacer)
+
+	var menu_btn := Button.new()
+	menu_btn.text = "Main Menu"
+	menu_btn.focus_mode = Control.FOCUS_NONE
+	menu_btn.pressed.connect(
+		func() -> void: get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	)
+	vbox.add_child(menu_btn)
 
 
 func _update_ui() -> void:

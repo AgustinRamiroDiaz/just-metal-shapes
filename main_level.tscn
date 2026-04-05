@@ -12,14 +12,3 @@ offset_top = 16.0
 offset_right = 200.0
 offset_bottom = 52.0
 text = "Score: 0"
-
-[node name="GameOverLabel" type="Label" parent="."]
-visible = false
-offset_left = 280.0
-offset_top = 280.0
-offset_right = 520.0
-offset_bottom = 340.0
-theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
-theme_override_font_sizes/font_size = 48
-text = "GAME OVER"
-horizontal_alignment = 1

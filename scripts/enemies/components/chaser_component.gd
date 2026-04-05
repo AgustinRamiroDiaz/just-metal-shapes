@@ -25,6 +25,8 @@ func _get_nearest_target(targets: Array, origin: Vector2) -> Node2D:
 	for t in targets:
 		if not is_instance_valid(t) or not t is Node2D:
 			continue
+		if t.get("is_dead") == true:
+			continue
 		var d := origin.distance_to(t.global_position)
 		if d < min_dist:
 			min_dist = d

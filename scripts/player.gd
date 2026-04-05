@@ -1,3 +1,4 @@
+class_name Player
 extends CharacterBody2D
 
 signal died
@@ -20,6 +21,8 @@ const INVINCIBILITY_DURATION: float = 3.0
 var targets_in_range: Array[Node2D] = []
 var lives: int = MAX_LIVES
 var invincible_timer: float = 0.0
+var is_dead: bool = false
+var revival_progress: float = 0.0
 
 @onready var range_area: Area2D = $RangeArea
 @onready var range_shape: CollisionShape2D = $RangeArea/CollisionShape2D
@@ -40,6 +43,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if is_dead:
+		return
+
 	if invincible_timer > 0.0:
 		invincible_timer -= delta
 		modulate.a = 0.3 if fmod(invincible_timer * 6.0, 1.0) > 0.5 else 1.0
@@ -78,8 +84,13 @@ func _clamp_to_viewport() -> void:
 func _draw() -> void:
 	var ring_color := Color(team_color.r, team_color.g, team_color.b, 0.9)
 	var fill_color := Color(team_color.r, team_color.g, team_color.b, 0.08)
-	draw_arc(Vector2.ZERO, range_radius, 0.0, TAU, 64, ring_color, 2.5)
-	draw_circle(Vector2.ZERO, range_radius, fill_color)
+	if not is_dead:
+		draw_arc(Vector2.ZERO, range_radius, 0.0, TAU, 64, ring_color, 2.5)
+		draw_circle(Vector2.ZERO, range_radius, fill_color)
+	if is_dead and revival_progress > 0.0:
+		draw_arc(
+			Vector2.ZERO, 18.0, -PI / 2.0, -PI / 2.0 + TAU * revival_progress, 32, Color.WHITE, 3.0
+		)
 
 
 func set_range_radius(value: float) -> void:
@@ -108,14 +119,25 @@ func _on_range_body_exited(body: Node) -> void:
 
 
 func take_damage(amount: int) -> void:
-	if invincible_timer > 0.0 or lives <= 0:
+	if invincible_timer > 0.0 or is_dead:
 		return
 	lives -= amount
 	invincible_timer = INVINCIBILITY_DURATION
 	if lives <= 0:
 		lives = 0
-		modulate = Color(0.5, 0.5, 0.5, 1.0)
+		is_dead = true
+		modulate = Color(0.4, 0.4, 0.4, 1.0)
+		queue_redraw()
 		died.emit()
+
+
+func revive() -> void:
+	lives = 1
+	is_dead = false
+	revival_progress = 0.0
+	invincible_timer = INVINCIBILITY_DURATION
+	modulate = Color.WHITE
+	queue_redraw()
 
 
 func _apply_continuous_damage(delta: float) -> void:
