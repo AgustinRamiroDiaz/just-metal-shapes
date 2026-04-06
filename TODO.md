@@ -16,9 +16,6 @@ With invincibility frames.
 
 ## More enemy types
 
-- A runner that goes towards a player with a different color
-- One that drops mines
-
 ## Make enemies drop powerups
 
 - bigger range

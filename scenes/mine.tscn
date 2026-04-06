@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/mine.gd" id="1_mine"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_mine"]
+radius = 10.0
+
+[node name="Mine" type="Area2D"]
+collision_layer = 0
+script = ExtResource("1_mine")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_mine")

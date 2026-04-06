@@ -36,6 +36,8 @@ func _ready() -> void:
 		EnemyConfig.new(load("res://scenes/static_shooter_enemy.tscn"), SpawnType.INSIDE, 1.0),
 		EnemyConfig.new(load("res://scenes/shotgun_enemy.tscn"), SpawnType.OUTSIDE, 1.5),
 		EnemyConfig.new(load("res://scenes/turret_enemy.tscn"), SpawnType.INSIDE, 2.0),
+		EnemyConfig.new(load("res://scenes/runner_enemy.tscn"), SpawnType.OUTSIDE, 1.2),
+		EnemyConfig.new(load("res://scenes/mine_layer_enemy.tscn"), SpawnType.OUTSIDE, 2.5),
 	]
 
 	for cfg in enemy_configs:
