@@ -1,13 +1,13 @@
-class_name ShooterComponent
+class_name TurretShooterComponent
 extends Node
 
 signal fired(projectile: Node)
 
 @export var shoot_interval: float = 2.0
-@export var target_group: StringName = &"players"
 
 var _projectile_scene: PackedScene
 var _timer: Timer
+var _phase: int = 0
 
 
 func _ready() -> void:
@@ -21,10 +21,17 @@ func _ready() -> void:
 
 func _shoot() -> void:
 	var origin := (get_parent() as Node2D).global_position
-	var nearest := Targeting.get_nearest_alive(get_tree(), origin, target_group)
-	if nearest == null:
-		return
-	_spawn_projectile(origin, (nearest.global_position - origin).normalized())
+	if _phase == 0:
+		_spawn_projectile(origin, Vector2.RIGHT)
+		_spawn_projectile(origin, Vector2.LEFT)
+		_spawn_projectile(origin, Vector2.UP)
+		_spawn_projectile(origin, Vector2.DOWN)
+	else:
+		_spawn_projectile(origin, Vector2(1, 1).normalized())
+		_spawn_projectile(origin, Vector2(1, -1).normalized())
+		_spawn_projectile(origin, Vector2(-1, 1).normalized())
+		_spawn_projectile(origin, Vector2(-1, -1).normalized())
+	_phase = 1 - _phase
 
 
 func _spawn_projectile(origin: Vector2, direction: Vector2) -> void:

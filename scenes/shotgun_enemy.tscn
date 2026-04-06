@@ -3,11 +3,10 @@
 [ext_resource type="Script" path="res://scripts/enemies/base_enemy.gd" id="1_enemy"]
 [ext_resource type="Texture2D" uid="uid://dx60ovk85ckyh" path="res://icon.svg" id="2_icon"]
 [ext_resource type="Script" uid="uid://b8213fec7gt7m" path="res://scripts/enemies/components/health_component.gd" id="3_health"]
-[ext_resource type="Script" path="res://scripts/enemies/components/shooter_component.gd" id="4_shooter"]
-[ext_resource type="Script" path="res://scripts/enemies/components/fire_patterns/shotgun_pattern.gd" id="5_shotgun_pattern"]
-[ext_resource type="Script" uid="uid://cstgj6w4m6oyo" path="res://scripts/enemies/components/chaser_component.gd" id="6_chaser"]
-[ext_resource type="Script" uid="uid://baibtnk3m4nge" path="res://scripts/enemies/components/turn_component.gd" id="7_turn"]
-[ext_resource type="Script" uid="uid://contact_dmg" path="res://scripts/enemies/components/contact_damage_component.gd" id="8_contact"]
+[ext_resource type="Script" path="res://scripts/enemies/components/shotgun_shooter_component.gd" id="4_shotgun_shooter"]
+[ext_resource type="Script" uid="uid://cstgj6w4m6oyo" path="res://scripts/enemies/components/chaser_component.gd" id="5_chaser"]
+[ext_resource type="Script" uid="uid://baibtnk3m4nge" path="res://scripts/enemies/components/turn_component.gd" id="6_turn"]
+[ext_resource type="Script" uid="uid://contact_dmg" path="res://scripts/enemies/components/contact_damage_component.gd" id="7_contact"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_shotgun"]
 radius = 32.0
@@ -28,22 +27,19 @@ shape = SubResource("CircleShape2D_shotgun")
 script = ExtResource("3_health")
 shield_color = Color(0.35, 0.75, 1, 1)
 
-[node name="ShooterComponent" type="Node" parent="."]
-script = ExtResource("4_shooter")
+[node name="ShotgunShooterComponent" type="Node" parent="."]
+script = ExtResource("4_shotgun_shooter")
 shoot_interval = 3.0
 
-[node name="ShotgunPattern" type="Node" parent="ShooterComponent"]
-script = ExtResource("5_shotgun_pattern")
-
 [node name="ChaserComponent" type="Node" parent="."]
-script = ExtResource("6_chaser")
+script = ExtResource("5_chaser")
 
 [node name="TurnComponent" type="Node" parent="."]
-script = ExtResource("7_turn")
+script = ExtResource("6_turn")
 turn_speed = 1.0
 
 [node name="ContactDamageComponent" type="Area2D" parent="."]
-script = ExtResource("8_contact")
+script = ExtResource("7_contact")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ContactDamageComponent"]
 shape = SubResource("CircleShape2D_shotgun")

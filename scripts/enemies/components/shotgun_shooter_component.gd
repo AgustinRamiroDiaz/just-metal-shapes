@@ -1,13 +1,17 @@
-class_name ShooterComponent
+class_name ShotgunShooterComponent
 extends Node
 
 signal fired(projectile: Node)
 
-@export var shoot_interval: float = 2.0
-@export var target_group: StringName = &"players"
+@export var shoot_interval: float = 3.0
+@export var shot_count: int = 3
+@export var spread_angle: float = 45.0
+@export var sprite_path: NodePath = "Sprite2D"
 
 var _projectile_scene: PackedScene
 var _timer: Timer
+
+@onready var _sprite: Sprite2D = get_parent().get_node(sprite_path)
 
 
 func _ready() -> void:
@@ -21,10 +25,13 @@ func _ready() -> void:
 
 func _shoot() -> void:
 	var origin := (get_parent() as Node2D).global_position
-	var nearest := Targeting.get_nearest_alive(get_tree(), origin, target_group)
-	if nearest == null:
-		return
-	_spawn_projectile(origin, (nearest.global_position - origin).normalized())
+	var base_direction := Vector2.RIGHT.rotated(_sprite.rotation)
+	var start_angle := -spread_angle / 2.0
+	var angle_step := spread_angle / (shot_count - 1) if shot_count > 1 else 0.0
+
+	for i in shot_count:
+		var angle := deg_to_rad(start_angle + angle_step * i)
+		_spawn_projectile(origin, base_direction.rotated(angle))
 
 
 func _spawn_projectile(origin: Vector2, direction: Vector2) -> void:
