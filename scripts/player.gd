@@ -11,6 +11,7 @@ const LIGHTNING_TEXTURES: Array[Texture2D] = [
 ]
 const LIGHTNING_FPS: float = 12.0
 const LIGHTNING_WIDTH: float = 80.0
+const TIER_COUNT: int = 3
 
 @export var speed: float = 220.0
 @export var range_radius: float = 140.0:
@@ -29,7 +30,7 @@ var lives: int = MAX_LIVES
 var invincible_timer: float = 0.0
 var is_dead: bool = false
 var revival_progress: float = 0.0
-var _lightning_lines: Dictionary = {}
+var _lightning_lines: Dictionary = {}  # target_id -> Array[Line2D]
 var _lightning_frame_timer: float = 0.0
 var _lightning_frame_index: int = 0
 
@@ -90,12 +91,30 @@ func _clamp_to_viewport() -> void:
 	global_position.y = clampf(global_position.y, rect.position.y, rect.end.y)
 
 
+func _get_tier_radius(tier: int) -> float:
+	return range_radius * (float(tier + 1) / TIER_COUNT)
+
+
+func _get_ray_count(target: Node2D) -> int:
+	var dist := global_position.distance_to(target.global_position)
+	for tier in range(TIER_COUNT):
+		if dist <= _get_tier_radius(tier):
+			return TIER_COUNT - tier
+	return 1
+
+
 func _draw() -> void:
-	var ring_color := Color(team_color.r, team_color.g, team_color.b, 0.9)
-	var fill_color := Color(team_color.r, team_color.g, team_color.b, 0.08)
 	if not is_dead:
-		draw_arc(Vector2.ZERO, range_radius, 0.0, TAU, 64, ring_color, 2.5)
-		draw_circle(Vector2.ZERO, range_radius, fill_color)
+		for tier in range(TIER_COUNT):
+			var r := _get_tier_radius(tier)
+			var alpha := 0.12 * (TIER_COUNT - tier) / TIER_COUNT
+			var tier_fill := Color(team_color.r, team_color.g, team_color.b, alpha)
+			if tier == 0:
+				draw_circle(Vector2.ZERO, r, tier_fill)
+			else:
+				# Draw filled ring between previous tier and this one
+				var prev_r := _get_tier_radius(tier - 1)
+				draw_arc(Vector2.ZERO, (prev_r + r) / 2.0, 0.0, TAU, 64, tier_fill, r - prev_r)
 	if is_dead and revival_progress > 0.0:
 		draw_arc(
 			Vector2.ZERO, 18.0, -PI / 2.0, -PI / 2.0 + TAU * revival_progress, 32, Color.WHITE, 3.0
@@ -127,7 +146,8 @@ func _on_range_body_exited(body: Node) -> void:
 		targets_in_range.erase(body)
 		var target_id := body.get_instance_id()
 		if target_id in _lightning_lines:
-			_lightning_lines[target_id].queue_free()
+			for line: Line2D in _lightning_lines[target_id]:
+				line.queue_free()
 			_lightning_lines.erase(target_id)
 
 
@@ -164,17 +184,19 @@ func _apply_continuous_damage(delta: float) -> void:
 	if _lightning_frame_timer >= 1.0 / LIGHTNING_FPS:
 		_lightning_frame_timer -= 1.0 / LIGHTNING_FPS
 		_lightning_frame_index = (_lightning_frame_index + 1) % LIGHTNING_TEXTURES.size()
-		for line: Line2D in _lightning_lines.values():
-			line.texture = LIGHTNING_TEXTURES[_lightning_frame_index]
+		for lines: Array in _lightning_lines.values():
+			for line: Line2D in lines:
+				line.texture = LIGHTNING_TEXTURES[_lightning_frame_index]
 
 	var active_targets: Array[Node2D] = []
-	var damage_amount := damage_per_second * delta
 	for target in targets_in_range:
 		if is_instance_valid(target) and target.has_method("take_damage"):
+			var ray_count := _get_ray_count(target)
+			var damage_amount := damage_per_second * ray_count * delta
 			var did_damage: bool = target.take_damage(damage_amount, team_color)
 			if did_damage:
 				active_targets.append(target)
-				_update_lightning(target)
+				_update_lightning(target, ray_count)
 
 	# Remove lightning for targets no longer being damaged
 	for target_id in _lightning_lines.keys():
@@ -184,30 +206,42 @@ func _apply_continuous_damage(delta: float) -> void:
 				found = true
 				break
 		if not found:
-			_lightning_lines[target_id].queue_free()
+			for line: Line2D in _lightning_lines[target_id]:
+				line.queue_free()
 			_lightning_lines.erase(target_id)
 
 
-func _update_lightning(target: Node2D) -> void:
+func _update_lightning(target: Node2D, ray_count: int) -> void:
 	var target_id := target.get_instance_id()
-	var line: Line2D
-	if target_id in _lightning_lines:
-		line = _lightning_lines[target_id]
-	else:
-		line = Line2D.new()
+	var lines: Array = _lightning_lines.get(target_id, []) as Array
+
+	# Add or remove lines to match ray_count
+	while lines.size() < ray_count:
+		var line := Line2D.new()
 		line.texture = LIGHTNING_TEXTURES[_lightning_frame_index]
 		line.texture_mode = Line2D.LINE_TEXTURE_TILE
 		line.width = LIGHTNING_WIDTH
 		line.default_color = Color(team_color, 0.8)
 		line.z_index = -1
 		add_child(line)
-		_lightning_lines[target_id] = line
-	line.clear_points()
-	line.add_point(to_local(target.global_position))
-	line.add_point(Vector2.ZERO)
+		lines.append(line)
+	while lines.size() > ray_count:
+		var extra: Line2D = lines.pop_back()
+		extra.queue_free()
+
+	_lightning_lines[target_id] = lines
+
+	var target_local := to_local(target.global_position)
+	var perp := target_local.normalized().rotated(PI / 2.0)
+	for i in range(ray_count):
+		var offset := perp * (i - (ray_count - 1) / 2.0) * 10.0
+		lines[i].clear_points()
+		lines[i].add_point(target_local + offset)
+		lines[i].add_point(Vector2.ZERO + offset)
 
 
 func _clear_lightning() -> void:
-	for line: Line2D in _lightning_lines.values():
-		line.queue_free()
+	for lines: Array in _lightning_lines.values():
+		for line: Line2D in lines:
+			line.queue_free()
 	_lightning_lines.clear()
