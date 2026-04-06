@@ -36,7 +36,7 @@ func take_damage(amount: float, damage_color: Color = Color.WHITE) -> bool:
 	if life <= 0:
 		return false
 
-	if has_shield and shield > 0.0 and _colors_match(shield_color, damage_color):
+	if has_shield and shield > 0.0 and ColorUtils.colors_match(shield_color, damage_color):
 		shield = max(shield - amount, 0.0)
 		damage_flash_timer = DAMAGE_FLASH_DURATION
 		damaged.emit(amount)
@@ -53,10 +53,6 @@ func take_damage(amount: float, damage_color: Color = Color.WHITE) -> bool:
 	if life == 0:
 		died.emit()
 	return true
-
-
-func _colors_match(c1: Color, c2: Color) -> bool:
-	return c1.r == c2.r and c1.g == c2.g and c1.b == c2.b
 
 
 func _draw() -> void:

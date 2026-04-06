@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/enemies/mine_layer_enemy.gd" id="1_mine_layer"]
+[ext_resource type="Script" path="res://scripts/enemies/base_enemy.gd" id="1_enemy"]
 [ext_resource type="Texture2D" uid="uid://dx60ovk85ckyh" path="res://icon.svg" id="2_icon"]
 [ext_resource type="Script" uid="uid://b8213fec7gt7m" path="res://scripts/enemies/components/health_component.gd" id="3_health"]
 [ext_resource type="Script" uid="uid://cstgj6w4m6oyo" path="res://scripts/enemies/components/chaser_component.gd" id="4_chaser"]
@@ -12,7 +12,7 @@ radius = 26.0
 
 [node name="MineLayerEnemy" type="StaticBody2D"]
 collision_layer = 2
-script = ExtResource("1_mine_layer")
+script = ExtResource("1_enemy")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 modulate = Color(1.0, 0.6, 0.1, 1)

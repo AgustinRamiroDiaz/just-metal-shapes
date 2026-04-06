@@ -12,14 +12,19 @@ func _ready() -> void:
 	var notifier := VisibleOnScreenNotifier2D.new()
 	notifier.screen_exited.connect(queue_free)
 	add_child(notifier)
+
+	var timer := Timer.new()
+	timer.wait_time = lifetime
+	timer.one_shot = true
+	timer.timeout.connect(queue_free)
+	add_child(timer)
+	timer.start()
+
 	queue_redraw()
 
 
 func _process(delta: float) -> void:
 	position += direction * speed * delta
-	lifetime -= delta
-	if lifetime <= 0.0:
-		queue_free()
 
 
 func _draw() -> void:

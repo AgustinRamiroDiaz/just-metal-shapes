@@ -4,46 +4,27 @@ extends Node
 signal fired(projectile: Node)
 
 @export var shoot_interval: float = 2.0
-@export var target_group: StringName = &"players"
 
-var shoot_timer: float = 0.0
 var _projectile_scene: PackedScene
+var _timer: Timer
+var _pattern: Node
 
 
 func _ready() -> void:
 	_projectile_scene = load("res://scenes/projectile.tscn")
-	shoot_timer = randf_range(0.0, shoot_interval)
-
-
-func _process(delta: float) -> void:
-	if _projectile_scene == null:
-		return
-	shoot_timer += delta
-	if shoot_timer >= shoot_interval:
-		shoot_timer = 0.0
-		_shoot()
+	_pattern = _find_pattern()
+	_timer = Timer.new()
+	_timer.wait_time = shoot_interval
+	_timer.timeout.connect(_shoot)
+	add_child(_timer)
+	_timer.start(shoot_interval)
 
 
 func _shoot() -> void:
-	var targets := get_tree().get_nodes_in_group(target_group)
 	var origin := (get_parent() as Node2D).global_position
-	var nearest: Node2D = _get_nearest_target(targets, origin)
-	if nearest == null:
-		return
-	_spawn_projectile(origin, (nearest.global_position - origin).normalized())
-
-
-func _get_nearest_target(targets: Array, origin: Vector2) -> Node2D:
-	var nearest: Node2D = null
-	var min_dist: float = INF
-	for t in targets:
-		if not is_instance_valid(t) or not t is Node2D:
-			continue
-		var d := origin.distance_to(t.global_position)
-		if d < min_dist:
-			min_dist = d
-			nearest = t as Node2D
-	return nearest
+	var directions: Array[Vector2] = _pattern.get_directions(origin)
+	for dir: Vector2 in directions:
+		_spawn_projectile(origin, dir)
 
 
 func _spawn_projectile(origin: Vector2, direction: Vector2) -> void:
@@ -52,3 +33,13 @@ func _spawn_projectile(origin: Vector2, direction: Vector2) -> void:
 	proj.direction = direction
 	get_tree().current_scene.add_child(proj)
 	fired.emit(proj)
+
+
+func _find_pattern() -> Node:
+	for child in get_children():
+		if child.has_method("get_directions"):
+			return child
+	# Default: aimed at nearest player
+	var aimed: AimedPattern = AimedPattern.new()
+	add_child(aimed)
+	return aimed

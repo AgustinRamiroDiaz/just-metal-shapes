@@ -8,27 +8,10 @@ signal moved(amount: float)
 
 
 func _process(delta: float) -> void:
-	var targets := get_tree().get_nodes_in_group(target_group)
-	var origin := (get_parent() as Node2D).global_position
-	var nearest: Node2D = _get_nearest_target(targets, origin)
+	var parent := get_parent() as Node2D
+	var nearest := Targeting.get_nearest_alive(get_tree(), parent.global_position, target_group)
 	if nearest == null:
 		return
-	var direction := (nearest.global_position - origin).normalized()
-	origin += direction * move_speed * delta
-	(get_parent() as Node2D).global_position = origin
+	var direction := (nearest.global_position - parent.global_position).normalized()
+	parent.global_position += direction * move_speed * delta
 	moved.emit(move_speed * delta)
-
-
-func _get_nearest_target(targets: Array, origin: Vector2) -> Node2D:
-	var nearest: Node2D = null
-	var min_dist: float = INF
-	for t in targets:
-		if not is_instance_valid(t) or not t is Node2D:
-			continue
-		if t.get("is_dead") == true:
-			continue
-		var d := origin.distance_to(t.global_position)
-		if d < min_dist:
-			min_dist = d
-			nearest = t as Node2D
-	return nearest

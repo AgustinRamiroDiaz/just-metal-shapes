@@ -1,3 +1,4 @@
+class_name BaseEnemy
 extends StaticBody2D
 
 signal died

@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/enemies/runner_enemy.gd" id="1_runner"]
+[ext_resource type="Script" path="res://scripts/enemies/base_enemy.gd" id="1_enemy"]
 [ext_resource type="Texture2D" uid="uid://dx60ovk85ckyh" path="res://icon.svg" id="2_icon"]
 [ext_resource type="Script" uid="uid://b8213fec7gt7m" path="res://scripts/enemies/components/health_component.gd" id="3_health"]
 [ext_resource type="Script" path="res://scripts/enemies/components/color_chaser_component.gd" id="4_color_chaser"]
@@ -12,7 +12,7 @@ radius = 20.0
 
 [node name="RunnerEnemy" type="StaticBody2D"]
 collision_layer = 2
-script = ExtResource("1_runner")
+script = ExtResource("1_enemy")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 modulate = Color(0.2, 0.8, 0.2, 1)

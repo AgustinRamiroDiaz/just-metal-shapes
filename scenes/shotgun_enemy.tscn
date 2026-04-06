@@ -1,45 +1,49 @@
 [gd_scene format=3 uid="uid://dmj0ol8d38aoh"]
 
-[ext_resource type="Script" uid="uid://do03jimx88myu" path="res://scripts/enemies/shotgun_enemy.gd" id="1_shotgun"]
+[ext_resource type="Script" path="res://scripts/enemies/base_enemy.gd" id="1_enemy"]
 [ext_resource type="Texture2D" uid="uid://dx60ovk85ckyh" path="res://icon.svg" id="2_icon"]
 [ext_resource type="Script" uid="uid://b8213fec7gt7m" path="res://scripts/enemies/components/health_component.gd" id="3_health"]
-[ext_resource type="Script" uid="uid://cj0rlemobwci7" path="res://scripts/enemies/components/shotgun_shooter_component.gd" id="4_shotgun_shooter"]
-[ext_resource type="Script" uid="uid://cstgj6w4m6oyo" path="res://scripts/enemies/components/chaser_component.gd" id="5_chaser"]
-[ext_resource type="Script" uid="uid://baibtnk3m4nge" path="res://scripts/enemies/components/turn_component.gd" id="6_turn"]
-[ext_resource type="Script" uid="uid://contact_dmg" path="res://scripts/enemies/components/contact_damage_component.gd" id="7_contact"]
+[ext_resource type="Script" path="res://scripts/enemies/components/shooter_component.gd" id="4_shooter"]
+[ext_resource type="Script" path="res://scripts/enemies/components/fire_patterns/shotgun_pattern.gd" id="5_shotgun_pattern"]
+[ext_resource type="Script" uid="uid://cstgj6w4m6oyo" path="res://scripts/enemies/components/chaser_component.gd" id="6_chaser"]
+[ext_resource type="Script" uid="uid://baibtnk3m4nge" path="res://scripts/enemies/components/turn_component.gd" id="7_turn"]
+[ext_resource type="Script" uid="uid://contact_dmg" path="res://scripts/enemies/components/contact_damage_component.gd" id="8_contact"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_shotgun"]
 radius = 32.0
 
-[node name="ShotgunEnemy" type="StaticBody2D" unique_id=597421633]
+[node name="ShotgunEnemy" type="StaticBody2D"]
 collision_layer = 2
-script = ExtResource("1_shotgun")
+script = ExtResource("1_enemy")
 
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=658582241]
+[node name="Sprite2D" type="Sprite2D" parent="."]
 modulate = Color(0.8, 0.2, 0.2, 1)
 scale = Vector2(0.3, 0.3)
 texture = ExtResource("2_icon")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=12647215]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_shotgun")
 
-[node name="HealthComponent" type="Node2D" parent="." unique_id=632148012]
+[node name="HealthComponent" type="Node2D" parent="."]
 script = ExtResource("3_health")
 shield_color = Color(0.35, 0.75, 1, 1)
 
-[node name="ShotgunShooterComponent" type="Node" parent="." unique_id=1226956249]
-script = ExtResource("4_shotgun_shooter")
+[node name="ShooterComponent" type="Node" parent="."]
+script = ExtResource("4_shooter")
 shoot_interval = 3.0
 
-[node name="ChaserComponent" type="Node" parent="." unique_id=915578384]
-script = ExtResource("5_chaser")
+[node name="ShotgunPattern" type="Node" parent="ShooterComponent"]
+script = ExtResource("5_shotgun_pattern")
 
-[node name="TurnComponent" type="Node" parent="." unique_id=2090137885]
-script = ExtResource("6_turn")
+[node name="ChaserComponent" type="Node" parent="."]
+script = ExtResource("6_chaser")
+
+[node name="TurnComponent" type="Node" parent="."]
+script = ExtResource("7_turn")
 turn_speed = 1.0
 
-[node name="ContactDamageComponent" type="Area2D" parent="." unique_id=998877665]
-script = ExtResource("7_contact")
+[node name="ContactDamageComponent" type="Area2D" parent="."]
+script = ExtResource("8_contact")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactDamageComponent" unique_id=998877666]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactDamageComponent"]
 shape = SubResource("CircleShape2D_shotgun")

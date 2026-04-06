@@ -1,59 +1,29 @@
 class_name GameManager
 extends Node2D
 
-enum SpawnType { INSIDE, OUTSIDE }
-
-
-class EnemyConfig:
-	var scene: PackedScene
-	var spawn_type: SpawnType
-	var interval_multiplier: float
-	var timer: float
-	var spawn_interval: float
-
-	func _init(p_scene: PackedScene, p_spawn_type: SpawnType, p_interval_multiplier: float) -> void:
-		scene = p_scene
-		spawn_type = p_spawn_type
-		interval_multiplier = p_interval_multiplier
-
-
 @export var player_scene: PackedScene
-@export var base_spawn_interval: float = 7.0
 
-var enemy_configs: Array[EnemyConfig] = []
 var score: int = 0
 var game_time: float = 0.0
 var is_game_over: bool = false
 var viewport_rect: Rect2
-var _spawn_effect_scene: PackedScene = preload("res://scenes/spawn_effect.tscn")
+
 @onready var score_label: Label = $ScoreLabel
+@onready var _spawner: EnemySpawner = $EnemySpawner
 
 
 func _ready() -> void:
 	viewport_rect = get_viewport().get_visible_rect()
 	player_scene = load("res://scenes/player.tscn")
-	enemy_configs = [
-		EnemyConfig.new(load("res://scenes/static_shooter_enemy.tscn"), SpawnType.INSIDE, 1.0),
-		EnemyConfig.new(load("res://scenes/shotgun_enemy.tscn"), SpawnType.OUTSIDE, 1.5),
-		EnemyConfig.new(load("res://scenes/turret_enemy.tscn"), SpawnType.INSIDE, 2.0),
-		EnemyConfig.new(load("res://scenes/runner_enemy.tscn"), SpawnType.OUTSIDE, 1.2),
-		EnemyConfig.new(load("res://scenes/mine_layer_enemy.tscn"), SpawnType.OUTSIDE, 2.5),
-	]
-
-	for cfg in enemy_configs:
-		cfg.timer = randf_range(0.0, base_spawn_interval)
-		cfg.spawn_interval = base_spawn_interval * cfg.interval_multiplier
-
+	_spawner.enemy_died.connect(_on_enemy_died)
 	_spawn_players()
 
 
 func _process(delta: float) -> void:
 	if is_game_over:
 		return
-
 	game_time += delta
-	_update_spawn_intervals()
-	_handle_spawning(delta)
+	_spawner.update_difficulty(game_time)
 	_update_ui()
 
 
@@ -100,64 +70,6 @@ func _spawn_players() -> void:
 		p.died.connect(_on_player_died)
 
 
-func _update_spawn_intervals() -> void:
-	var difficulty_factor: float = 1.0 - min(game_time / 300.0, 0.7)
-	for cfg in enemy_configs:
-		cfg.spawn_interval = base_spawn_interval * cfg.interval_multiplier * difficulty_factor
-
-
-func _handle_spawning(delta: float) -> void:
-	for cfg in enemy_configs:
-		cfg.timer += delta
-		if cfg.timer >= cfg.spawn_interval:
-			cfg.timer = 0.0
-			_spawn_enemy(cfg)
-
-
-func _spawn_enemy(cfg: EnemyConfig) -> void:
-	var spawn_pos := (
-		_get_spawn_inside_viewport()
-		if cfg.spawn_type == SpawnType.INSIDE
-		else _get_spawn_on_circle()
-	)
-
-	if cfg.spawn_type == SpawnType.INSIDE:
-		var effect: GPUParticles2D = _spawn_effect_scene.instantiate()
-		effect.global_position = spawn_pos
-		add_child(effect)
-		effect.spawn_ready.connect(_place_enemy.bind(cfg, spawn_pos))
-	else:
-		_place_enemy(cfg, spawn_pos)
-
-
-func _place_enemy(cfg: EnemyConfig, spawn_pos: Vector2) -> void:
-	if is_game_over:
-		return
-	var enemy: StaticBody2D = cfg.scene.instantiate()
-	enemy.global_position = spawn_pos
-	var player_count := GameConfig.players.size()
-	if player_count > 1:
-		var health: HealthComponent = enemy.get_node("HealthComponent")
-		health.max_life *= player_count
-	add_child(enemy)
-	enemy.died.connect(_on_enemy_died)
-
-
-func _get_spawn_on_circle() -> Vector2:
-	var center := viewport_rect.get_center()
-	var angle := randf() * TAU
-	var radius := viewport_rect.size.length() / 2.0 + 50.0
-	return center + Vector2(cos(angle), sin(angle)) * radius
-
-
-func _get_spawn_inside_viewport() -> Vector2:
-	var margin := 50.0
-	return Vector2(
-		randf_range(viewport_rect.position.x + margin, viewport_rect.end.x - margin),
-		randf_range(viewport_rect.position.y + margin, viewport_rect.end.y - margin)
-	)
-
-
 func _on_enemy_died() -> void:
 	score += 10
 
@@ -175,6 +87,7 @@ func _on_player_died() -> void:
 
 func _game_over() -> void:
 	is_game_over = true
+	_spawner.stop()
 	_show_game_over_screen()
 
 

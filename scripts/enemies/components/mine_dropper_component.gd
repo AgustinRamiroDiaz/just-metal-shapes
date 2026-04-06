@@ -4,14 +4,14 @@ extends Node
 @export var drop_interval: float = 2.5
 
 var _mine_scene: PackedScene = preload("res://scenes/mine.tscn")
-var _timer: float = 0.0
 
 
-func _process(delta: float) -> void:
-	_timer += delta
-	if _timer >= drop_interval:
-		_timer -= drop_interval
-		_drop_mine()
+func _ready() -> void:
+	var timer := Timer.new()
+	timer.wait_time = drop_interval
+	timer.timeout.connect(_drop_mine)
+	add_child(timer)
+	timer.start()
 
 
 func _drop_mine() -> void:
