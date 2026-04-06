@@ -6,8 +6,6 @@
 
 With invincibility frames.
 
-## Spawn animations
-
 ## Add pause
 
 ## Add restart button when game is over
