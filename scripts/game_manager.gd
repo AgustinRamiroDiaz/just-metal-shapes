@@ -226,7 +226,7 @@ func _show_game_over_screen() -> void:
 	)
 	vbox.add_child(menu_btn)
 
-	restart_btn.grab_focus()
+	restart_btn.call_deferred(&"grab_focus")
 
 
 func _update_ui() -> void:

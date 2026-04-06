@@ -1,7 +1,5 @@
 # Features
 
-## More damage the closer you are to the enemy
-
 ## Add dodge roll
 
 With invincibility frames.
