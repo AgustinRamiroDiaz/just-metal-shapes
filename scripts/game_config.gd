@@ -43,7 +43,6 @@ const PLAYER_COLORS := [
 ]
 
 const _SPRITES_BASE := "res://assets/kenney_shape-characters/PNG/Default"
-const PLAYER_BODY_TEXTURE := _SPRITES_BASE + "/blue_body_squircle.png"
 const PLAYER_FACE_IDLE := _SPRITES_BASE + "/face_f.png"
 const PLAYER_FACE_ATTACKING := _SPRITES_BASE + "/face_g.png"
 const PLAYER_FACE_DEAD := _SPRITES_BASE + "/face_j.png"

@@ -70,13 +70,7 @@ func _ready() -> void:
 
 
 func _load_sprites() -> void:
-	var shader_mat := ShaderMaterial.new()
-	shader_mat.shader = load("res://shaders/player_color.gdshader")
-	shader_mat.set_shader_parameter("player_color", team_color)
-
-	_body_sprite.texture = load(GameConfig.PLAYER_BODY_TEXTURE)
-	_body_sprite.scale = Vector2(0.2, 0.2)
-	_body_sprite.material = shader_mat
+	(_body_sprite.material as ShaderMaterial).set_shader_parameter("player_color", team_color)
 
 	_face_tex_idle = load(GameConfig.PLAYER_FACE_IDLE)
 	_face_tex_attacking = load(GameConfig.PLAYER_FACE_ATTACKING)
@@ -84,7 +78,7 @@ func _load_sprites() -> void:
 
 	_face_sprite = Sprite2D.new()
 	_face_sprite.texture = _face_tex_idle
-	_face_sprite.scale = Vector2(0.2, 0.2)
+	_face_sprite.scale = _body_sprite.scale
 	add_child(_face_sprite)
 
 
