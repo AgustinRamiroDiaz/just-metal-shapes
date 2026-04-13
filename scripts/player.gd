@@ -151,15 +151,10 @@ func _get_ray_count(target: Node2D) -> int:
 
 func _draw() -> void:
 	if not is_dead:
-		for tier in range(TIER_COUNT):
-			var r := _get_tier_radius(tier)
-			var alpha := 0.12 * (TIER_COUNT - tier) / TIER_COUNT
-			var tier_fill := Color(team_color.r, team_color.g, team_color.b, alpha)
-			if tier == 0:
-				draw_circle(Vector2.ZERO, r, tier_fill)
-			else:
-				var prev_r := _get_tier_radius(tier - 1)
-				draw_arc(Vector2.ZERO, (prev_r + r) / 2.0, 0.0, TAU, 64, tier_fill, r - prev_r)
+		var alpha := 0.12 / TIER_COUNT
+		var ring_color := Color(team_color.r, team_color.g, team_color.b, alpha)
+		for tier in range(TIER_COUNT - 1, -1, -1):
+			draw_circle(Vector2.ZERO, _get_tier_radius(tier), ring_color)
 	if is_dead and revival_progress > 0.0:
 		draw_arc(
 			Vector2.ZERO, 18.0, -PI / 2.0, -PI / 2.0 + TAU * revival_progress, 32, Color.WHITE, 3.0
