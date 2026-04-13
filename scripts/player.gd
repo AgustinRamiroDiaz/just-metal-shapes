@@ -2,6 +2,9 @@ class_name Player
 extends CharacterBody2D
 
 signal died
+signal state_changed(from: int, to: int)
+
+enum State { IDLE, ATTACKING, DEAD }
 
 const MAX_LIVES: int = 3
 const INVINCIBILITY_DURATION: float = 3.0
@@ -25,6 +28,12 @@ var invincible_timer: float = 0.0
 var is_dead: bool = false
 var revival_progress: float = 0.0
 
+var _sm: StateMachine
+var _face_sprite: Sprite2D
+var _face_tex_idle: Texture2D
+var _face_tex_attacking: Texture2D
+var _face_tex_dead: Texture2D
+
 @onready var range_area: Area2D = $RangeArea
 @onready var range_shape: CollisionShape2D = $RangeArea/CollisionShape2D
 @onready var _lightning: LightningComponent = $LightningComponent
@@ -38,6 +47,20 @@ func _apply_deadzone(value: float) -> float:
 
 
 func _ready() -> void:
+	_sm = (
+		StateMachine
+		. new(
+			State.IDLE,
+			{
+				State.IDLE: [State.ATTACKING, State.DEAD],
+				State.ATTACKING: [State.IDLE, State.DEAD],
+				State.DEAD: [],
+			}
+		)
+	)
+	_sm.state_changed.connect(_on_state_changed)
+	_sm.state_changed.connect(func(from, to): state_changed.emit(from, to))
+
 	add_to_group("players")
 	_update_range_shape()
 	_load_sprites()
@@ -55,10 +78,24 @@ func _load_sprites() -> void:
 	_body_sprite.scale = Vector2(0.2, 0.2)
 	_body_sprite.material = shader_mat
 
-	var face := Sprite2D.new()
-	face.texture = load(GameConfig.PLAYER_FACE_TEXTURE)
-	face.scale = Vector2(0.2, 0.2)
-	add_child(face)
+	_face_tex_idle = load(GameConfig.PLAYER_FACE_IDLE)
+	_face_tex_attacking = load(GameConfig.PLAYER_FACE_ATTACKING)
+	_face_tex_dead = load(GameConfig.PLAYER_FACE_DEAD)
+
+	_face_sprite = Sprite2D.new()
+	_face_sprite.texture = _face_tex_idle
+	_face_sprite.scale = Vector2(0.2, 0.2)
+	add_child(_face_sprite)
+
+
+func _on_state_changed(_from: int, to: int) -> void:
+	match to:
+		State.IDLE:
+			_face_sprite.texture = _face_tex_idle
+		State.ATTACKING:
+			_face_sprite.texture = _face_tex_attacking
+		State.DEAD:
+			_face_sprite.texture = _face_tex_dead
 
 
 func _physics_process(delta: float) -> void:
@@ -147,12 +184,15 @@ func _update_range_shape() -> void:
 func _on_range_body_entered(body: Node) -> void:
 	if body is Node2D and body.has_method("take_damage"):
 		targets_in_range.append(body)
+		_sm.transition(State.ATTACKING)
 
 
 func _on_range_body_exited(body: Node) -> void:
 	if body is Node2D:
 		targets_in_range.erase(body)
 		_lightning.remove_target(body.get_instance_id())
+		if targets_in_range.is_empty():
+			_sm.transition(State.IDLE)
 
 
 func take_damage(amount: int) -> void:
@@ -163,6 +203,7 @@ func take_damage(amount: int) -> void:
 	if lives <= 0:
 		lives = 0
 		is_dead = true
+		_sm.transition(State.DEAD)
 		_lightning.clear()
 		modulate = Color(0.4, 0.4, 0.4, 1.0)
 		queue_redraw()
@@ -175,6 +216,7 @@ func revive() -> void:
 	revival_progress = 0.0
 	invincible_timer = INVINCIBILITY_DURATION
 	modulate = Color.WHITE
+	_sm.force(State.IDLE)
 	queue_redraw()
 
 
