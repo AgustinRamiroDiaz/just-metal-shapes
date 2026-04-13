@@ -184,15 +184,12 @@ func _update_range_shape() -> void:
 func _on_range_body_entered(body: Node) -> void:
 	if body is Node2D and body.has_method("take_damage"):
 		targets_in_range.append(body)
-		_sm.transition(State.ATTACKING)
 
 
 func _on_range_body_exited(body: Node) -> void:
 	if body is Node2D:
 		targets_in_range.erase(body)
 		_lightning.remove_target(body.get_instance_id())
-		if targets_in_range.is_empty():
-			_sm.transition(State.IDLE)
 
 
 func take_damage(amount: int) -> void:
@@ -223,6 +220,7 @@ func revive() -> void:
 func _apply_continuous_damage(delta: float) -> void:
 	if damage_per_second <= 0.0:
 		_lightning.clear()
+		_sm.transition(State.IDLE)
 		return
 
 	var active_targets: Dictionary = {}
@@ -237,3 +235,8 @@ func _apply_continuous_damage(delta: float) -> void:
 				}
 
 	_lightning.update(delta, active_targets)
+
+	if active_targets.is_empty():
+		_sm.transition(State.IDLE)
+	else:
+		_sm.transition(State.ATTACKING)
