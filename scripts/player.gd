@@ -28,6 +28,7 @@ var revival_progress: float = 0.0
 @onready var range_area: Area2D = $RangeArea
 @onready var range_shape: CollisionShape2D = $RangeArea/CollisionShape2D
 @onready var _lightning: LightningComponent = $LightningComponent
+@onready var _body_sprite: Sprite2D = $Sprite2D
 
 
 func _apply_deadzone(value: float) -> float:
@@ -39,9 +40,25 @@ func _apply_deadzone(value: float) -> float:
 func _ready() -> void:
 	add_to_group("players")
 	_update_range_shape()
+	_load_sprites()
 	queue_redraw()
 	range_area.body_entered.connect(_on_range_body_entered)
 	range_area.body_exited.connect(_on_range_body_exited)
+
+
+func _load_sprites() -> void:
+	var shader_mat := ShaderMaterial.new()
+	shader_mat.shader = load("res://shaders/player_color.gdshader")
+	shader_mat.set_shader_parameter("player_color", team_color)
+
+	_body_sprite.texture = load(GameConfig.PLAYER_BODY_TEXTURE)
+	_body_sprite.scale = Vector2(0.2, 0.2)
+	_body_sprite.material = shader_mat
+
+	var face := Sprite2D.new()
+	face.texture = load(GameConfig.PLAYER_FACE_TEXTURE)
+	face.scale = Vector2(0.2, 0.2)
+	add_child(face)
 
 
 func _physics_process(delta: float) -> void:

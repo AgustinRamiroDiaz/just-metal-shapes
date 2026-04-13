@@ -42,6 +42,10 @@ const PLAYER_COLORS := [
 	Color(1.0, 0.6, 0.75),
 ]
 
+const _SPRITES_BASE := "res://assets/kenney_shape-characters/PNG/Default"
+const PLAYER_BODY_TEXTURE := _SPRITES_BASE + "/blue_body_squircle.png"
+const PLAYER_FACE_TEXTURE := _SPRITES_BASE + "/face_f.png"
+
 const INPUT_LABELS := {
 	InputType.KEYBOARD1: "KB: WASD/Arrows",
 	InputType.KEYBOARD2: "KB: IJKL",
