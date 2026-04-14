@@ -22,6 +22,7 @@ class EnemyConfig:
 @export var base_spawn_interval: float = 7.0
 
 var enemy_configs: Array[EnemyConfig] = []
+var difficulty_factor: float = 1.0
 var _spawn_effect_scene: PackedScene = preload("res://scenes/spawn_effect.tscn")
 var _viewport_rect: Rect2
 var _active: bool = true
@@ -46,7 +47,7 @@ func stop() -> void:
 
 
 func update_difficulty(game_time: float) -> void:
-	var difficulty_factor: float = 1.0 - min(game_time / 300.0, 0.7)
+	difficulty_factor = 1.0 - min(game_time / 300.0, 0.7)
 	for cfg in enemy_configs:
 		cfg.spawn_interval = base_spawn_interval * cfg.interval_multiplier * difficulty_factor
 

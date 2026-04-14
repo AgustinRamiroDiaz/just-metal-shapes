@@ -9,6 +9,7 @@ var is_game_over: bool = false
 var viewport_rect: Rect2
 
 @onready var score_label: Label = $ScoreLabel
+@onready var debug_label: Label = $DebugLabel
 @onready var _spawner: EnemySpawner = $EnemySpawner
 
 
@@ -146,3 +147,17 @@ func _show_game_over_screen() -> void:
 
 func _update_ui() -> void:
 	score_label.text = "Score: %d" % score
+	_update_debug_label()
+
+
+func _update_debug_label() -> void:
+	var lines := PackedStringArray()
+	lines.append("─── DEBUG ───")
+	lines.append("time:       %6.1fs" % game_time)
+	lines.append("difficulty: %6.2f" % _spawner.difficulty_factor)
+	lines.append("")
+	lines.append("spawn intervals:")
+	for cfg in _spawner.enemy_configs:
+		var enemy_name := cfg.scene.resource_path.get_file().get_basename()
+		lines.append("  %-22s %5.2fs" % [enemy_name, cfg.spawn_interval])
+	debug_label.text = "\n".join(lines)
