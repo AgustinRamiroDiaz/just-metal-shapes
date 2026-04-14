@@ -18,6 +18,7 @@ func _ready() -> void:
 	player_scene = load("res://scenes/player.tscn")
 	_spawner.enemy_died.connect(_on_enemy_died)
 	_spawn_players()
+	debug_label.visible = OS.is_debug_build()
 
 
 func _process(delta: float) -> void:
@@ -151,6 +152,8 @@ func _update_ui() -> void:
 
 
 func _update_debug_label() -> void:
+	if not OS.is_debug_build():
+		return
 	var lines := PackedStringArray()
 	lines.append("─── DEBUG ───")
 	lines.append("time:       %6.1fs" % game_time)
