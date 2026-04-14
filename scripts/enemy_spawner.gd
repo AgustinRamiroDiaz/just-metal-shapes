@@ -19,7 +19,7 @@ class EnemyConfig:
 		interval_multiplier = p_interval_multiplier
 
 
-@export var base_spawn_interval: float = 14.0
+@export var base_spawn_interval: float = 20.0
 
 var enemy_configs: Array[EnemyConfig] = []
 var difficulty_factor: float = 1.0

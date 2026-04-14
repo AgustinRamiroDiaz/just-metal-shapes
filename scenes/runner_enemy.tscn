@@ -25,6 +25,7 @@ shape = SubResource("CircleShape2D_runner")
 [node name="HealthComponent" type="Node2D" parent="."]
 script = ExtResource("3_health")
 max_life = 2.0
+auto_shield_layers = 3
 
 [node name="ColorChaserComponent" type="Node" parent="."]
 script = ExtResource("4_color_chaser")

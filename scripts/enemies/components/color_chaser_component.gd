@@ -2,26 +2,26 @@ class_name ColorChaserComponent
 extends Node
 
 @export var move_speed: float = 50.0
-@export var shield_color: Color = Color.WHITE
 @export var target_group: StringName = &"players"
+
+var _health: HealthComponent
 
 
 func _ready() -> void:
-	var health := get_parent().get_node_or_null("HealthComponent") as HealthComponent
-	if health:
-		shield_color = health.shield_color
+	_health = get_parent().get_node_or_null("HealthComponent") as HealthComponent
 
 
 func _process(delta: float) -> void:
 	var parent := get_parent() as Node2D
-	var nearest := _get_nearest_mismatched_target(parent.global_position)
+	var active_color := _health.get_active_color() if _health else Color.WHITE
+	var nearest := _get_nearest_mismatched_target(parent.global_position, active_color)
 	if nearest == null:
 		return
 	var direction := (nearest.global_position - parent.global_position).normalized()
 	parent.global_position += direction * move_speed * delta
 
 
-func _get_nearest_mismatched_target(origin: Vector2) -> Node2D:
+func _get_nearest_mismatched_target(origin: Vector2, shield_color: Color) -> Node2D:
 	var nearest: Node2D = null
 	var min_dist: float = INF
 	for t in get_tree().get_nodes_in_group(target_group):
