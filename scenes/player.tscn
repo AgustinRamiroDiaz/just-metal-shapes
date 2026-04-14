@@ -5,6 +5,9 @@
 [ext_resource type="Script" uid="uid://bh6af2rsr1xxr" path="res://scripts/player/revival_component.gd" id="2_revival"]
 [ext_resource type="Script" uid="uid://cvsqifpygog1o" path="res://scripts/player/lightning_component.gd" id="3_lightning"]
 [ext_resource type="Shader" uid="uid://ccuxjshnb3dht" path="res://shaders/player_color.gdshader" id="4_shader"]
+[ext_resource type="Texture2D" uid="uid://bhnisht3o3jpd" path="res://assets/kenney_shape-characters/PNG/Default/face_f.png" id="5_face_idle"]
+[ext_resource type="Texture2D" uid="uid://57jotb1siyyj" path="res://assets/kenney_shape-characters/PNG/Default/face_g.png" id="6_face_attacking"]
+[ext_resource type="Texture2D" uid="uid://dm7s8yxecxpb3" path="res://assets/kenney_shape-characters/PNG/Default/face_j.png" id="7_face_dead"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_player"]
 resource_local_to_scene = true
@@ -19,12 +22,19 @@ radius = 140.0
 
 [node name="Player" type="CharacterBody2D" unique_id=743564121]
 script = ExtResource("1_player")
+face_tex_idle = ExtResource("5_face_idle")
+face_tex_attacking = ExtResource("6_face_attacking")
+face_tex_dead = ExtResource("7_face_dead")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1031474399]
 material = SubResource("ShaderMaterial_player")
 position = Vector2(-5.9604645e-08, -1.7881393e-07)
 scale = Vector2(0.32499996, 0.325)
 texture = ExtResource("2_body")
+
+[node name="FaceSprite" type="Sprite2D" parent="."]
+scale = Vector2(0.32499996, 0.325)
+texture = ExtResource("5_face_idle")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1075342262]
 position = Vector2(-4.7683716e-07, 4.7683716e-07)

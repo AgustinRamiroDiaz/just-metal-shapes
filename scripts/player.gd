@@ -21,6 +21,9 @@ const TIER_COUNT: int = 3
 @export var move_down_action: StringName = &"ui_down"
 @export var input_type: int = 0
 @export var joystick_deadzone: float = 0.2
+@export var face_tex_idle: Texture2D
+@export var face_tex_attacking: Texture2D
+@export var face_tex_dead: Texture2D
 
 var targets_in_range: Array[Node2D] = []
 var lives: int = MAX_LIVES
@@ -29,15 +32,12 @@ var is_dead: bool = false
 var revival_progress: float = 0.0
 
 var _sm: StateMachine
-var _face_sprite: Sprite2D
-var _face_tex_idle: Texture2D
-var _face_tex_attacking: Texture2D
-var _face_tex_dead: Texture2D
 
 @onready var range_area: Area2D = $RangeArea
 @onready var range_shape: CollisionShape2D = $RangeArea/CollisionShape2D
 @onready var _lightning: LightningComponent = $LightningComponent
 @onready var _body_sprite: Sprite2D = $Sprite2D
+@onready var _face_sprite: Sprite2D = $FaceSprite
 
 
 func _apply_deadzone(value: float) -> float:
@@ -72,24 +72,15 @@ func _ready() -> void:
 func _load_sprites() -> void:
 	(_body_sprite.material as ShaderMaterial).set_shader_parameter("player_color", team_color)
 
-	_face_tex_idle = load(GameConfig.PLAYER_FACE_IDLE)
-	_face_tex_attacking = load(GameConfig.PLAYER_FACE_ATTACKING)
-	_face_tex_dead = load(GameConfig.PLAYER_FACE_DEAD)
-
-	_face_sprite = Sprite2D.new()
-	_face_sprite.texture = _face_tex_idle
-	_face_sprite.scale = _body_sprite.scale
-	add_child(_face_sprite)
-
 
 func _on_state_changed(_from: int, to: int) -> void:
 	match to:
 		State.IDLE:
-			_face_sprite.texture = _face_tex_idle
+			_face_sprite.texture = face_tex_idle
 		State.ATTACKING:
-			_face_sprite.texture = _face_tex_attacking
+			_face_sprite.texture = face_tex_attacking
 		State.DEAD:
-			_face_sprite.texture = _face_tex_dead
+			_face_sprite.texture = face_tex_dead
 
 
 func _physics_process(delta: float) -> void:
