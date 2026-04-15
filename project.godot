@@ -27,6 +27,10 @@ window/stretch/aspect="expand"
 
 project/assembly_name="Just Metal Shapes"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot_midi/plugin.cfg")
+
 [input]
 
 ui_accept={
