@@ -11,6 +11,8 @@ var viewport_rect: Rect2
 @onready var score_label: Label = $ScoreLabel
 @onready var debug_label: Label = $DebugLabel
 @onready var _spawner: EnemySpawner = $EnemySpawner
+@onready var _midi_player: MidiPlayer = $MidiPlayer
+@onready var _midi_synth: MidiSynth = $MidiSynth
 
 
 func _ready() -> void:
@@ -19,6 +21,16 @@ func _ready() -> void:
 	_spawner.enemy_died.connect(_on_enemy_died)
 	_spawn_players()
 	debug_label.visible = OS.is_debug_build()
+	_midi_player.note.connect(_on_midi_note)
+	_midi_player.play()
+
+
+func _on_midi_note(event: Dictionary, _track: int) -> void:
+	var note: int = event.get("note", 0)
+	if event.get("subtype") == MIDI_MESSAGE_NOTE_ON:
+		_midi_synth.note_on(note)
+	elif event.get("subtype") == MIDI_MESSAGE_NOTE_OFF:
+		_midi_synth.note_off(note)
 
 
 func _process(delta: float) -> void:

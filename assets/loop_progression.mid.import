@@ -1,0 +1,14 @@
+[remap]
+
+importer="com.nlaha.godotmidi"
+type="MidiResource"
+uid="uid://dkm65w0hkacog"
+path="res://.godot/imported/loop_progression.mid-5a3629b07b4f7e464af350b61c528934.res"
+
+[deps]
+
+source_file="res://assets/loop_progression.mid"
+dest_files=["res://.godot/imported/loop_progression.mid-5a3629b07b4f7e464af350b61c528934.res"]
+
+[params]
+

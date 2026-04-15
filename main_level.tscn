@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://bh1e5rgutq38q"]
+[gd_scene load_steps=6 format=3 uid="uid://bh1e5rgutq38q"]
 
 [ext_resource type="Script" path="res://scripts/game_manager.gd" id="1_gm"]
 [ext_resource type="PackedScene" uid="uid://player" path="res://scenes/player.tscn" id="3_player"]
 [ext_resource type="Script" path="res://scripts/enemy_spawner.gd" id="4_spawner"]
+[ext_resource type="MidiResource" path="res://assets/loop_progression.mid" id="5_midi"]
+[ext_resource type="Script" path="res://scripts/midi_synth.gd" id="6_synth"]
 
 [node name="Main Level" type="Node2D" unique_id=886601202]
 script = ExtResource("1_gm")
@@ -16,6 +18,13 @@ text = "Score: 0"
 
 [node name="EnemySpawner" type="Node" parent="."]
 script = ExtResource("4_spawner")
+
+[node name="MidiSynth" type="AudioStreamPlayer" parent="."]
+script = ExtResource("6_synth")
+
+[node name="MidiPlayer" type="MidiPlayer" parent="."]
+midi = ExtResource("5_midi")
+loop = true
 
 [node name="DebugLabel" type="Label" parent="."]
 offset_left = 440.0
