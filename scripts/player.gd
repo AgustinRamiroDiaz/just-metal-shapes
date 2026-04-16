@@ -2,6 +2,7 @@ class_name Player
 extends CharacterBody2D
 
 signal died
+signal hit_enemy
 signal state_changed(from: int, to: int)
 
 enum State { IDLE, ATTACKING, DEAD }
@@ -210,6 +211,7 @@ func _apply_continuous_damage(delta: float) -> void:
 			var damage_amount := damage_per_second * ray_count * delta
 			var did_damage: bool = target.take_damage(damage_amount, team_color)
 			if did_damage:
+				hit_enemy.emit()
 				active_targets[target.get_instance_id()] = {
 					"target": target, "ray_count": ray_count
 				}

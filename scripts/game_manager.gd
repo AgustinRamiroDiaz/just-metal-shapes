@@ -13,6 +13,7 @@ var viewport_rect: Rect2
 @onready var _spawner: EnemySpawner = $EnemySpawner
 @onready var _midi_player: MidiPlayer = $MidiPlayer
 @onready var _midi_synth: MidiSynth = $MidiSynth
+@onready var _music_toggle: Button = $MusicToggle
 
 
 func _ready() -> void:
@@ -23,6 +24,13 @@ func _ready() -> void:
 	debug_label.visible = OS.is_debug_build()
 	_midi_player.note.connect(_on_midi_note)
 	_midi_player.play()
+	_music_toggle.pressed.connect(_on_music_toggle)
+
+
+func _on_music_toggle() -> void:
+	_midi_synth.enabled = not _midi_synth.enabled
+	_midi_synth._active_notes.clear()
+	_music_toggle.text = "Music: ON" if _midi_synth.enabled else "Music: OFF"
 
 
 func _on_midi_note(event: Dictionary, _track: int) -> void:
@@ -82,6 +90,7 @@ func _spawn_players() -> void:
 			p.move_down_action = &"p2_down"
 		add_child(p)
 		p.died.connect(_on_player_died)
+		p.hit_enemy.connect(_midi_synth.play_hit_note)
 
 
 func _on_enemy_died() -> void:

@@ -1,36 +1,45 @@
-[gd_scene load_steps=6 format=3 uid="uid://bh1e5rgutq38q"]
+[gd_scene format=3 uid="uid://bh1e5rgutq38q"]
 
-[ext_resource type="Script" path="res://scripts/game_manager.gd" id="1_gm"]
-[ext_resource type="PackedScene" uid="uid://player" path="res://scenes/player.tscn" id="3_player"]
-[ext_resource type="Script" path="res://scripts/enemy_spawner.gd" id="4_spawner"]
-[ext_resource type="MidiResource" path="res://assets/loop_progression.mid" id="5_midi"]
-[ext_resource type="Script" path="res://scripts/midi_synth.gd" id="6_synth"]
+[ext_resource type="Script" uid="uid://dn8p8mmgu4vjv" path="res://scripts/game_manager.gd" id="1_gm"]
+[ext_resource type="Script" uid="uid://c01t3lcxap01b" path="res://scripts/enemy_spawner.gd" id="4_spawner"]
+[ext_resource type="MidiResource" uid="uid://dkm65w0hkacog" path="res://assets/loop_progression.mid" id="5_midi"]
+[ext_resource type="Script" uid="uid://748o8780cieb" path="res://scripts/midi_synth.gd" id="6_synth"]
 
 [node name="Main Level" type="Node2D" unique_id=886601202]
 script = ExtResource("1_gm")
 
-[node name="ScoreLabel" type="Label" parent="."]
-offset_left = 20.0
-offset_top = 16.0
-offset_right = 200.0
-offset_bottom = 52.0
+[node name="ScoreLabel" type="Label" parent="." unique_id=1901478740]
+offset_left = 26.0
+offset_top = 60.0
+offset_right = 206.0
+offset_bottom = 96.0
 text = "Score: 0"
 
-[node name="EnemySpawner" type="Node" parent="."]
+[node name="EnemySpawner" type="Node" parent="." unique_id=79819931]
 script = ExtResource("4_spawner")
 
-[node name="MidiSynth" type="AudioStreamPlayer" parent="."]
+[node name="MidiSynth" type="AudioStreamPlayer" parent="." unique_id=530299819]
 script = ExtResource("6_synth")
 
-[node name="MidiPlayer" type="MidiPlayer" parent="."]
+[node name="MidiPlayer" type="MidiPlayer" parent="." unique_id=43261310]
 midi = ExtResource("5_midi")
 loop = true
 
-[node name="DebugLabel" type="Label" parent="."]
+[node name="MusicToggle" type="Button" parent="." unique_id=425515642]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = 21.0
+offset_top = 15.0
+offset_right = 129.0
+offset_bottom = 47.0
+grow_horizontal = 0
+text = "Music: OFF"
+
+[node name="DebugLabel" type="Label" parent="." unique_id=1213846277]
 offset_left = 440.0
 offset_top = 16.0
 offset_right = 700.0
 offset_bottom = 400.0
-theme_override_colors/font_color = Color(0.8, 1.0, 0.8, 1.0)
+theme_override_colors/font_color = Color(0.8, 1, 0.8, 1)
 theme_override_font_sizes/font_size = 14
-text = ""
