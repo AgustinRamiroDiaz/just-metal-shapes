@@ -1,3 +1,4 @@
+use crate::game_config::{GameConfig, PlayerConfig};
 use crate::player::Player;
 use crate::spawner::EnemySpawner;
 use godot::classes::{
@@ -156,13 +157,10 @@ impl GameManager {
             return players_cfg;
         }
 
-        let colors = [
-            Color::from_rgb(0.35, 0.75, 1.0),
-            Color::from_rgb(1.0, 0.6, 0.2),
-        ];
+        let colors = GameConfig::get_player_colors();
 
-        let p1 = crate::game_config::PlayerConfig::new_config(0, colors[0]); // Keyboard1
-        let p2 = crate::game_config::PlayerConfig::new_config(1, colors[1]); // Keyboard2
+        let p1 = PlayerConfig::new_config(GameConfig::KEYBOARD1, colors.get(0).unwrap());
+        let p2 = PlayerConfig::new_config(GameConfig::KEYBOARD2, colors.get(1).unwrap());
 
         players_cfg.push(&p1.upcast::<RefCounted>());
         players_cfg.push(&p2.upcast::<RefCounted>());
@@ -192,8 +190,8 @@ impl GameManager {
         input_type: i32,
     ) -> Option<(&'static str, &'static str, &'static str, &'static str)> {
         match input_type {
-            0 => Some(("p1_left", "p1_right", "p1_up", "p1_down")),
-            1 => Some(("p2_left", "p2_right", "p2_up", "p2_down")),
+            GameConfig::KEYBOARD1 => Some(("p1_left", "p1_right", "p1_up", "p1_down")),
+            GameConfig::KEYBOARD2 => Some(("p2_left", "p2_right", "p2_up", "p2_down")),
             _ => None,
         }
     }
