@@ -29,17 +29,13 @@ impl GameManager {
 
     #[func]
     fn _on_player_died(&mut self) {
-        let mut alive_count = 0;
         let tree = self.base().get_tree();
-        for node in tree.get_nodes_in_group("players").iter_shared() {
-            if let Ok(p) = node.try_cast::<Player>()
-                && !p.bind().is_dead
-            {
-                alive_count += 1;
-            }
-        }
+        let has_alive_player = tree
+            .get_nodes_in_group("players")
+            .iter_shared()
+            .any(|node| node.try_cast::<Player>().is_ok_and(|p| !p.bind().is_dead));
 
-        if alive_count == 0 {
+        if !has_alive_player {
             self.game_over();
         }
     }
