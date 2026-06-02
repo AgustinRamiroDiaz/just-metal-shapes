@@ -11,7 +11,7 @@ repos:
         language_version: python3
         require_serial: true
         types: [gdscript]
-        exclude: ^addons/
+        exclude: ^godot/addons/
       - id: gdformat
         name: gdformat
         description: "gdformat - formatter for GDScript"
@@ -20,4 +20,4 @@ repos:
         language_version: python3
         require_serial: true
         types: [gdscript]
-        exclude: ^addons/
+        exclude: ^godot/addons/
