@@ -121,43 +121,8 @@ impl GameManager {
     }
 
     fn spawn_players(&mut self) {
-        let game_config_node = self.base().get_node_or_null("/root/GameConfig");
-        let mut players_cfg = Array::<Gd<RefCounted>>::new();
-
-        if let Some(game_config) = game_config_node.clone()
-            && let Ok(p) = game_config.get("players").try_to::<Array<Gd<RefCounted>>>()
-        {
-            players_cfg = p;
-        }
-
-        if players_cfg.is_empty() {
-            let colors = [
-                Color::from_rgb(0.35, 0.75, 1.0),
-                Color::from_rgb(1.0, 0.6, 0.2),
-            ];
-
-            let p1 = crate::game_config::PlayerConfig::new_config(0, colors[0]); // Keyboard1
-            let p2 = crate::game_config::PlayerConfig::new_config(1, colors[1]); // Keyboard2
-
-            players_cfg.push(&p1.upcast::<RefCounted>());
-            players_cfg.push(&p2.upcast::<RefCounted>());
-
-            if let Some(mut game_config) = game_config_node {
-                game_config.set("players", &players_cfg.to_variant());
-            }
-        }
-
-        let r = self.viewport_rect;
-        let spawn_positions = [
-            r.position + r.size * Vector2::new(0.333, 0.390),
-            r.position + r.size * Vector2::new(0.333, 0.612),
-            r.position + r.size * Vector2::new(0.667, 0.390),
-            r.position + r.size * Vector2::new(0.667, 0.612),
-            r.position + r.size * Vector2::new(0.500, 0.260),
-            r.position + r.size * Vector2::new(0.500, 0.703),
-            r.position + r.size * Vector2::new(0.167, 0.502),
-            r.position + r.size * Vector2::new(0.833, 0.502),
-        ];
+        let players_cfg = self.player_configs_or_default();
+        let spawn_positions = self.spawn_positions();
 
         let mut spawn_index = 0;
         for cfg in players_cfg.iter_shared() {
@@ -210,6 +175,52 @@ impl GameManager {
                 p.connect("died", &manager_gd.callable("_on_player_died"));
             }
         }
+    }
+
+    fn player_configs_or_default(&self) -> Array<Gd<RefCounted>> {
+        let game_config_node = self.base().get_node_or_null("/root/GameConfig");
+        let mut players_cfg = Array::<Gd<RefCounted>>::new();
+
+        if let Some(game_config) = game_config_node.clone()
+            && let Ok(p) = game_config.get("players").try_to::<Array<Gd<RefCounted>>>()
+        {
+            players_cfg = p;
+        }
+
+        if !players_cfg.is_empty() {
+            return players_cfg;
+        }
+
+        let colors = [
+            Color::from_rgb(0.35, 0.75, 1.0),
+            Color::from_rgb(1.0, 0.6, 0.2),
+        ];
+
+        let p1 = crate::game_config::PlayerConfig::new_config(0, colors[0]); // Keyboard1
+        let p2 = crate::game_config::PlayerConfig::new_config(1, colors[1]); // Keyboard2
+
+        players_cfg.push(&p1.upcast::<RefCounted>());
+        players_cfg.push(&p2.upcast::<RefCounted>());
+
+        if let Some(mut game_config) = game_config_node {
+            game_config.set("players", &players_cfg.to_variant());
+        }
+
+        players_cfg
+    }
+
+    fn spawn_positions(&self) -> [Vector2; 8] {
+        let r = self.viewport_rect;
+        [
+            r.position + r.size * Vector2::new(0.333, 0.390),
+            r.position + r.size * Vector2::new(0.333, 0.612),
+            r.position + r.size * Vector2::new(0.667, 0.390),
+            r.position + r.size * Vector2::new(0.667, 0.612),
+            r.position + r.size * Vector2::new(0.500, 0.260),
+            r.position + r.size * Vector2::new(0.500, 0.703),
+            r.position + r.size * Vector2::new(0.167, 0.502),
+            r.position + r.size * Vector2::new(0.833, 0.502),
+        ]
     }
 
     fn update_ui(&mut self) {
