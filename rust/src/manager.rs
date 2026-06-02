@@ -137,36 +137,8 @@ impl GameManager {
                 p.set("team_color", &color.to_variant());
                 p.set("input_type", &input_type.to_variant());
 
-                if input_type == 0 {
-                    // Keyboard1
-                    p.set(
-                        "move_left_action",
-                        &StringName::from("p1_left").to_variant(),
-                    );
-                    p.set(
-                        "move_right_action",
-                        &StringName::from("p1_right").to_variant(),
-                    );
-                    p.set("move_up_action", &StringName::from("p1_up").to_variant());
-                    p.set(
-                        "move_down_action",
-                        &StringName::from("p1_down").to_variant(),
-                    );
-                } else if input_type == 1 {
-                    // Keyboard2
-                    p.set(
-                        "move_left_action",
-                        &StringName::from("p2_left").to_variant(),
-                    );
-                    p.set(
-                        "move_right_action",
-                        &StringName::from("p2_right").to_variant(),
-                    );
-                    p.set("move_up_action", &StringName::from("p2_up").to_variant());
-                    p.set(
-                        "move_down_action",
-                        &StringName::from("p2_down").to_variant(),
-                    );
+                if let Some(actions) = Self::keyboard_actions(input_type) {
+                    Self::set_keyboard_actions(&mut p, actions);
                 }
 
                 self.base_mut().add_child(&p);
@@ -221,6 +193,24 @@ impl GameManager {
             r.position + r.size * Vector2::new(0.167, 0.502),
             r.position + r.size * Vector2::new(0.833, 0.502),
         ]
+    }
+
+    fn keyboard_actions(
+        input_type: i32,
+    ) -> Option<(&'static str, &'static str, &'static str, &'static str)> {
+        match input_type {
+            0 => Some(("p1_left", "p1_right", "p1_up", "p1_down")),
+            1 => Some(("p2_left", "p2_right", "p2_up", "p2_down")),
+            _ => None,
+        }
+    }
+
+    fn set_keyboard_actions(player: &mut Gd<CharacterBody2D>, actions: (&str, &str, &str, &str)) {
+        let (left, right, up, down) = actions;
+        player.set("move_left_action", &StringName::from(left).to_variant());
+        player.set("move_right_action", &StringName::from(right).to_variant());
+        player.set("move_up_action", &StringName::from(up).to_variant());
+        player.set("move_down_action", &StringName::from(down).to_variant());
     }
 
     fn update_ui(&mut self) {
