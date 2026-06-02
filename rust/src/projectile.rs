@@ -1,6 +1,5 @@
 use godot::classes::{
-    Area2D, CircleShape2D, CollisionShape2D, IArea2D, Node2D, Timer,
-    VisibleOnScreenNotifier2D,
+    Area2D, CircleShape2D, CollisionShape2D, IArea2D, Node2D, Timer, VisibleOnScreenNotifier2D,
 };
 use godot::prelude::*;
 
@@ -40,12 +39,12 @@ impl IArea2D for Projectile {
             .connect_other(&projectile, Self::on_body_entered);
 
         let notifier = VisibleOnScreenNotifier2D::new_alloc();
-        notifier
-            .signals()
-            .screen_exited()
-            .connect_other(&projectile, |projectile: &mut Projectile| {
+        notifier.signals().screen_exited().connect_other(
+            &projectile,
+            |projectile: &mut Projectile| {
                 projectile.base_mut().queue_free();
-            });
+            },
+        );
         self.base_mut().add_child(&notifier);
 
         let mut timer = Timer::new_alloc();
@@ -91,7 +90,9 @@ impl IArea2D for Projectile {
 
 impl Projectile {
     fn collision_radius(&self) -> f32 {
-        let shape_node = self.base().get_node_as::<CollisionShape2D>("CollisionShape2D");
+        let shape_node = self
+            .base()
+            .get_node_as::<CollisionShape2D>("CollisionShape2D");
         let Some(shape) = shape_node.get_shape() else {
             return self.radius;
         };
