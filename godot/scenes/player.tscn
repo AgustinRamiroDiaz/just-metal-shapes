@@ -1,9 +1,6 @@
 [gd_scene format=3 uid="uid://player"]
 
-[ext_resource type="Script" uid="uid://btkqdvaijbr61" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Texture2D" uid="uid://c3bux1nx54wl5" path="res://assets/kenney_shape-characters/PNG/Default/blue_body_squircle.png" id="2_body"]
-[ext_resource type="Script" uid="uid://bh6af2rsr1xxr" path="res://scripts/player/revival_component.gd" id="2_revival"]
-[ext_resource type="Script" uid="uid://cvsqifpygog1o" path="res://scripts/player/lightning_component.gd" id="3_lightning"]
 [ext_resource type="Shader" uid="uid://ccuxjshnb3dht" path="res://shaders/player_color.gdshader" id="4_shader"]
 [ext_resource type="Texture2D" uid="uid://bhnisht3o3jpd" path="res://assets/kenney_shape-characters/PNG/Default/face_f.png" id="5_face_idle"]
 [ext_resource type="Texture2D" uid="uid://57jotb1siyyj" path="res://assets/kenney_shape-characters/PNG/Default/face_g.png" id="6_face_attacking"]
@@ -20,8 +17,7 @@ size = Vector2(22, 22)
 [sub_resource type="CircleShape2D" id="CircleShape2D_range"]
 radius = 140.0
 
-[node name="Player" type="CharacterBody2D" unique_id=743564121]
-script = ExtResource("1_player")
+[node name="Player" type="Player" unique_id=743564121]
 face_tex_idle = ExtResource("5_face_idle")
 face_tex_attacking = ExtResource("6_face_attacking")
 face_tex_dead = ExtResource("7_face_dead")
@@ -40,11 +36,9 @@ texture = ExtResource("5_face_idle")
 position = Vector2(-4.7683716e-07, 4.7683716e-07)
 shape = SubResource("RectangleShape2D_player")
 
-[node name="RevivalComponent" type="Node" parent="." unique_id=-457676251]
-script = ExtResource("2_revival")
+[node name="RevivalComponent" type="RevivalComponent" parent="." unique_id=-457676251]
 
-[node name="LightningComponent" type="Node" parent="." unique_id=345842022]
-script = ExtResource("3_lightning")
+[node name="LightningComponent" type="LightningComponent" parent="." unique_id=345842022]
 
 [node name="RangeArea" type="Area2D" parent="." unique_id=1917969162]
 collision_mask = 2

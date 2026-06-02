@@ -105,7 +105,7 @@ impl Projectile {
 
     fn on_body_entered(&mut self, mut body: Gd<Node2D>) {
         if body.has_method("take_damage") {
-            body.call("take_damage", &[1i64.to_variant()]);
+            body.call("take_damage", &[1.0f32.to_variant()]);
         }
 
         self.base_mut().queue_free();

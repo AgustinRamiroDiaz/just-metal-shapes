@@ -1,10 +1,6 @@
 [gd_scene format=3 uid="uid://bh1e5rgutq38q"]
 
-[ext_resource type="Script" uid="uid://dn8p8mmgu4vjv" path="res://scripts/game_manager.gd" id="1_gm"]
-[ext_resource type="Script" uid="uid://c01t3lcxap01b" path="res://scripts/enemy_spawner.gd" id="4_spawner"]
-
-[node name="Main Level" type="Node2D" unique_id=886601202]
-script = ExtResource("1_gm")
+[node name="Main Level" type="GameManager" unique_id=886601202]
 
 [node name="ScoreLabel" type="Label" parent="." unique_id=1901478740]
 offset_left = 26.0
@@ -13,8 +9,7 @@ offset_right = 206.0
 offset_bottom = 96.0
 text = "Score: 0"
 
-[node name="EnemySpawner" type="Node" parent="." unique_id=79819931]
-script = ExtResource("4_spawner")
+[node name="EnemySpawner" type="EnemySpawner" parent="." unique_id=79819931]
 
 [node name="DebugLabel" type="Label" parent="." unique_id=1213846277]
 offset_left = 440.0

@@ -1,6 +1,5 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://scripts/spawn_effect.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/kenney-particles/dirt_03.png" id="2_texture"]
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_1"]
@@ -17,8 +16,7 @@ scale_over_velocity_min = 0.0
 color = Color(1, 1, 1, 1)
 color_ramp = null
 
-[node name="SpawnEffect" type="GPUParticles2D"]
-script = ExtResource("1_script")
+[node name="SpawnEffect" type="SpawnEffect"]
 amount = 16
 process_material = SubResource("ParticleProcessMaterial_1")
 texture = ExtResource("2_texture")
