@@ -28,10 +28,30 @@ jobs:
           use-dotnet: false
           include-templates: true
 
+      - name: Setup Rust nightly for Web
+        run: |
+          rustup toolchain install nightly
+          rustup component add rust-src --toolchain nightly
+          rustup target add wasm32-unknown-emscripten --toolchain nightly
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: "3.1.74"
+
+      - name: Build Rust GDExtension for Web
+        run: |
+          cd rust
+          GDRUST_GODOT_BIN=godot cargo +nightly build \
+            --release \
+            --features nothreads \
+            -Zbuild-std \
+            --target wasm32-unknown-emscripten
+
       - name: Build Web export
         run: |
           mkdir -p build/web
-          godot --headless --path . --export-release "Web" build/web/index.html
+          godot --headless --path godot --export-release "Web" ../build/web/index.html
           touch build/web/.nojekyll
 
       - name: Upload GitHub Pages artifact
