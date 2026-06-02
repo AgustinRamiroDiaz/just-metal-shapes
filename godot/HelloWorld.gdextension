@@ -4,11 +4,11 @@ compatibility_minimum = 4.1
 reloadable = true
 
 [libraries]
-linux.debug.x86_64 =     "res://../rust/target/debug/lib{YourCrate}.so"
-linux.release.x86_64 =   "res://../rust/target/release/lib{YourCrate}.so"
-windows.debug.x86_64 =   "res://../rust/target/debug/{YourCrate}.dll"
-windows.release.x86_64 = "res://../rust/target/release/{YourCrate}.dll"
-macos.debug =            "res://../rust/target/debug/lib{YourCrate}.dylib"
-macos.release =          "res://../rust/target/release/lib{YourCrate}.dylib"
-macos.debug.arm64 =      "res://../rust/target/debug/lib{YourCrate}.dylib"
-macos.release.arm64 =    "res://../rust/target/release/lib{YourCrate}.dylib"
+linux.debug.x86_64 =     "res://../rust/target/debug/librust.so"
+linux.release.x86_64 =   "res://../rust/target/release/librust.so"
+windows.debug.x86_64 =   "res://../rust/target/debug/rust.dll"
+windows.release.x86_64 = "res://../rust/target/release/rust.dll"
+macos.debug =            "res://../rust/target/debug/librust.dylib"
+macos.release =          "res://../rust/target/release/librust.dylib"
+macos.debug.arm64 =      "res://../rust/target/debug/librust.dylib"
+macos.release.arm64 =    "res://../rust/target/release/librust.dylib"
