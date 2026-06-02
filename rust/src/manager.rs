@@ -68,56 +68,53 @@ impl GameManager {
         vbox.set_alignment(godot::classes::box_container::AlignmentMode::CENTER);
         center.add_child(&vbox);
 
-        let mut title = Label::new_alloc();
-        title.set_text("GAME OVER");
-        title.add_theme_color_override("font_color", Color::from_rgba(1.0, 0.2, 0.2, 1.0));
-        title.add_theme_font_size_override("font_size", 64);
-        title.set_horizontal_alignment(godot::global::HorizontalAlignment::CENTER);
+        let title =
+            Self::game_over_label("GAME OVER", 64, Some(Color::from_rgba(1.0, 0.2, 0.2, 1.0)));
         vbox.add_child(&title);
 
-        let mut score_lbl = Label::new_alloc();
-        score_lbl.set_text(&format!("Score: {}", self.score));
-        score_lbl.add_theme_font_size_override("font_size", 32);
-        score_lbl.set_horizontal_alignment(godot::global::HorizontalAlignment::CENTER);
+        let score_lbl = Self::game_over_label(&format!("Score: {}", self.score), 32, None);
         vbox.add_child(&score_lbl);
 
         let mut spacer = Control::new_alloc();
         spacer.set_custom_minimum_size(Vector2::new(0.0, 32.0));
         vbox.add_child(&spacer);
 
-        let mut restart_btn = Button::new_alloc();
-        restart_btn.set_text("Restart");
-        restart_btn.add_theme_font_size_override("font_size", 24);
-        restart_btn.connect(
-            "pressed",
-            &Callable::from_fn("on_restart", |_args| {
-                let mut tree = godot::classes::Engine::singleton()
-                    .get_main_loop()
-                    .and_then(|l| l.try_cast::<SceneTree>().ok())
-                    .unwrap();
-                tree.change_scene_to_file("res://main_level.tscn");
-                Variant::nil()
-            }),
-        );
+        let mut restart_btn = Self::scene_button("Restart", "on_restart", "res://main_level.tscn");
         vbox.add_child(&restart_btn);
 
-        let mut menu_btn = Button::new_alloc();
-        menu_btn.set_text("Main Menu");
-        menu_btn.add_theme_font_size_override("font_size", 24);
-        menu_btn.connect(
-            "pressed",
-            &Callable::from_fn("on_menu", |_args| {
-                let mut tree = godot::classes::Engine::singleton()
-                    .get_main_loop()
-                    .and_then(|l| l.try_cast::<SceneTree>().ok())
-                    .unwrap();
-                tree.change_scene_to_file("res://scenes/main_menu.tscn");
-                Variant::nil()
-            }),
-        );
+        let menu_btn = Self::scene_button("Main Menu", "on_menu", "res://scenes/main_menu.tscn");
         vbox.add_child(&menu_btn);
 
         restart_btn.call_deferred("grab_focus", &[]);
+    }
+
+    fn game_over_label(text: &str, font_size: i32, font_color: Option<Color>) -> Gd<Label> {
+        let mut label = Label::new_alloc();
+        label.set_text(text);
+        label.add_theme_font_size_override("font_size", font_size);
+        label.set_horizontal_alignment(godot::global::HorizontalAlignment::CENTER);
+        if let Some(color) = font_color {
+            label.add_theme_color_override("font_color", color);
+        }
+        label
+    }
+
+    fn scene_button(
+        text: &str,
+        callback_name: &'static str,
+        scene_path: &'static str,
+    ) -> Gd<Button> {
+        let mut button = Button::new_alloc();
+        button.set_text(text);
+        button.add_theme_font_size_override("font_size", 24);
+        button.connect(
+            "pressed",
+            &Callable::from_fn(callback_name, move |_args| {
+                change_scene_to_file(scene_path);
+                Variant::nil()
+            }),
+        );
+        button
     }
 
     fn spawn_players(&mut self) {
@@ -271,4 +268,12 @@ impl INode2D for GameManager {
         spawner.bind_mut().update_difficulty(self.game_time);
         self.update_ui();
     }
+}
+
+fn change_scene_to_file(scene_path: &str) {
+    let mut tree = godot::classes::Engine::singleton()
+        .get_main_loop()
+        .and_then(|l| l.try_cast::<SceneTree>().ok())
+        .unwrap();
+    tree.change_scene_to_file(scene_path);
 }
