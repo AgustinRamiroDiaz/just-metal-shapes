@@ -217,15 +217,13 @@ impl GameManager {
         let mut debug_label = self.base().get_node_as::<Label>("DebugLabel");
         let spawner = self.base().get_node_as::<EnemySpawner>("EnemySpawner");
 
-        let mut lines = Vec::new();
-        lines.push("─── DEBUG ───".to_string());
-        lines.push(format!("time:       {:>6.1}s", self.game_time));
-        lines.push(format!(
-            "difficulty: {:>6.2}",
-            spawner.bind().difficulty_factor
-        ));
-        lines.push("".to_string());
-        lines.push("spawn intervals:".to_string());
+        let lines = [
+            "─── DEBUG ───".to_string(),
+            format!("time:       {:>6.1}s", self.game_time),
+            format!("difficulty: {:>6.2}", spawner.bind().difficulty_factor),
+            String::new(),
+            "spawn intervals:".to_string(),
+        ];
 
         debug_label.set_text(&lines.join("\n"));
     }
