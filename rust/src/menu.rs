@@ -4,6 +4,7 @@ use godot::classes::{
     InputEventJoypadMotion, InputEventKey, Label, VBoxContainer,
 };
 use godot::prelude::*;
+use std::collections::HashMap;
 
 #[derive(GodotClass)]
 #[class(init, base = RefCounted)]
@@ -24,21 +25,20 @@ pub struct DeviceSlot {
 
 #[godot_api]
 impl DeviceSlot {
-    #[func]
-    pub fn get_input_types(&self) -> Array<i32> {
-        let mut result = Array::new();
+    pub fn input_types(&self) -> Vec<i32> {
+        let mut result = Vec::new();
         if self.is_keyboard {
             if self.split {
-                result.push(0); // Keyboard1
-                result.push(1); // Keyboard2
+                result.push(GameConfig::KEYBOARD1);
+                result.push(GameConfig::KEYBOARD2);
             } else {
-                result.push(0); // Keyboard1
+                result.push(GameConfig::KEYBOARD1);
             }
             return result;
         }
 
-        let left = 2 + self.device_index; // GamepadLeft0 + device_index
-        let right = 10 + self.device_index; // GamepadRight0 + device_index
+        let left = GameConfig::GAMEPAD_LEFT_0 + self.device_index;
+        let right = GameConfig::GAMEPAD_RIGHT_0 + self.device_index;
         if self.split {
             result.push(left);
             result.push(right);
@@ -49,13 +49,18 @@ impl DeviceSlot {
     }
 }
 
+struct DeviceRow {
+    dots: Gd<HBoxContainer>,
+    status: Gd<Label>,
+}
+
 #[derive(GodotClass)]
 #[class(init, base = Control)]
 pub struct MainMenu {
     device_slots: Vec<Gd<DeviceSlot>>,
-    device_rows: Vec<Dictionary<Variant, Variant>>, // {dots: Gd<HBoxContainer>, status: Gd<Label>}
-    hold_timers: Dictionary<i32, f32>,              // slot_idx (i32) -> f32
-    last_stick_dir: Dictionary<i32, i32>,           // device_index (i32) -> i32 (-1, 0, 1)
+    device_rows: Vec<DeviceRow>,
+    hold_timers: HashMap<i32, f32>,
+    last_stick_dir: HashMap<i32, i32>,
 
     base: Base<Control>,
 }
@@ -132,10 +137,10 @@ impl MainMenu {
             row.add_child(&status_lbl);
             device_list.add_child(&row);
 
-            let mut row_dict = Dictionary::new();
-            let _ = row_dict.insert("dots", &dots_box.to_variant());
-            let _ = row_dict.insert("status", &status_lbl.to_variant());
-            self.device_rows.push(row_dict);
+            self.device_rows.push(DeviceRow {
+                dots: dots_box,
+                status: status_lbl,
+            });
         }
 
         self.refresh();
@@ -155,12 +160,8 @@ impl MainMenu {
         for i in 0..self.device_slots.len() {
             let slot = self.device_slots[i].clone();
             let row = &self.device_rows[i];
-            let mut dots_box = row
-                .get("dots")
-                .unwrap()
-                .try_to::<Gd<HBoxContainer>>()
-                .unwrap();
-            let mut status_lbl = row.get("status").unwrap().try_to::<Gd<Label>>().unwrap();
+            let mut dots_box = row.dots.clone();
+            let mut status_lbl = row.status.clone();
 
             for mut child in dots_box.get_children().iter_shared() {
                 child.queue_free();
@@ -176,8 +177,7 @@ impl MainMenu {
                 }
             }
 
-            if self.hold_timers.contains_key(i as i32) {
-                let hold_time = self.hold_timers.get(i as i32).unwrap();
+            if let Some(hold_time) = self.hold_timers.get(&(i as i32)) {
                 let progress = (hold_time / HOLD_TIME).min(1.0);
                 let filled = (progress * 8.0).round() as usize;
                 let text = format!("{}{}", "█".repeat(filled), "░".repeat(8 - filled));
@@ -213,7 +213,7 @@ impl MainMenu {
             if !slot.bind().joined {
                 continue;
             }
-            let types = slot.bind().get_input_types();
+            let types = slot.bind().input_types();
             if i as i32 == slot_idx {
                 let mut result = Vec::new();
                 for _ in 0..types.len() {
@@ -231,7 +231,7 @@ impl MainMenu {
     }
 
     fn start_game(&mut self) {
-        let mut players_cfg = Array::<Gd<RefCounted>>::new();
+        let mut players_cfg = Array::<Gd<PlayerConfig>>::new();
         let mut color_index = 0;
         let player_colors = GameConfig::get_player_colors();
 
@@ -239,12 +239,12 @@ impl MainMenu {
             if !slot.bind().joined {
                 continue;
             }
-            for input_type in slot.bind().get_input_types().iter_shared() {
+            for input_type in slot.bind().input_types() {
                 let color = player_colors
                     .get(color_index % player_colors.len())
                     .unwrap();
                 let cfg = PlayerConfig::new_config(input_type, color);
-                players_cfg.push(&cfg.upcast::<RefCounted>());
+                players_cfg.push(&cfg);
                 color_index += 1;
             }
         }
@@ -266,16 +266,16 @@ impl MainMenu {
             slot.bind_mut().joined = true;
             self.refresh();
         } else {
-            let _ = self.hold_timers.insert(slot_idx, 0.0);
+            self.hold_timers.insert(slot_idx, 0.0);
         }
     }
 
     fn handle_join_up(&mut self, slot_idx: i32) {
-        if slot_idx == -1 || !self.hold_timers.contains_key(slot_idx) {
+        if slot_idx == -1 || !self.hold_timers.contains_key(&slot_idx) {
             return;
         }
-        let held = self.hold_timers.get(slot_idx).unwrap();
-        self.hold_timers.remove(slot_idx);
+        let held = self.hold_timers.get(&slot_idx).copied().unwrap();
+        self.hold_timers.remove(&slot_idx);
         if held < HOLD_TIME {
             let mut slot = self.device_slots[slot_idx as usize].clone();
             slot.bind_mut().joined = false;
@@ -320,7 +320,7 @@ impl MainMenu {
 impl IControl for MainMenu {
     fn ready(&mut self) {
         if let Some(mut game_config) = self.base().get_node_or_null("/root/GameConfig") {
-            game_config.set("players", &Array::<Gd<RefCounted>>::new().to_variant());
+            game_config.set("players", &Array::<Gd<PlayerConfig>>::new().to_variant());
         }
 
         let mut input = Input::singleton();
@@ -338,18 +338,11 @@ impl IControl for MainMenu {
             return;
         }
         let mut should_start = false;
-        let mut to_update = Vec::new();
-        for key in self.hold_timers.keys_array().iter_shared() {
-            let mut timer = self.hold_timers.get(key).unwrap();
-            timer += delta as f32;
-            to_update.push((key, timer));
-            if timer >= HOLD_TIME {
+        for timer in self.hold_timers.values_mut() {
+            *timer += delta as f32;
+            if *timer >= HOLD_TIME {
                 should_start = true;
             }
-        }
-
-        for (idx, timer) in to_update {
-            let _ = self.hold_timers.insert(idx, timer);
         }
 
         self.refresh();
@@ -425,7 +418,8 @@ impl IControl for MainMenu {
 
             let prev_dir = self
                 .last_stick_dir
-                .get(joy_motion.get_device())
+                .get(&joy_motion.get_device())
+                .copied()
                 .unwrap_or(0);
             let axis_value = joy_motion.get_axis_value();
             let new_dir = if axis_value > STICK_THRESHOLD {
@@ -439,7 +433,7 @@ impl IControl for MainMenu {
             };
 
             if new_dir != prev_dir {
-                let _ = self.last_stick_dir.insert(joy_motion.get_device(), new_dir);
+                self.last_stick_dir.insert(joy_motion.get_device(), new_dir);
                 if new_dir == 1 {
                     self.set_split(idx, true);
                 } else if new_dir == -1 {

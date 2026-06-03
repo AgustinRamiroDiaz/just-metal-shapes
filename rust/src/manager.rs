@@ -125,8 +125,9 @@ impl GameManager {
                 p.set_position(spawn_positions[spawn_index % spawn_positions.len()]);
                 spawn_index += 1;
 
-                let color = cfg.get("color").try_to::<Color>().unwrap_or(Color::WHITE);
-                let input_type = cfg.get("input_type").try_to::<i32>().unwrap_or(0);
+                let cfg = cfg.bind();
+                let color = cfg.color;
+                let input_type = cfg.input_type;
 
                 p.set("team_color", &color.to_variant());
                 p.set("input_type", &input_type.to_variant());
@@ -143,12 +144,14 @@ impl GameManager {
         }
     }
 
-    fn player_configs_or_default(&self) -> Array<Gd<RefCounted>> {
+    fn player_configs_or_default(&self) -> Array<Gd<PlayerConfig>> {
         let game_config_node = self.base().get_node_or_null("/root/GameConfig");
-        let mut players_cfg = Array::<Gd<RefCounted>>::new();
+        let mut players_cfg = Array::<Gd<PlayerConfig>>::new();
 
         if let Some(game_config) = game_config_node.clone()
-            && let Ok(p) = game_config.get("players").try_to::<Array<Gd<RefCounted>>>()
+            && let Ok(p) = game_config
+                .get("players")
+                .try_to::<Array<Gd<PlayerConfig>>>()
         {
             players_cfg = p;
         }
@@ -162,8 +165,8 @@ impl GameManager {
         let p1 = PlayerConfig::new_config(GameConfig::KEYBOARD1, colors.get(0).unwrap());
         let p2 = PlayerConfig::new_config(GameConfig::KEYBOARD2, colors.get(1).unwrap());
 
-        players_cfg.push(&p1.upcast::<RefCounted>());
-        players_cfg.push(&p2.upcast::<RefCounted>());
+        players_cfg.push(&p1);
+        players_cfg.push(&p2);
 
         if let Some(mut game_config) = game_config_node {
             game_config.set("players", &players_cfg.to_variant());

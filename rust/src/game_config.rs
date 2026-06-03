@@ -51,7 +51,7 @@ impl PlayerConfig {
 #[class(init, base = Node)]
 pub struct GameConfig {
     #[var]
-    pub players: Array<Gd<RefCounted>>,
+    pub players: Array<Gd<PlayerConfig>>,
 
     base: Base<Node>,
 }

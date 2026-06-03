@@ -1,3 +1,4 @@
+use crate::game_config::PlayerConfig;
 use godot::classes::{GpuParticles2D, INode, Node, Node2D, PackedScene, ResourceLoader};
 use godot::global::randf;
 use godot::prelude::*;
@@ -118,7 +119,9 @@ impl EnemySpawner {
 
     fn get_player_count(&self) -> i32 {
         if let Some(game_config) = self.base().get_node_or_null("/root/GameConfig")
-            && let Ok(players) = game_config.get("players").try_to::<Array<Variant>>()
+            && let Ok(players) = game_config
+                .get("players")
+                .try_to::<Array<Gd<PlayerConfig>>>()
         {
             return players.len() as i32;
         }

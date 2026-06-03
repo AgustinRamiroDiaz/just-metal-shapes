@@ -4,6 +4,7 @@ use godot::classes::{
     Line2D, Node, Node2D, ResourceLoader, ShaderMaterial, Sprite2D, Texture2D,
 };
 use godot::prelude::*;
+use std::collections::HashMap;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum PlayerState {
@@ -231,7 +232,7 @@ impl Player {
             return;
         }
 
-        let mut active_targets = Dictionary::<Variant, Variant>::new(); // target instance ID -> target info
+        let mut active_targets = HashMap::new();
         let mut did_hit_any = false;
 
         let targets = self.targets_in_range.clone();
@@ -249,12 +250,9 @@ impl Player {
             );
             if result.try_to::<bool>().unwrap_or(false) {
                 did_hit_any = true;
-                let mut info = Dictionary::<Variant, Variant>::new();
-                let _ = info.insert("target", &target.to_variant());
-                let _ = info.insert("ray_count", &ray_count.to_variant());
-                let _ = active_targets.insert(
-                    &target.instance_id().to_i64().to_variant(),
-                    &info.to_variant(),
+                active_targets.insert(
+                    target.instance_id().to_i64(),
+                    LightningTarget { target, ray_count },
                 );
             }
         }
@@ -268,7 +266,7 @@ impl Player {
             .get_node_as::<LightningComponent>("LightningComponent");
         lightning
             .bind_mut()
-            .update(delta as f32, active_targets.clone(), self.team_color);
+            .update(delta as f32, &active_targets, self.team_color);
 
         if active_targets.is_empty() {
             self.transition_state(PlayerState::Idle as i32);
@@ -443,10 +441,15 @@ impl ICharacterBody2D for Player {
 #[class(init, base = Node)]
 pub struct LightningComponent {
     textures: Vec<Gd<Texture2D>>,
-    lines: Dictionary<i64, Variant>, // Variant is Array<Gd<Line2D>>
+    lines: HashMap<i64, Vec<Gd<Line2D>>>,
     frame_timer: f32,
     frame_index: usize,
     base: Base<Node>,
+}
+
+struct LightningTarget {
+    target: Gd<Node2D>,
+    ray_count: i32,
 }
 
 const LIGHTNING_FPS: f32 = 12.0;
@@ -455,38 +458,30 @@ const RAY_SPACING: f32 = 10.0;
 
 #[godot_api]
 impl LightningComponent {
-    #[func]
-    pub fn update(
+    fn update(
         &mut self,
         delta: f32,
-        active_targets: Dictionary<Variant, Variant>,
+        active_targets: &HashMap<i64, LightningTarget>,
         team_color: Color,
     ) {
         self.cycle_frame(delta);
         self.sync_lines(active_targets, team_color);
     }
 
-    #[func]
-    pub fn clear(&mut self) {
-        for val in self.lines.values_array().iter_shared() {
-            if let Ok(arr) = val.try_to::<Array<Gd<Line2D>>>() {
-                for mut line in arr.iter_shared() {
-                    line.queue_free();
-                }
+    fn clear(&mut self) {
+        for lines in self.lines.values_mut() {
+            for line in lines {
+                line.queue_free();
             }
         }
         self.lines.clear();
     }
 
-    #[func]
-    pub fn remove_target(&mut self, target_id: i64) {
-        if let Some(val) = self.lines.get(target_id) {
-            if let Ok(arr) = val.try_to::<Array<Gd<Line2D>>>() {
-                for mut line in arr.iter_shared() {
-                    line.queue_free();
-                }
+    fn remove_target(&mut self, target_id: i64) {
+        if let Some(lines) = self.lines.remove(&target_id) {
+            for mut line in lines {
+                line.queue_free();
             }
-            self.lines.remove(target_id);
         }
     }
 
@@ -499,17 +494,15 @@ impl LightningComponent {
             self.frame_timer -= 1.0 / LIGHTNING_FPS;
             self.frame_index = (self.frame_index + 1) % self.textures.len();
             let tex = self.textures[self.frame_index].clone();
-            for val in self.lines.values_array().iter_shared() {
-                if let Ok(arr) = val.try_to::<Array<Gd<Line2D>>>() {
-                    for mut line in arr.iter_shared() {
-                        line.set_texture(&tex);
-                    }
+            for lines in self.lines.values_mut() {
+                for line in lines {
+                    line.set_texture(&tex);
                 }
             }
         }
     }
 
-    fn sync_lines(&mut self, active_targets: Dictionary<Variant, Variant>, team_color: Color) {
+    fn sync_lines(&mut self, active_targets: &HashMap<i64, LightningTarget>, team_color: Color) {
         let Some(mut parent) = self
             .base()
             .get_parent()
@@ -519,47 +512,21 @@ impl LightningComponent {
         };
 
         // Remove lines for targets no longer active
-        let mut to_remove = Vec::new();
-        for key in self.lines.keys_array().iter_shared() {
-            if !active_targets.contains_key(&key.to_variant()) {
-                to_remove.push(key);
-            }
-        }
+        let to_remove: Vec<_> = self
+            .lines
+            .keys()
+            .copied()
+            .filter(|id| !active_targets.contains_key(id))
+            .collect();
         for id in to_remove {
             self.remove_target(id);
         }
 
         // Update or create lines for active targets
-        for key in active_targets.keys_array().iter_shared() {
-            let Ok(target_id) = key.try_to::<i64>() else {
-                continue;
-            };
-            let Some(info_variant) = active_targets.get(&key) else {
-                continue;
-            };
-            let Ok(info) = info_variant.try_to::<Dictionary<Variant, Variant>>() else {
-                continue;
-            };
-            let Some(target_variant) = info.get("target") else {
-                continue;
-            };
-            let Ok(target) = target_variant.try_to::<Gd<Node2D>>() else {
-                continue;
-            };
-            let Some(ray_count_variant) = info.get("ray_count") else {
-                continue;
-            };
-            let Ok(ray_count) = ray_count_variant.try_to::<i32>() else {
-                continue;
-            };
+        for (&target_id, info) in active_targets {
+            let lines = self.lines.entry(target_id).or_default();
 
-            let mut lines = if let Some(val) = self.lines.get(target_id) {
-                val.try_to::<Array<Gd<Line2D>>>().unwrap_or_default()
-            } else {
-                Array::new()
-            };
-
-            while lines.len() < ray_count as usize {
+            while lines.len() < info.ray_count as usize {
                 let mut line = Line2D::new_alloc();
                 if !self.textures.is_empty() {
                     line.set_texture(&self.textures[self.frame_index]);
@@ -571,24 +538,19 @@ impl LightningComponent {
                 line.set_default_color(line_color);
                 line.set_z_index(-1);
                 parent.add_child(&line);
-                lines.push(&line);
+                lines.push(line);
             }
-            while lines.len() > ray_count as usize {
-                let mut extra = lines.remove(lines.len() - 1);
+            while lines.len() > info.ray_count as usize {
+                let mut extra = lines.pop().unwrap();
                 extra.queue_free();
             }
 
-            let _ = self.lines.insert(target_id, &lines.to_variant());
-
-            let target_local = parent.to_local(target.get_global_position());
+            let target_local = parent.to_local(info.target.get_global_position());
             let perp = target_local
                 .normalized()
                 .rotated(std::f32::consts::FRAC_PI_2);
-            for i in 0..ray_count {
-                let offset = perp * (i as f32 - (ray_count - 1) as f32 / 2.0) * RAY_SPACING;
-                let Some(mut line) = lines.get(i as usize) else {
-                    continue;
-                };
+            for (i, line) in lines.iter_mut().enumerate() {
+                let offset = perp * (i as f32 - (info.ray_count - 1) as f32 / 2.0) * RAY_SPACING;
                 line.clear_points();
                 line.add_point(target_local + offset);
                 line.add_point(Vector2::ZERO + offset);
