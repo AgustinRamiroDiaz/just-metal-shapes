@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://bh1e5rgutq38q"]
+
+[node name="Main Level" type="GameManager" unique_id=886601202]
+
+[node name="ScoreLabel" type="Label" parent="." unique_id=1901478740]
+offset_left = 26.0
+offset_top = 60.0
+offset_right = 206.0
+offset_bottom = 96.0
+text = "Score: 0"
+
+[node name="EnemySpawner" type="EnemySpawner" parent="." unique_id=79819931]
+
+[node name="DebugLabel" type="Label" parent="." unique_id=1213846277]
+offset_left = 440.0
+offset_top = 16.0
+offset_right = 700.0
+offset_bottom = 400.0
+theme_override_colors/font_color = Color(0.8, 1, 0.8, 1)
+theme_override_font_sizes/font_size = 14

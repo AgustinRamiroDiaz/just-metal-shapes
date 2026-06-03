@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://dmj0ol8d38aoh"]
+
+[ext_resource type="Texture2D" uid="uid://dx60ovk85ckyh" path="res://icon.svg" id="2_icon"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_shotgun"]
+radius = 32.0
+
+[node name="ShotgunEnemy" type="BaseEnemy"]
+collision_layer = 2
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(0.8, 0.2, 0.2, 1)
+scale = Vector2(0.3, 0.3)
+texture = ExtResource("2_icon")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_shotgun")
+
+[node name="HealthComponent" type="HealthComponent" parent="."]
+auto_shield_layers = 3
+
+[node name="ShotgunShooterComponent" type="ShotgunShooterComponent" parent="."]
+shoot_interval = 3.0
+
+[node name="ChaserComponent" type="ChaserComponent" parent="."]
+
+[node name="TurnComponent" type="TurnComponent" parent="."]
+turn_speed = 1.0
+
+[node name="ContactDamageComponent" type="ContactDamageComponent" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactDamageComponent"]
+shape = SubResource("CircleShape2D_shotgun")

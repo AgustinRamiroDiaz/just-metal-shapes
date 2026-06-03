@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://mmtnpmljope"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 12.0
+
+[node name="Projectile" type="Projectile" unique_id=1227988378]
+collision_layer = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2136232067]
+shape = SubResource("CircleShape2D_1")

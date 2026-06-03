@@ -1,0 +1,16 @@
+[package]
+name = "rust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+godot = "0.5.3"
+
+[target.'cfg(target_os = "emscripten")'.dependencies]
+godot = { version = "0.5.3", features = ["api-custom", "experimental-wasm", "lazy-function-tables"] }
+
+[features]
+nothreads = ["godot/experimental-wasm-nothreads"]
+
+[lib]
+crate-type = ["cdylib"]  # Compile this crate to a dynamic C library.

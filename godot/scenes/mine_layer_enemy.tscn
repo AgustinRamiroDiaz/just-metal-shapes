@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" uid="uid://dx60ovk85ckyh" path="res://icon.svg" id="2_icon"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_mine_layer"]
+radius = 26.0
+
+[node name="MineLayerEnemy" type="BaseEnemy"]
+collision_layer = 2
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(1.0, 0.6, 0.1, 1)
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("2_icon")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_mine_layer")
+
+[node name="HealthComponent" type="HealthComponent" parent="."]
+max_life = 4.0
+auto_shield_layers = 3
+
+[node name="ChaserComponent" type="ChaserComponent" parent="."]
+move_speed = 20.0
+
+[node name="MineDropperComponent" type="MineDropperComponent" parent="."]
+drop_interval = 2.5
+
+[node name="ContactDamageComponent" type="ContactDamageComponent" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactDamageComponent"]
+shape = SubResource("CircleShape2D_mine_layer")

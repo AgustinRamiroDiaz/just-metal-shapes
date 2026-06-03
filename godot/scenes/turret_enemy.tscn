@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" uid="uid://dx60ovk85ckyh" path="res://icon.svg" id="2_icon"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_turret"]
+radius = 24.0
+
+[node name="TurretEnemy" type="BaseEnemy"]
+collision_layer = 2
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+modulate = Color(0.6, 0.2, 0.8, 1)
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("2_icon")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_turret")
+
+[node name="HealthComponent" type="HealthComponent" parent="."]
+max_life = 2.0
+auto_shield_layers = 3
+
+[node name="TurretShooterComponent" type="TurretShooterComponent" parent="."]
+shoot_interval = 2.0
+
+[node name="ContactDamageComponent" type="ContactDamageComponent" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactDamageComponent"]
+shape = SubResource("CircleShape2D_turret")
