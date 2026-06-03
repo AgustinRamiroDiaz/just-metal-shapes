@@ -35,9 +35,9 @@ jobs:
           rustup target add wasm32-unknown-emscripten --toolchain nightly
 
       - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@v14
+        uses: emscripten-core/setup-emsdk@v16
         with:
-          version: "3.1.74"
+          version: "5.0.7"
 
       - name: Build Rust GDExtension for Web
         run: |
