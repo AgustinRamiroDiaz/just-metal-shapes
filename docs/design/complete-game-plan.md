@@ -37,6 +37,7 @@ rust/src/
     chart_gen.rs        # generate_chart(&SongAnalysis, &LevelSpec, seed) -> Chart
     timing.rs           # beat<->seconds conversion, latency math
     danger.rs           # DangerShape + encode/decode to flat f32 records
+    beat_motion.rs      # enemy beat cadences and movement math (hops, steps, surges)
     bot.rs              # bot decision logic over a DangerSnapshot
     scoring.rs          # score, rank (S/A/B/C/D) from run stats
     rng.rs              # small deterministic PRNG (no global randomness in core)
@@ -52,7 +53,8 @@ rust/src/
   fx.rs                 # Fx autoload: shake, hitstop, bursts, flashes
   ui/                   # menus, HUD, pause, results, settings
   save.rs               # SaveData autoload (user://save.json)
-  ...existing modules (player, enemy, projectile, manager, menu, game_config)
+  enemies/            # BaseEnemy + components (beat-locked)
+  ...existing modules (player, projectile, manager, menu, game_config)
 ```
 
 `Cargo.toml` uses `crate-type = ["cdylib", "rlib"]`. `serde`/`serde_json` are allowed.

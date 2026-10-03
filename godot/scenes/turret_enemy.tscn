@@ -29,7 +29,6 @@ max_life = 2.0
 auto_shield_layers = 3
 
 [node name="TurretShooterComponent" type="TurretShooterComponent" parent="."]
-shoot_interval = 2.0
 
 [node name="ContactDamageComponent" type="ContactDamageComponent" parent="."]
 

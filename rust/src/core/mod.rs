@@ -4,6 +4,7 @@
 //! clock (`std::time::Instant`), so it builds unchanged for the no-thread web target.
 
 pub mod analysis;
+pub mod beat_motion;
 pub mod bot;
 pub mod chart;
 pub mod chart_gen;
