@@ -58,7 +58,7 @@ sprites through the metal body shader, with the amber core ring.
 | Static shooter | One aimed shot at the nearest player each bar | 4 / 0, 1 | `enemy_C` | level 1 pool |
 | Turret | Four shots, alternating cardinal and diagonal | 2 / 0, 0.75 | `enemy_E` | level 1 pool |
 | **Pulser** | A ring of 14 shots with a 3-shot gap every bar; the gap turns a quarter each bar | 4 / 0, 1 | `enemy_D` | level 1 |
-| **Hopper** | Hops toward the nearest player, landing with a shockwave (68 px) | 2 / 0, 0.85 | `enemy_B` | level 1 |
+| **Hopper** | Hops toward the nearest player, landing just short of them with a shockwave (52 px) | 2 / 0, 1 | `enemy_B` | level 1 |
 | Runner | Surges every beat toward the nearest player whose color does not match its shield | 1 / 0 | `ship_E` | level 2 pool |
 | **Bouncer** | Steps one diagonal cell (56 px) per beat, bouncing off the arena edges | 1 / 0, 0.3 | `meteor_squareDetailedLarge` | level 2 |
 | **Splitter** | Slow chaser; on death splits into two pieces, each with one shield in a different player's color | surges 1 / 0 | `enemy_A` (pieces `star_large`, hop every beat) | level 2 |

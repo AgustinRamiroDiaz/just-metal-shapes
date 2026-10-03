@@ -80,6 +80,8 @@ pub struct EnemyVisual {
     clock: EnemyClock,
     beat: f64,
     windup: f32,
+    /// Radius of the outermost shield ring (the wind-up ring closes onto it).
+    outer_radius: f32,
     /// Landing markers `(global position, radius)` reported by movers.
     markers: Vec<(Vector2, f32)>,
     lift: f32,
@@ -273,6 +275,14 @@ impl EnemyVisual {
             return;
         };
         let layer = health.call("get_active_layer", &[]).to::<i32>();
+        self.outer_radius = if layer >= 0 {
+            health
+                .call("get_layer_radius", &[0.to_variant()])
+                .try_to::<f32>()
+                .unwrap_or(0.0)
+        } else {
+            0.0
+        };
         let count = health
             .call("get_layer_count", &[])
             .try_to::<i32>()
@@ -481,9 +491,10 @@ impl INode2D for EnemyVisual {
             self.base_mut().draw_circle(local, 3.0, color);
         }
         if windup > 0.0 {
-            // Anticipation: an amber ring closing in on the body, flashing white just
-            // before the action beat.
-            let radius = r * (1.05 + 1.1 * (1.0 - windup) * (1.0 - windup));
+            // Anticipation: an amber ring closing in on the outer shield, flashing
+            // white just before the action beat.
+            let rest = self.outer_radius.max(r) + 6.0;
+            let radius = rest + 40.0 * (1.0 - windup) * (1.0 - windup);
             let hot = windup > 0.8 && (self.time * 20.0).fract() < 0.5;
             let color = if hot {
                 Color::from_rgba(1.0, 0.97, 0.9, 0.9)
