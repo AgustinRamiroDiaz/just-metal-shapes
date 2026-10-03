@@ -9,13 +9,21 @@ RUST_NIGHTLY ?= nightly
 EMSDK ?= /tmp/emsdk
 WEB_OUT ?= build/web
 WEB_PORT ?= 8060
+E2E_LOG ?= /tmp/just-metal-shapes-e2e.log
+# Run a single e2e scenario: make e2e ONLY=rewind
+ONLY ?=
 
-.PHONY: help check check-web-exporter rust-web web-export web-build web-serve web-run clean-web
+.PHONY: help check build test e2e test-all analyze-music check-web-exporter rust-web web-export web-build web-serve web-run clean-web
 
 help:
 	@printf '%s\n' \
 		'Targets:' \
 		'  make check       - Check the native Rust extension build' \
+		'  make build       - Build the native Rust extension (debug)' \
+		'  make test        - Rust unit tests (cargo test)' \
+		'  make e2e         - Headless Godot e2e scenarios (ONLY=name for one)' \
+		'  make test-all    - test + e2e' \
+		'  make analyze-music - Regenerate stale godot/music/*.analysis.json' \
 		'  make rust-web    - Build the no-thread Rust WASM GDExtension' \
 		'  make web-export  - Export the Godot Web build' \
 		'  make web-build   - Run rust-web and web-export' \
@@ -31,6 +39,26 @@ help:
 
 check:
 	cd $(RUST_CRATE) && cargo check
+
+build:
+	cd $(RUST_CRATE) && cargo build
+
+test:
+	cd $(RUST_CRATE) && cargo test
+
+# Imports first so a fresh checkout has its .godot/ cache, then fails on a non-zero exit
+# or on any Rust panic reported through Godot's output.
+e2e: build
+	"$(GODOT_BIN)" --headless --path "$(GODOT_PROJECT)" --import >/dev/null 2>&1 || true
+	set -o pipefail; \
+		"$(GODOT_BIN)" --headless --path "$(GODOT_PROJECT)" -s res://tests/run_e2e.gd \
+			$(if $(ONLY),-- --only=$(ONLY)) 2>&1 | tee "$(E2E_LOG)"
+	@if grep -q "\[panic" "$(E2E_LOG)"; then echo "e2e: Rust panic in Godot output"; exit 1; fi
+
+test-all: test e2e
+
+analyze-music:
+	uv run --project devtools devtools/analyze_all.py
 
 check-web-exporter:
 	@version="$$("$(GODOT_EXPORT_BIN)" --version)"; \
