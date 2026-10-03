@@ -68,12 +68,15 @@ rust/src/
 - Audio lives in `godot/music/*.ogg` (or `.mp3`), with `godot/music/CREDITS.md` listing
   source, author and license for every track.
 - `LevelSpec` (core) per level: `id`, `title`, `artist`, `music_path`, `analysis_path`,
-  `difficulty` (1-5), `seed`, `palette` (bg, accent), `pattern_pool` (which EventKinds
-  are allowed), `enemy_pool`, `density` multiplier, `tutorial` (show hints).
+  `difficulty` (1-5), `seed`, `palette` (bg, accent, danger), `pattern_pool` (which
+  EventKinds are allowed), `enemy_pool`, `phrases` (choreography emphasis), `density`
+  multiplier, `tutorial` (show hints), `finale` (end with the layered set piece).
   Interface detail: `pattern_pool` is `Vec<PatternEntry>` (kind plus weight, allowed
   sections, telegraph/duration beats, safe-path `coverage`, size, speed, count range,
   `min_accent`) so hazards are tuned as data; `enemy_pool` is `Vec<EnemyEntry>` (scene,
-  `spawn_outside`, weight).
+  `spawn_outside`, weight); `phrases` is `Vec<PhraseEntry>` (`Phrase` plus weight; empty
+  means every phrase at its default weight). See `docs/spec/hazards.md` and
+  `docs/spec/levels.md`.
 - Tempo estimates that lock onto a harmonic are pinned per song in
   `devtools/music_overrides.json` (`analyze_all.py` applies them).
 - `LevelCatalog` exposes the ordered list. Level 1 is the gentlest and acts as the
@@ -107,12 +110,14 @@ strength). Hazards read the fields they need.
 
 `chart_gen` maps analysis to events deterministically:
 
-- Section type chooses the pattern family (intro: sparse lasers/pulses; build: rising
-  density, sweeps; main: full patterns + enemy spawns; breakdown: few hazards, enemy
-  phase; outro: wind-down).
-- Strong onsets/accents trigger hits; bar intensity scales density; novelty spikes
-  start a new phrase; `silent` beats get nothing (the structural `Checkpoint` and
-  `ShowHint` events are exempt).
+- Sections are cut into bar-aligned phrases; each plays a `Phrase` (authored
+  choreography: laser call and response, rings on kicks, sweeping walls, spiral risers,
+  snare barrages, bomb pairs, spike sides, sweep crosses...) chosen by section type and
+  the level's `phrases` (intro: sparse pulses; build: risers, rising density; main: full
+  patterns + enemy spawns; breakdown: breathers, enemy phase; outro: wind-down).
+- Kicks, snares and strong accents place hits; bar intensity and difficulty set how
+  often; novelty spikes start a new phrase; `silent` beats get nothing (the structural
+  `Checkpoint` and `ShowHint` events are exempt).
 - Every bar gets an `ArenaPulse` on the downbeat; strong accents add `CameraKick`.
 - Each section start gets a `Checkpoint`.
 - A difficulty-aware cap guarantees a safe path: limit simultaneous screen coverage and
@@ -146,6 +151,8 @@ Presentation kinds are signals on the director: `arena_pulse(beat, intensity)`,
 `palette_shift(section_type, intensity)`, `checkpoint_reached(index, beat)`,
 `show_hint(text, duration_seconds)`; plus `event_spawned(kind, beat, song_beat)`,
 `enemy_spawned(enemy)`, `enemy_died()`, `rewound(beat)`.
+`spawn_event(kind, beat, telegraph_beats, params)` dispatches one event outside the
+chart (tests, previews); hazards draw in the level's `danger_color()`.
 
 ## Hazard contract
 
