@@ -9,7 +9,7 @@
 
 use crate::conductor::Conductor;
 use crate::core::analysis::SongAnalysis;
-use crate::core::chart::{Chart, ChartEvent, EventKind, HINTS};
+use crate::core::chart::{Chart, ChartEvent, EventKind, HINTS, PatternParams};
 use crate::core::chart_gen::{LevelSpec, generate_chart, section_type_index};
 use crate::core::mode::DifficultyMode;
 use crate::core::timing::Timing;
@@ -326,6 +326,31 @@ impl LevelDirector {
         kinds.iter().map(|k| GString::from(k.name())).collect()
     }
 
+    /// Dispatches one event now, outside the chart (tests, previews, debug tools).
+    /// `params` uses the `get_events` keys; missing keys keep `PatternParams` defaults.
+    /// Without a loaded level, beats use a 120 BPM grid starting at 0 s and hazards
+    /// run on their own clock from their spawn time. Returns false for unknown kinds.
+    #[func]
+    pub fn spawn_event(
+        &mut self,
+        kind: GString,
+        beat: f64,
+        telegraph_beats: f64,
+        params: VarDictionary,
+    ) -> bool {
+        let Some(kind) = EventKind::from_name(&kind.to_string()) else {
+            return false;
+        };
+        let event = ChartEvent {
+            beat,
+            telegraph_beats,
+            kind,
+            params: params_from_dictionary(&params),
+        };
+        self.dispatch(&event);
+        true
+    }
+
     #[func]
     fn _on_enemy_died(&mut self) {
         self.signals().enemy_died().emit();
@@ -389,14 +414,37 @@ impl LevelDirector {
             })
     }
 
-    /// Hazard color for a `color_index`: the level accent, varied in brightness.
+    /// The level's hazard color (neon pink unless the palette says otherwise).
+    pub fn danger_color(&self) -> Color {
+        self.level
+            .as_ref()
+            .map_or(Color::from_rgb(1.0, 0.15, 0.5), |l| {
+                rgb_to_color(l.palette.danger)
+            })
+    }
+
+    /// Hazard color for a `color_index`: the danger color, varied slightly so mirrored
+    /// halves of a pattern read as a pair.
     pub fn hazard_color(&self, color_index: u32) -> Color {
-        let accent = self.accent_color();
+        let danger = self.danger_color();
         match color_index % 4 {
-            0 | 1 => accent,
-            2 => accent.lightened(0.25),
-            _ => Color::from_rgb(1.0, 0.25, 0.45),
+            0 => danger,
+            1 => danger.lightened(0.12),
+            2 => danger.lightened(0.3),
+            _ => self.accent_color(),
         }
+    }
+
+    /// Global positions of living players (aim targets for `Barrage`).
+    pub fn alive_player_positions(&self) -> Vec<Vector2> {
+        self.base()
+            .get_tree()
+            .get_nodes_in_group(groups::PLAYERS)
+            .iter_shared()
+            .filter_map(|node| node.try_cast::<Node2D>().ok())
+            .filter(|player| !player.get("is_dead").try_to::<bool>().unwrap_or(false))
+            .map(|player| player.get_global_position())
+            .collect()
     }
 
     /// Adds a hazard node under the director and puts it in the `hazards` and
@@ -498,6 +546,32 @@ fn event_to_dictionary(event: &ChartEvent) -> VarDictionary {
     dict_set(&mut dict, "variant", p.variant as i64);
     dict_set(&mut dict, "intensity", p.intensity);
     dict
+}
+
+fn params_from_dictionary(dict: &VarDictionary) -> PatternParams {
+    let f32_of = |key: &str, default: f32| {
+        dict.get(key)
+            .and_then(|v| v.try_to::<f64>().ok())
+            .map_or(default, |v| v as f32)
+    };
+    let u32_of = |key: &str, default: u32| {
+        dict.get(key)
+            .and_then(|v| v.try_to::<i64>().ok())
+            .map_or(default, |v| v.max(0) as u32)
+    };
+    let d = PatternParams::default();
+    PatternParams {
+        x: f32_of("x", d.x),
+        y: f32_of("y", d.y),
+        angle: f32_of("angle", d.angle),
+        count: u32_of("count", d.count),
+        speed: f32_of("speed", d.speed),
+        size: f32_of("size", d.size),
+        duration_beats: f32_of("duration_beats", d.duration_beats as f32) as f64,
+        color_index: u32_of("color_index", d.color_index),
+        variant: u32_of("variant", d.variant),
+        intensity: f32_of("intensity", d.intensity),
+    }
 }
 
 #[godot_api]

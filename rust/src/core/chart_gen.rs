@@ -89,13 +89,13 @@ impl PatternEntry {
         let (telegraph_beats, duration_beats, coverage, size, speed, count) = match kind {
             EventKind::Laser => (2.0, 1.0, 0.08, 0.07, 0.0, (1, 1)),
             EventKind::LaserSweep => (2.0, 4.0, 0.12, 0.05, 0.25, (1, 1)),
-            EventKind::BulletRing => (1.0, 6.0, 0.06, 0.028, 0.35, (10, 18)),
-            EventKind::Spiral => (1.0, 8.0, 0.08, 0.026, 0.30, (2, 5)),
+            EventKind::BulletRing => (1.0, 8.0, 0.06, 0.028, 0.35, (10, 18)),
+            EventKind::Spiral => (1.0, 8.0, 0.08, 0.026, 0.40, (2, 5)),
             EventKind::Wall => (2.0, 4.0, 0.20, 0.06, 0.0, (1, 1)),
             EventKind::Pulse => (2.0, 1.0, 0.05, 0.14, 0.0, (1, 1)),
-            EventKind::Bomb => (3.0, 3.0, 0.12, 0.2, 0.45, (6, 12)),
+            EventKind::Bomb => (3.0, 4.0, 0.12, 0.2, 0.45, (6, 12)),
             EventKind::Spikes => (2.0, 2.0, 0.12, 0.2, 0.0, (6, 10)),
-            EventKind::Barrage => (1.5, 3.0, 0.10, 0.026, 0.7, (4, 9)),
+            EventKind::Barrage => (1.5, 6.0, 0.10, 0.026, 0.7, (4, 9)),
             _ => (0.0, 0.0, 0.0, 0.0, 0.0, (1, 1)),
         };
         Self {
@@ -1509,19 +1509,29 @@ impl<'a> Generator<'a> {
             let (limit, wanted) = match ctx.section_type {
                 SectionType::Breakdown => {
                     let pair = self.difficulty >= 3 && ctx.bars() >= 4;
-                    ((section_bars / 3).max(1), if pair { 2 } else { 1 })
+                    ((section_bars / 2).max(2), if pair { 2 } else { 1 })
                 }
-                SectionType::Main => {
+                SectionType::Main | SectionType::Build => {
+                    // Lighter phrases are likelier to bring an enemy; builds half as often.
                     let per_bar =
                         self.hazards_between(ctx.start, ctx.end) as f32 / ctx.bars() as f32;
-                    let chance =
-                        ((0.45 - 0.15 * per_bar).clamp(0.05, 0.4) * difficulty_scale) as f64;
-                    let first_in_section = per_section[section_index] == 0
+                    let mut chance = (0.65 - 0.1 * per_bar).clamp(0.2, 0.55) * difficulty_scale;
+                    let main = ctx.section_type == SectionType::Main;
+                    if !main {
+                        chance *= 0.5;
+                    }
+                    let last_chance = main
+                        && per_section[section_index] == 0
                         && plan.get(index + 1).is_none_or(|next| {
                             self.analysis.section_index_for_beat(next.ctx.start) != section_index
                         });
-                    let wanted = usize::from(first_in_section || rng.chance(chance));
-                    ((section_bars / 6).max(1), wanted)
+                    let wanted = usize::from(last_chance || rng.chance(chance as f64));
+                    let limit = if main {
+                        section_bars / 4
+                    } else {
+                        section_bars / 8
+                    };
+                    (limit.max(1), wanted)
                 }
                 _ => continue,
             };
@@ -1631,6 +1641,17 @@ mod tests {
             serial: 0,
             index: 0,
             finale: false,
+        }
+    }
+
+    /// Enemies come in main, breakdown and build music, never in the intro proper or
+    /// the outro.
+    fn enemy_beat_allowed(analysis: &SongAnalysis, beat: f64) -> bool {
+        let section = &analysis.sections[analysis.section_index_for_beat(beat as i64)];
+        match section.section_type {
+            SectionType::Main | SectionType::Breakdown | SectionType::Build => true,
+            SectionType::Intro => beat as i64 >= section.start_beat + INTRO_MAX_BARS * 4,
+            SectionType::Outro => false,
         }
     }
 
@@ -2228,11 +2249,10 @@ mod tests {
             assert!(!enemies.is_empty(), "{name}");
             for enemy in &enemies {
                 assert_eq!(enemy.beat as i64 % 4, 0, "{name}: enemy off the bar line");
-                let section = analysis.section_index_for_beat(enemy.beat as i64);
-                assert!(matches!(
-                    analysis.sections[section].section_type,
-                    SectionType::Main | SectionType::Breakdown
-                ));
+                assert!(
+                    enemy_beat_allowed(&analysis, enemy.beat),
+                    "{name}: {enemy:?}"
+                );
                 assert!(
                     plan.iter()
                         .any(|(s, e, _)| *s <= enemy.beat as i64 && (enemy.beat as i64) < *e),
@@ -2279,11 +2299,7 @@ mod tests {
             .iter()
             .filter(|e| e.kind == EventKind::SpawnEnemy)
         {
-            let section = analysis.section_index_for_beat(event.beat as i64);
-            assert!(matches!(
-                analysis.sections[section].section_type,
-                SectionType::Main | SectionType::Breakdown
-            ));
+            assert!(enemy_beat_allowed(&analysis, event.beat), "{event:?}");
         }
         spec.tutorial = false;
         let chart = generate_chart(&analysis, &spec, 1);
