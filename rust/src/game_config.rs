@@ -52,6 +52,13 @@ impl PlayerConfig {
 pub struct GameConfig {
     #[var]
     pub players: Array<Gd<PlayerConfig>>,
+    /// `LevelCatalog` id the next level loads (empty: first level).
+    #[var]
+    pub selected_level_id: GString,
+    /// `CASUAL`, `NORMAL` or `HARDCORE`.
+    #[var]
+    #[init(val = GameConfig::NORMAL)]
+    pub difficulty_mode: i32,
 
     base: Base<Node>,
 }
@@ -101,6 +108,16 @@ impl GameConfig {
     pub const GAMEPAD_RIGHT_6: i32 = 16;
     #[constant]
     pub const GAMEPAD_RIGHT_7: i32 = 17;
+
+    #[constant]
+    pub const CASUAL: i32 = 0;
+    #[constant]
+    pub const NORMAL: i32 = 1;
+    #[constant]
+    pub const HARDCORE: i32 = 2;
+    /// Input type for AI-controlled players (`BotBrain`).
+    #[constant]
+    pub const BOT: i32 = 100;
 
     #[func]
     pub fn get_player_colors() -> Array<Color> {

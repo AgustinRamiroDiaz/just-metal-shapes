@@ -1,6 +1,10 @@
+use crate::core::danger::{DangerShape, V2};
+use crate::groups;
+use crate::hazards::{encode_shapes, to_v2};
 use godot::classes::{
-    Area2D, GpuParticles2D, IArea2D, IGpuParticles2D, INode, INode2D, IStaticBody2D, Node, Node2D,
-    PackedScene, ResourceLoader, Sprite2D, StaticBody2D, Time, Timer,
+    Area2D, CircleShape2D, CollisionShape2D, GpuParticles2D, IArea2D, IGpuParticles2D, INode,
+    INode2D, IStaticBody2D, Node, Node2D, PackedScene, ResourceLoader, Sprite2D, StaticBody2D,
+    Time, Timer,
 };
 use godot::global::randi_range;
 use godot::prelude::*;
@@ -10,6 +14,10 @@ const TAU: f32 = std::f32::consts::TAU;
 #[derive(GodotClass)]
 #[class(init, base = StaticBody2D)]
 struct BaseEnemy {
+    /// Contact-damage radius reported to `DangerField` (0 = no contact damage).
+    contact_radius: f32,
+    last_position: Vector2,
+    velocity: Vector2,
     base: Base<StaticBody2D>,
 }
 
@@ -37,6 +45,20 @@ impl BaseEnemy {
         did_damage
     }
 
+    /// Contact-damage circle with the enemy's measured velocity.
+    #[func]
+    fn danger_shapes(&self) -> PackedFloat32Array {
+        if self.contact_radius <= 0.0 {
+            return PackedFloat32Array::new();
+        }
+        encode_shapes(&[DangerShape::Circle {
+            center: to_v2(self.base().get_global_position()),
+            radius: self.contact_radius,
+            velocity: to_v2(self.velocity),
+            activates_in: 0.0,
+        }])
+    }
+
     fn on_died(&mut self) {
         self.signals().died().emit();
         self.base_mut().queue_free();
@@ -45,7 +67,38 @@ impl BaseEnemy {
 
 #[godot_api]
 impl IStaticBody2D for BaseEnemy {
-    fn ready(&mut self) {}
+    fn ready(&mut self) {
+        self.base_mut().add_to_group(groups::ENEMIES);
+        if let Some(contact) = self
+            .base()
+            .try_get_node_as::<Area2D>("ContactDamageComponent")
+        {
+            self.contact_radius = circle_radius(&contact.upcast()).unwrap_or(16.0);
+            self.base_mut().add_to_group(groups::DANGER);
+        }
+        self.last_position = self.base().get_global_position();
+    }
+
+    fn physics_process(&mut self, delta: f64) {
+        let position = self.base().get_global_position();
+        if delta > 0.0 {
+            self.velocity = (position - self.last_position) / delta as f32;
+        }
+        self.last_position = position;
+    }
+}
+
+/// Radius of the first `CollisionShape2D` child with a circle shape.
+fn circle_radius(node: &Gd<Node>) -> Option<f32> {
+    node.get_children().iter_shared().find_map(|child| {
+        child
+            .try_cast::<CollisionShape2D>()
+            .ok()?
+            .get_shape()?
+            .try_cast::<CircleShape2D>()
+            .ok()
+            .map(|circle| circle.get_radius())
+    })
 }
 
 #[derive(GodotClass)]
@@ -280,7 +333,23 @@ const SHIELD_LAYER_SPACING: f32 = 8.0;
 #[class(init, base = Area2D)]
 struct Mine {
     armed: bool,
+    #[init(val = ARM_TIME)]
+    arm_remaining: f32,
     base: Base<Area2D>,
+}
+
+#[godot_api]
+impl Mine {
+    /// The mine's blast circle; `activates_in` counts down until it arms.
+    #[func]
+    fn danger_shapes(&self) -> PackedFloat32Array {
+        encode_shapes(&[DangerShape::Circle {
+            center: to_v2(self.base().get_global_position()),
+            radius: MINE_RADIUS,
+            velocity: V2::ZERO,
+            activates_in: if self.armed { 0.0 } else { self.arm_remaining },
+        }])
+    }
 }
 
 #[godot_api]
@@ -288,6 +357,8 @@ impl IArea2D for Mine {
     fn ready(&mut self) {
         self.base_mut().set_collision_layer(0);
         self.base_mut().set_collision_mask(1);
+        self.base_mut().add_to_group(groups::MINES);
+        self.base_mut().add_to_group(groups::DANGER);
 
         let mine = self.to_gd();
         self.base_mut()
@@ -320,7 +391,8 @@ impl IArea2D for Mine {
         self.base_mut().queue_redraw();
     }
 
-    fn process(&mut self, _delta: f64) {
+    fn process(&mut self, delta: f64) {
+        self.arm_remaining = (self.arm_remaining - delta as f32).max(0.0);
         if self.armed {
             self.base_mut().queue_redraw();
         }

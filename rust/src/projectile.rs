@@ -1,3 +1,6 @@
+use crate::core::danger::DangerShape;
+use crate::groups;
+use crate::hazards::{encode_shapes, to_v2};
 use godot::classes::{
     Area2D, CircleShape2D, CollisionShape2D, IArea2D, Node2D, Timer, VisibleOnScreenNotifier2D,
 };
@@ -30,6 +33,8 @@ struct Projectile {
 impl IArea2D for Projectile {
     fn ready(&mut self) {
         self.radius = self.collision_radius();
+        self.base_mut().add_to_group(groups::ENEMY_PROJECTILES);
+        self.base_mut().add_to_group(groups::DANGER);
 
         let projectile = self.to_gd();
 
@@ -85,6 +90,20 @@ impl IArea2D for Projectile {
             )
             .width(1.5)
             .done();
+    }
+}
+
+#[godot_api]
+impl Projectile {
+    /// The projectile circle moving along `direction * speed`.
+    #[func]
+    fn danger_shapes(&self) -> PackedFloat32Array {
+        encode_shapes(&[DangerShape::Circle {
+            center: to_v2(self.base().get_global_position()),
+            radius: self.radius,
+            velocity: to_v2(self.direction * self.speed),
+            activates_in: 0.0,
+        }])
     }
 }
 

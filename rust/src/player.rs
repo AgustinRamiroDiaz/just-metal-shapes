@@ -47,7 +47,11 @@ pub struct Player {
     pub is_dead: bool,
     #[var]
     pub revival_progress: f32,
+    /// Ignores all damage (tests, debugging).
+    #[var]
+    pub god_mode: bool,
 
+    #[var]
     pub lives: i32,
     pub invincible_timer: f32,
     pub targets_in_range: Vec<Gd<Node2D>>,
@@ -69,6 +73,14 @@ impl Player {
     fn hit_enemy();
     #[signal]
     fn state_changed(from: i32, to: i32);
+    /// Took a hit; `lives_left` is 0 when this hit downed the player.
+    #[signal]
+    fn damaged(lives_left: i32);
+    #[signal]
+    fn revived();
+
+    #[constant]
+    pub const MAX_LIVES: i32 = MAX_LIVES;
 
     fn apply_state_visuals(&mut self, to: i32) {
         let mut face_sprite = self.base().get_node_as::<Sprite2D>("FaceSprite");
@@ -144,11 +156,13 @@ impl Player {
         amount: f32,
         #[opt(default = Color::WHITE)] _damage_color: Color,
     ) -> bool {
-        if self.invincible_timer > 0.0 || self.is_dead {
+        if self.invincible_timer > 0.0 || self.is_dead || self.god_mode {
             return false;
         }
         self.lives -= amount.round() as i32;
         self.invincible_timer = INVINCIBILITY_DURATION;
+        let lives_left = self.lives.max(0);
+        self.signals().damaged().emit(lives_left);
         if self.lives <= 0 {
             self.lives = 0;
             self.is_dead = true;
@@ -164,15 +178,40 @@ impl Player {
         true
     }
 
+    /// Teammate revive: back with one life.
     #[func]
     pub fn revive(&mut self) {
-        self.lives = 1;
+        self.restore(1);
+        self.signals().revived().emit();
+    }
+
+    /// Back with full lives after a checkpoint rewind (does not emit `revived`).
+    #[func]
+    pub fn respawn(&mut self) {
+        self.restore(MAX_LIVES);
+    }
+
+    fn restore(&mut self, lives: i32) {
+        self.lives = lives;
         self.is_dead = false;
         self.revival_progress = 0.0;
         self.invincible_timer = INVINCIBILITY_DURATION;
         self.base_mut().set_modulate(Color::WHITE);
         self.force_state(PlayerState::Idle as i32);
         self.base_mut().queue_redraw();
+    }
+
+    /// Downs the player immediately, ignoring invincibility and god mode.
+    #[func]
+    pub fn kill(&mut self) {
+        if self.is_dead {
+            return;
+        }
+        self.invincible_timer = 0.0;
+        let god_mode = std::mem::replace(&mut self.god_mode, false);
+        let lives = self.lives as f32;
+        self.take_damage(lives.max(1.0), Color::WHITE);
+        self.god_mode = god_mode;
     }
 
     fn apply_deadzone(&self, value: f32) -> f32 {
