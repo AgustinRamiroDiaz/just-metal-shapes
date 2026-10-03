@@ -340,6 +340,13 @@ impl UiServices {
         if self.track.as_ref().is_some_and(|t| t.path == track.path) {
             return;
         }
+        // The dummy driver (headless) never mixes, so a started stream is never released
+        // and leaks at exit; the frame clock keeps menu beats running without it.
+        if AudioServer::singleton().get_driver_name() == "Dummy" {
+            self.music_time = from;
+            self.track = Some(track);
+            return;
+        }
         let Ok(stream) = try_load::<AudioStream>(&track.path) else {
             godot_warn!("Ui: missing music {}", track.path);
             return;

@@ -92,6 +92,32 @@ func press_key(keycode: Key, pressed: bool) -> void:
 	Input.parse_input_event(event)
 
 
+func press_pad_button(button: JoyButton, pressed: bool, device := 0) -> void:
+	var event := InputEventJoypadButton.new()
+	event.device = device
+	event.button_index = button
+	event.pressed = pressed
+	Input.parse_input_event(event)
+
+
+## Holds a stick axis at `value` for `frame_count` frames, sending a motion event every
+## frame like a real pad does, then centers it.
+func hold_pad_axis(axis: JoyAxis, value: float, frame_count: int, device := 0) -> void:
+	for i in frame_count:
+		var event := InputEventJoypadMotion.new()
+		event.device = device
+		event.axis = axis
+		event.axis_value = value + (0.001 if i % 2 == 0 else 0.0)
+		Input.parse_input_event(event)
+		await frames(1)
+	var release := InputEventJoypadMotion.new()
+	release.device = device
+	release.axis = axis
+	release.axis_value = 0.0
+	Input.parse_input_event(release)
+	await frames(2)
+
+
 ## Loads main_level.tscn for `level_id` and returns the GameManager once the
 ## countdown is running. Players get `god_mode` unless `vulnerable`.
 func start_level(level_id: String, mode: int, time_scale: float, vulnerable := false) -> Node:
