@@ -49,6 +49,12 @@ pub struct LevelDirector {
     order: Vec<usize>,
     cursor: usize,
     seen_seek_count: i64,
+    /// Checkpoint beat of the last rewind; the song replays from a little before it, and
+    /// a second rewind in that lead-in must not fall back to an earlier checkpoint.
+    rewind_floor: f64,
+    /// Highest checkpoint index announced, so replays after a rewind stay quiet.
+    #[init(val = -1)]
+    announced_checkpoint: i64,
     registry: HashMap<EventKind, SpawnFn>,
     warned: HashSet<EventKind>,
     conductor: Option<Gd<Conductor>>,
@@ -172,6 +178,8 @@ impl LevelDirector {
 
         self.order = chart.spawn_order();
         self.cursor = 0;
+        self.rewind_floor = 0.0;
+        self.announced_checkpoint = -1;
         self.chart = Some(chart);
         self.level = Some(spec);
         self.mode = mode;
@@ -267,20 +275,27 @@ impl LevelDirector {
         self.chart
             .as_ref()
             .map_or(0.0, |c| c.checkpoint_at_or_before(beat))
+            .max(self.rewind_floor)
     }
 
     /// Clears the arena, seeks the Conductor back to the last reached checkpoint and
-    /// replays the chart from there. Returns the checkpoint beat.
+    /// replays the chart from there. Playback resumes early enough that events hitting
+    /// at or after the checkpoint get their full warning. Returns the checkpoint beat.
     #[func]
     pub fn rewind_to_checkpoint(&mut self) -> f64 {
         let beat = self.current_checkpoint_beat();
+        let start = self
+            .chart
+            .as_ref()
+            .map_or(beat, |c| c.replay_start_beat(beat));
+        self.rewind_floor = beat;
         self.clear_arena();
         if let Some(conductor) = self.conductor.as_mut() {
-            let seconds = conductor.bind().beat_to_time(beat).max(0.0);
+            let seconds = conductor.bind().beat_to_time(start).max(0.0);
             conductor.bind_mut().seek(seconds);
             self.seen_seek_count = conductor.bind().get_seek_count();
         }
-        self.jump_to_beat(beat);
+        self.jump_to_beat(start);
         self.signals().rewound().emit(beat);
         beat
     }
@@ -498,9 +513,12 @@ impl LevelDirector {
                 .emit(&GString::from(name), e.params.intensity as f64);
         });
         self.registry.insert(EventKind::Checkpoint, |d, e| {
-            d.signals()
-                .checkpoint_reached()
-                .emit(e.params.variant as i64, e.beat);
+            let index = e.params.variant as i64;
+            if index <= d.announced_checkpoint {
+                return;
+            }
+            d.announced_checkpoint = index;
+            d.signals().checkpoint_reached().emit(index, e.beat);
         });
         self.registry.insert(EventKind::ShowHint, |d, e| {
             let text = HINTS.get(e.params.variant as usize).copied().unwrap_or("");

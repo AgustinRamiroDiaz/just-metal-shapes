@@ -215,6 +215,17 @@ impl Chart {
             .unwrap_or(0.0)
     }
 
+    /// Beat to resume from when rewinding to `checkpoint`: the earliest spawn of any
+    /// event that hits at or after it, so those events replay with their full warning.
+    pub fn replay_start_beat(&self, checkpoint: f64) -> f64 {
+        self.events
+            .iter()
+            .filter(|event| event.beat >= checkpoint - 1e-6)
+            .map(ChartEvent::spawn_beat)
+            .fold(checkpoint, f64::min)
+            .max(0.0)
+    }
+
     pub fn count_kind(&self, kind: EventKind) -> usize {
         self.events
             .iter()
@@ -280,5 +291,27 @@ mod tests {
         assert_eq!(chart.checkpoint_at_or_before(16.0), 16.0);
         assert_eq!(chart.checkpoint_at_or_before(100.0), 48.0);
         assert_eq!(chart.count_kind(EventKind::Checkpoint), 3);
+    }
+
+    #[test]
+    fn replay_start_covers_warnings_that_cross_the_checkpoint() {
+        let chart = Chart {
+            bpm: 120.0,
+            offset_seconds: 0.0,
+            duration_seconds: 60.0,
+            events: vec![
+                event(8.0, 4.0, EventKind::Laser),
+                event(16.0, 0.0, EventKind::Checkpoint),
+                event(17.0, 3.0, EventKind::Pulse),
+                event(18.0, 1.0, EventKind::Wall),
+                event(24.0, 2.0, EventKind::BulletRing),
+            ],
+        };
+        // The Pulse hits after the checkpoint but warns from beat 14.
+        assert_eq!(chart.replay_start_beat(16.0), 14.0);
+        // An event that hits before the checkpoint does not pull the start back.
+        assert_eq!(chart.replay_start_beat(24.0), 22.0);
+        assert_eq!(chart.replay_start_beat(40.0), 40.0);
+        assert_eq!(chart.replay_start_beat(0.0), 0.0);
     }
 }

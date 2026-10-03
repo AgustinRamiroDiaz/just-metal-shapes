@@ -1095,6 +1095,10 @@ impl MineDropperComponent {
         let Some(parent) = parent_as_node2d(self.base().get_parent()) else {
             return;
         };
+        // Find the container before instantiating: an unparented mine would leak.
+        let Some(mut container) = parent.get_parent() else {
+            return;
+        };
         let Some(mut mine) = self
             .mine_scene
             .as_ref()
@@ -1104,9 +1108,7 @@ impl MineDropperComponent {
         };
 
         mine.set_global_position(parent.get_global_position());
-        if let Some(mut container) = parent.get_parent() {
-            container.add_child(&mine);
-        }
+        container.add_child(&mine);
     }
 }
 
@@ -1122,11 +1124,13 @@ fn spawn_projectile(
     origin: Vector2,
     direction: Vector2,
 ) -> Option<Gd<Node>> {
+    // No current scene during a scene change; an unparented projectile would leak.
+    let mut current_scene = tree.get_current_scene()?;
     let mut projectile = scene.try_instantiate_as::<Area2D>()?;
     projectile.set_global_position(origin);
     projectile.set("direction", &direction.to_variant());
 
     let node = projectile.upcast::<Node>();
-    tree.get_current_scene()?.add_child(&node);
+    current_scene.add_child(&node);
     Some(node)
 }
