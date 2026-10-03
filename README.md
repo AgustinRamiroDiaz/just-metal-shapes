@@ -100,7 +100,7 @@ scenes/
   spawn_effect.tscn
 
 main_level.tscn            # Main game scene
-project.godot              # Godot project config (720x768, Jolt physics)
+project.godot              # Godot project config (1280x720, Jolt physics)
 ```
 
 ## Design Goals

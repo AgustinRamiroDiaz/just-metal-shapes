@@ -40,10 +40,13 @@ rust/src/
     bot.rs              # bot decision logic over a DangerSnapshot
     scoring.rs          # score, rank (S/A/B/C/D) from run stats
     rng.rs              # small deterministic PRNG (no global randomness in core)
+    mode.rs             # DifficultyMode (casual/normal/hardcore rules)
   conductor.rs          # Conductor node
   level_catalog.rs      # LevelCatalog (static level list)
   director.rs           # LevelDirector: plays a Chart against the Conductor
-  hazards/              # JSB-style hazard nodes (one file per hazard)
+  hazards/              # JSB-style hazard nodes (one file per hazard; mod.rs = shared helpers)
+  enemy_spawn.rs        # SpawnEnemy handler
+  groups.rs             # scene-tree group names
   danger_field.rs       # DangerField node: per-frame snapshot of all hazards
   bot_brain.rs          # BotBrain node: drives a Player from core::bot
   fx.rs                 # Fx autoload: shake, hitstop, bursts, flashes
@@ -66,7 +69,13 @@ rust/src/
   source, author and license for every track.
 - `LevelSpec` (core) per level: `id`, `title`, `artist`, `music_path`, `analysis_path`,
   `difficulty` (1-5), `seed`, `palette` (bg, accent), `pattern_pool` (which EventKinds
-  are allowed), `enemy_pool`, `density` multiplier.
+  are allowed), `enemy_pool`, `density` multiplier, `tutorial` (show hints).
+  Interface detail: `pattern_pool` is `Vec<PatternEntry>` (kind plus weight, allowed
+  sections, telegraph/duration beats, safe-path `coverage`, size, speed, count range,
+  `min_accent`) so hazards are tuned as data; `enemy_pool` is `Vec<EnemyEntry>` (scene,
+  `spawn_outside`, weight).
+- Tempo estimates that lock onto a harmonic are pinned per song in
+  `devtools/music_overrides.json` (`analyze_all.py` applies them).
 - `LevelCatalog` exposes the ordered list. Level 1 is the gentlest and acts as the
   tutorial (sparse patterns, on-screen hints during the intro section).
 
@@ -90,13 +99,20 @@ pub enum EventKind {
 pub struct Chart { pub bpm: f64, pub offset_seconds: f64, pub duration_seconds: f64, pub events: Vec<ChartEvent> }
 ```
 
+`PatternParams` is one flat struct for every kind: `x`, `y` (normalized 0..1 arena),
+`angle` (radians), `count`, `speed` (arena heights/s), `size` (fraction of arena height),
+`duration_beats`, `color_index`, `variant` (enemy pool index for `SpawnEnemy`, section
+index for `Checkpoint`, `HINTS` index for `ShowHint`), `intensity` (0..1 musical
+strength). Hazards read the fields they need.
+
 `chart_gen` maps analysis to events deterministically:
 
 - Section type chooses the pattern family (intro: sparse lasers/pulses; build: rising
   density, sweeps; main: full patterns + enemy spawns; breakdown: few hazards, enemy
   phase; outro: wind-down).
 - Strong onsets/accents trigger hits; bar intensity scales density; novelty spikes
-  start a new phrase; `silent` beats get nothing.
+  start a new phrase; `silent` beats get nothing (the structural `Checkpoint` and
+  `ShowHint` events are exempt).
 - Every bar gets an `ArenaPulse` on the downbeat; strong accents add `CameraKick`.
 - Each section start gets a `Checkpoint`.
 - A difficulty-aware cap guarantees a safe path: limit simultaneous screen coverage and
@@ -114,6 +130,10 @@ pub struct Chart { pub bpm: f64, pub offset_seconds: f64, pub duration_seconds: 
 - Signals: `beat(index: i64)`, `bar(index: i64)`, `section_started(index: i64, type: GString)`,
   `song_finished()`.
 - `seek(seconds)` for checkpoints; `pause()`/`resume()`.
+- Also: `play(from_seconds)`, `stop()`, signals `seeked(seconds)` and
+  `paused_changed(paused)`, `get_seek_count()` (lets the director resync after jumps).
+  Frame `delta` is already scaled by `Engine.time_scale`. The user `latency_offset` is
+  subtracted: positive means audio is heard later than reported.
 
 ## LevelDirector
 
@@ -121,12 +141,18 @@ Reads the `Chart` for the selected level, keeps a cursor, and when
 `song_beat >= event.beat - event.telegraph_beats` spawns the hazard via a registry
 (`EventKind -> fn(&mut Director, &ChartEvent)`). Hazards receive their absolute hit time
 and query the Conductor themselves, so they stay synced if frames drop.
+Presentation kinds are signals on the director: `arena_pulse(beat, intensity)`,
+`camera_kick(strength)`, `flash(color, duration_seconds)`,
+`palette_shift(section_type, intensity)`, `checkpoint_reached(index, beat)`,
+`show_hint(text, duration_seconds)`; plus `event_spawned(kind, beat, song_beat)`,
+`enemy_spawned(enemy)`, `enemy_died()`, `rewound(beat)`.
 
 ## Hazard contract
 
 Every hazard node:
 
-- joins group `"hazards"`;
+- joins groups `"hazards"` and `"danger"` (`LevelDirector::add_hazard` does both;
+  `DangerField` gathers the `"danger"` group);
 - is harmless while telegraphing, damages players (`take_damage(1.0)`) once active;
 - frees itself when done;
 - implements `#[func] fn danger_shapes(&self) -> PackedFloat32Array` returning records
@@ -170,8 +196,11 @@ Settings: master/music/sfx volume, screen shake on/off, audio latency offset, fu
   (level N+1 unlocks when N is cleared; all levels unlocked in debug builds).
 - HUD: song progress bar with section ticks, per-player life pips in player color,
   score, combo-free (team score only), checkpoint toast.
-- On all players down: rewind to the last checkpoint (song seeks back, hazards cleared,
-  players revived) with a counter; results show rewinds used. Hardcore toggle disables it.
+- On all players down: rewind to the last checkpoint (song seeks back, hazards, enemies,
+  enemy projectiles and mines cleared so the chart can respawn them, players revived
+  with full lives) with a counter; results show rewinds used. Hardcore toggle disables
+  it. `GameConfig.difficulty_mode` is CASUAL/NORMAL/HARDCORE (`core::mode`: chart
+  density scale, rewind allowed, score multiplier).
 - Consistent theme: Kenney fonts and UI art, one accent color per level palette.
 
 ## Feel and animation
