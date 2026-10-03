@@ -14,6 +14,8 @@ extends SceneTree
 const E2EContext = preload("res://tests/e2e_context.gd")
 const SCENARIO_DIR := "res://tests/e2e"
 const DEFAULT_TIMEOUT := 60.0
+## Scenarios never touch the player's save.
+const E2E_SAVE_PATH := "user://e2e_save.json"
 
 
 func _initialize() -> void:
@@ -80,6 +82,28 @@ func _ensure_autoloads() -> void:
 		var config: Node = load("res://scenes/autoload/game_config.tscn").instantiate()
 		config.name = "GameConfig"
 		root.add_child(config)
+	var save := root.get_node_or_null("SaveData")
+	if save != null:
+		save.save_path = E2E_SAVE_PATH
+		_reset_save(save)
+
+
+func _reset_save(save: Node) -> void:
+	for suffix in ["", ".bak", ".tmp"]:
+		if FileAccess.file_exists(E2E_SAVE_PATH + suffix):
+			DirAccess.remove_absolute(E2E_SAVE_PATH + suffix)
+	save.save_path = E2E_SAVE_PATH
+	save.debug_unlocks_all = true
+	save.reset_to_defaults()
+
+
+func _autoload_names() -> PackedStringArray:
+	var names: PackedStringArray = []
+	for property in ProjectSettings.get_property_list():
+		var key: String = property.name
+		if key.begins_with("autoload/"):
+			names.append(key.trim_prefix("autoload/"))
+	return names
 
 
 func _run_scenario(path: String) -> bool:
@@ -127,8 +151,20 @@ func _reset() -> void:
 		config.players.clear()
 		config.selected_level_id = ""
 		config.difficulty_mode = GameConfig.NORMAL
+	var save := root.get_node_or_null("SaveData")
+	if save != null:
+		_reset_save(save)
+	var ui := root.get_node_or_null("Ui")
+	if ui != null:
+		ui.stop_music()
+		var waited := 0
+		while ui.is_transitioning() and waited < 120:
+			await process_frame
+			waited += 1
+	var keep := _autoload_names()
+	keep.append("GameConfig")
 	for child in root.get_children():
-		if child != config:
+		if not keep.has(child.name):
 			child.queue_free()
 	await process_frame
 	await process_frame
