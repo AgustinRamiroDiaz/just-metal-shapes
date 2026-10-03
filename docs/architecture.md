@@ -159,7 +159,8 @@ it: `PlayerVisual` (squash/stretch, beat bounce, trail, range ring, hit/down/rev
 death explosion). Enemy bodies are a `Sprite2D` pivot (rotated by `TurnComponent`) with
 a `Body` child sprite. Tunable feel math (trauma, hit-stop, squash, beat envelopes) is in
 `core/feel.rs`. `godot/tests/capture_screens.gd` stages gameplay moments and saves
-screenshots plus a frame-time sample for visual checks (needs a display).
+screenshots plus a frame-time sample for visual checks. `make screenshots` renders it and the
+UI capture tool on an off-screen virtual display (`xvfb-run`) with the dummy audio driver.
 
 Bot scenarios (`test_bot_*`) use `tests/bot_arena.gd` for a bare arena (DangerField +
 players, scripted danger records) and scale `Engine.physics_ticks_per_second` with the

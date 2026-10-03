@@ -9,11 +9,12 @@ RUST_NIGHTLY ?= nightly
 EMSDK ?= /tmp/emsdk
 WEB_OUT ?= build/web
 WEB_PORT ?= 8060
+SHOTS_DIR ?= /tmp/jms_shots
 E2E_LOG ?= /tmp/just-metal-shapes-e2e.log
 # Run a single e2e scenario: make e2e ONLY=rewind
 ONLY ?=
 
-.PHONY: help check build test e2e test-all analyze-music check-web-exporter rust-web web-export web-build web-serve web-run clean-web
+.PHONY: help check build test e2e test-all screenshots analyze-music check-web-exporter rust-web web-export web-build web-serve web-run clean-web
 
 help:
 	@printf '%s\n' \
@@ -49,13 +50,20 @@ test:
 # Imports first so a fresh checkout has its .godot/ cache, then fails on a non-zero exit
 # or on any Rust panic reported through Godot's output.
 e2e: build
-	"$(GODOT_BIN)" --headless --path "$(GODOT_PROJECT)" --import >/dev/null 2>&1 || true
+	"$(GODOT_BIN)" --headless --audio-driver Dummy --path "$(GODOT_PROJECT)" --import >/dev/null 2>&1 || true
 	set -o pipefail; \
-		"$(GODOT_BIN)" --headless --path "$(GODOT_PROJECT)" -s res://tests/run_e2e.gd \
+		"$(GODOT_BIN)" --headless --audio-driver Dummy --path "$(GODOT_PROJECT)" -s res://tests/run_e2e.gd \
 			$(if $(ONLY),-- --only=$(ONLY)) 2>&1 | tee "$(E2E_LOG)"
 	@if grep -q "\[panic" "$(E2E_LOG)"; then echo "e2e: Rust panic in Godot output"; exit 1; fi
 
 test-all: test e2e
+
+# Off-screen and silent: renders on a virtual X display with the dummy audio driver.
+screenshots: build
+	xvfb-run -a -s "-screen 0 1280x720x24" "$(GODOT_BIN)" --audio-driver Dummy --path "$(GODOT_PROJECT)" \
+		-s res://tests/tools/screenshots.gd -- --out=$(SHOTS_DIR)/ui
+	xvfb-run -a -s "-screen 0 1280x720x24" "$(GODOT_BIN)" --audio-driver Dummy --path "$(GODOT_PROJECT)" \
+		-s res://tests/capture_screens.gd -- --out=$(SHOTS_DIR)/gameplay $(if $(LEVEL),--level=$(LEVEL))
 
 analyze-music:
 	uv run --project devtools devtools/analyze_all.py

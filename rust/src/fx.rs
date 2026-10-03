@@ -36,6 +36,8 @@ pub const WORLD_Z: i32 = 50;
 const BURST_POOL_SIZE: usize = 48;
 /// Peak alpha of a full-screen flash, whatever the requested color alpha.
 const FLASH_MAX_ALPHA: f32 = 0.32;
+/// Flash strength kept when the reduce-flashing setting is on.
+const REDUCED_FLASH_SCALE: f32 = 0.2;
 /// Length in pixels of the checkpoint sweep's gradient wake.
 const SWEEP_TRAIL: f32 = 260.0;
 const SFX_DIR: &str = "res://assets/sfx";
@@ -361,7 +363,20 @@ impl Fx {
             return 0.0;
         }
         let t = self.flash_left / self.flash_total;
-        self.flash_color.a.min(1.0) * FLASH_MAX_ALPHA * t * t
+        self.flash_color.a.min(1.0) * FLASH_MAX_ALPHA * t * t * self.flash_scale()
+    }
+
+    /// Full-screen flash multiplier: dimmed when `SaveData.reduce_flashing` is on.
+    fn flash_scale(&self) -> f32 {
+        let reduced = self
+            .base()
+            .get_node_or_null("/root/SaveData")
+            .is_some_and(|save| {
+                save.get("reduce_flashing")
+                    .try_to::<bool>()
+                    .unwrap_or(false)
+            });
+        if reduced { REDUCED_FLASH_SCALE } else { 1.0 }
     }
 
     fn apply_overlays(&mut self) {

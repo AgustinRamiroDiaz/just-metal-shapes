@@ -16,11 +16,12 @@ pub mod groups;
 pub mod hazards;
 pub mod level_catalog;
 mod manager;
-mod menu;
 pub mod player;
 mod projectile;
+pub mod save;
 mod state_machine;
 mod targeting;
+pub mod ui;
 pub mod util;
 pub mod visuals;
 

@@ -3,8 +3,11 @@
 ## revived, an enemy death, a checkpoint sweep, a rewind), saving a PNG of each, and
 ## prints a frame-time sample while enemies, lightning and hazards are all on screen.
 ##
-## Needs a display (not --headless):
-##   godot --path godot -s res://tests/capture_screens.gd -- --out=/tmp/jms_shots \
+## Needs a renderer (not --headless). `make screenshots` renders off-screen and silent;
+## by hand:
+##   xvfb-run -a -s "-screen 0 1280x720x24" \
+##       godot --audio-driver Dummy --path godot \
+##       -s res://tests/capture_screens.gd -- --out=/tmp/jms_shots \
 ##       [--level=celtic] [--players=8]
 extends SceneTree
 
