@@ -2,6 +2,7 @@ use godot::prelude::*;
 
 pub mod core;
 
+mod bot_brain;
 mod color_utils;
 pub mod conductor;
 pub mod danger_field;

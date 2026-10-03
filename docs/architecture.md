@@ -75,8 +75,14 @@ Player (CharacterBody2D + player.gd)
   ├── CollisionShape2D
   ├── RevivalComponent         (teammate revival mechanic)
   ├── LightningComponent       (visual lightning rays to damaged targets)
-  └── RangeArea                (Area2D detecting enemies in range)
+  ├── RangeArea                (Area2D detecting enemies in range)
+  └── BotBrain                 (bot seats only: move direction from core::bot)
 ```
+
+A Player whose `input_type` is `GameConfig.BOT` moves along its `BotBrain`'s
+`get_move_direction()` instead of reading `Input`. The brain decides at a fixed rate
+from the `DangerField` snapshot, enemies' shield colors and teammates, delays the
+result by its reaction time and smooths it (`bot_brain.rs`, `core/bot.rs`).
 
 ## Game Management
 
@@ -140,6 +146,11 @@ Groups (`groups.rs`): `players`, `enemies`, `hazards`, `danger`, `enemy_projecti
   (`check*`, `wait_until`, `change_scene`, `start_level`, input injection) and typically
   set `Conductor.use_clock` and `Engine.time_scale`.
 - `make test-all`: both.
+
+Bot scenarios (`test_bot_*`) use `tests/bot_arena.gd` for a bare arena (DangerField +
+players, scripted danger records) and scale `Engine.physics_ticks_per_second` with the
+time scale so bots keep their decision rate. `test_bot_full_level` plays the first level
+with bots only (`-- --bot-level=<id>` for another level).
 
 ## Shared Utilities
 

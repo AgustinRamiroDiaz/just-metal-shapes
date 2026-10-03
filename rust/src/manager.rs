@@ -5,6 +5,7 @@
 //! down the song rewinds to the last checkpoint (players revived, arena cleared), or,
 //! in hardcore mode, the run ends.
 
+use crate::bot_brain::BotBrain;
 use crate::conductor::Conductor;
 use crate::core::mode::DifficultyMode;
 use crate::core::scoring::{self, RunStats};
@@ -370,6 +371,14 @@ impl GameManager {
             p.set("input_type", &cfg.input_type.to_variant());
             if let Some(actions) = Self::keyboard_actions(cfg.input_type) {
                 Self::set_keyboard_actions(&mut p, actions);
+            }
+            p.set_meta("display_name", &cfg.display_name.to_variant());
+            if cfg.input_type == GameConfig::BOT {
+                let mut brain = BotBrain::new_alloc();
+                brain.set_name("BotBrain");
+                brain.bind_mut().set_skill(cfg.bot_skill);
+                brain.set("seed", &(spawn_index as i64).to_variant());
+                p.add_child(&brain);
             }
 
             self.base_mut().add_child(&p);

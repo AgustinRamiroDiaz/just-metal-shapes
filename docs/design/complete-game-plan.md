@@ -180,8 +180,53 @@ frame into a `core::danger::DangerSnapshot` that bots query in pure Rust.
   matches the bot's color (stay inside range ring but outside contact radius), attraction
   to downed teammates (revive), mild cohesion, and arena-bounds penalty. Pure and unit
   tested with hand-built snapshots.
+  Interface detail: candidates are *plans* (heading x speed x stop time, then hold) scored
+  over `horizon + hold` seconds with swept sampling, so bots pre-empt telegraphs
+  (`activates_in`), lead moving shapes and wait in a wall's gap. Bots treat any
+  `danger_shapes()` record generically; a new hazard needs nothing bot-specific.
+  `BotTuning::for_skill(skill)` holds every knob (reaction delay, decision interval,
+  horizon, hold, plans, directions, noise, turn rate, term weights).
 - Lobby: any joined device can add/remove bots (keyboard: `B`/`Backspace`; gamepad: `X`/`Y`).
   Starting with zero humans is allowed (attract/demo mode).
+
+### Lobby API (`GameConfig` autoload)
+
+`GameConfig.players` is the seat list the level spawns, in order (seat index = spawn
+slot). Use these helpers instead of building `PlayerConfig`s by hand so colors stay unique
+across humans and bots:
+
+| Call | Effect |
+|---|---|
+| `add_human(input_type) -> bool` | Seat for that input with the first free color, named `P<n>`. False when full or that input already has a seat. |
+| `remove_human(input_type) -> bool` | Frees that input's seat. |
+| `find_human(input_type) -> int` | Seat index or -1. |
+| `add_bot(skill) -> bool` | Bot seat (`BOT_EASY`/`BOT_NORMAL`/`BOT_HARD`) with the first free color, named `BOT <n>`. False when full. |
+| `remove_last_bot() -> bool` | Removes the most recently added bot. |
+| `bot_count()`, `human_count()` | Seat counts. |
+| `next_free_color() -> Color` | First `get_player_colors()` entry no seat uses. |
+| `bot_skill_name(skill) -> String` | `easy` / `normal` / `hard`. |
+
+Constants: `BOT = 100` (input type), `BOT_EASY = 0`, `BOT_NORMAL = 1`, `BOT_HARD = 2`,
+`MAX_PLAYERS = 8`. `PlayerConfig` carries `input_type`, `color`, `bot_skill`,
+`display_name` and `is_bot()`; `PlayerConfig.new_bot(skill, color, name)` exists for
+custom setups. With no seats configured the level still falls back to two keyboard
+players.
+
+At spawn, `GameManager` gives each bot seat a `BotBrain` child (`skill`, `seed` = seat
+index) and stores every seat's `display_name` as the Player's `display_name` meta.
+`BotBrain` exposes `get_move_direction()`, `skill` (settable at runtime), `enabled`
+(false = stand still) and `get_stats()` (`decisions`, `avg_decide_usec`,
+`max_decide_usec`, `hit_predictions`, `last_danger`, `skill`). A downed bot stops deciding
+and stays put until revived; bots revive humans and bots alike.
+
+| Skill | Reaction | Decisions | Horizon + hold | Notes |
+|---|---|---|---|---|
+| easy | 0.25 s | 12 Hz | 0.6 + 0.3 s | noisy, slow turns; takes hits |
+| normal | 0.12 s | 20 Hz | 1.2 + 1.0 s | |
+| hard | 0.04 s | 30 Hz | 1.6 + 1.5 s | no noise |
+
+Cost (release build): about 26 us per decision in a level, about 5 ms of CPU per game
+second for 8 bots; about 170 us per decision against 160 bullets on screen.
 
 ## Game flow and UX
 
