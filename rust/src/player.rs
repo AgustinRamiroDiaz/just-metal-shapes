@@ -1,8 +1,12 @@
+use crate::bot_brain::BotBrain;
+use crate::fx::{BurstStyle, with_fx};
+use crate::game_config::GameConfig;
 use crate::state_machine::StateMachine;
 use godot::classes::{
-    Area2D, CharacterBody2D, CircleShape2D, CollisionShape2D, ICharacterBody2D, INode, Input,
-    Line2D, Node, Node2D, ResourceLoader, ShaderMaterial, Sprite2D, Texture2D,
+    Area2D, CharacterBody2D, CircleShape2D, CollisionShape2D, ICharacterBody2D, INode, INode2D,
+    Input, Node, Node2D, ShaderMaterial, Sprite2D, Texture2D,
 };
+use godot::global::randf_range;
 use godot::prelude::*;
 use std::collections::HashMap;
 
@@ -47,7 +51,11 @@ pub struct Player {
     pub is_dead: bool,
     #[var]
     pub revival_progress: f32,
+    /// Ignores all damage (tests, debugging).
+    #[var]
+    pub god_mode: bool,
 
+    #[var]
     pub lives: i32,
     pub invincible_timer: f32,
     pub targets_in_range: Vec<Gd<Node2D>>,
@@ -69,6 +77,14 @@ impl Player {
     fn hit_enemy();
     #[signal]
     fn state_changed(from: i32, to: i32);
+    /// Took a hit; `lives_left` is 0 when this hit downed the player.
+    #[signal]
+    fn damaged(lives_left: i32);
+    #[signal]
+    fn revived();
+
+    #[constant]
+    pub const MAX_LIVES: i32 = MAX_LIVES;
 
     fn apply_state_visuals(&mut self, to: i32) {
         let mut face_sprite = self.base().get_node_as::<Sprite2D>("FaceSprite");
@@ -144,11 +160,13 @@ impl Player {
         amount: f32,
         #[opt(default = Color::WHITE)] _damage_color: Color,
     ) -> bool {
-        if self.invincible_timer > 0.0 || self.is_dead {
+        if self.invincible_timer > 0.0 || self.is_dead || self.god_mode {
             return false;
         }
         self.lives -= amount.round() as i32;
         self.invincible_timer = INVINCIBILITY_DURATION;
+        let lives_left = self.lives.max(0);
+        self.signals().damaged().emit(lives_left);
         if self.lives <= 0 {
             self.lives = 0;
             self.is_dead = true;
@@ -157,16 +175,28 @@ impl Player {
                 .base()
                 .get_node_as::<LightningComponent>("LightningComponent");
             lightning.bind_mut().clear();
-            self.base_mut().set_modulate(Color::from_rgb(0.4, 0.4, 0.4));
-            self.base_mut().queue_redraw();
+            // Downed look (ghosted body, revive zone) is drawn by `PlayerVisual`.
+            self.base_mut().set_modulate(Color::WHITE);
             self.base_mut().emit_signal("died", &[]);
         }
         true
     }
 
+    /// Teammate revive: back with one life.
     #[func]
     pub fn revive(&mut self) {
-        self.lives = 1;
+        self.restore(1);
+        self.signals().revived().emit();
+    }
+
+    /// Back with full lives after a checkpoint rewind (does not emit `revived`).
+    #[func]
+    pub fn respawn(&mut self) {
+        self.restore(MAX_LIVES);
+    }
+
+    fn restore(&mut self, lives: i32) {
+        self.lives = lives;
         self.is_dead = false;
         self.revival_progress = 0.0;
         self.invincible_timer = INVINCIBILITY_DURATION;
@@ -175,11 +205,31 @@ impl Player {
         self.base_mut().queue_redraw();
     }
 
+    /// Downs the player immediately, ignoring invincibility and god mode.
+    #[func]
+    pub fn kill(&mut self) {
+        if self.is_dead {
+            return;
+        }
+        self.invincible_timer = 0.0;
+        let god_mode = std::mem::replace(&mut self.god_mode, false);
+        let lives = self.lives as f32;
+        self.take_damage(lives.max(1.0), Color::WHITE);
+        self.god_mode = god_mode;
+    }
+
     fn apply_deadzone(&self, value: f32) -> f32 {
         if value.abs() < self.joystick_deadzone {
             return 0.0;
         }
         value.signum() * (value.abs() - self.joystick_deadzone) / (1.0 - self.joystick_deadzone)
+    }
+
+    /// Heading from the `BotBrain` child (zero without one).
+    fn bot_direction(&self) -> Vector2 {
+        self.base()
+            .try_get_node_as::<BotBrain>("BotBrain")
+            .map_or(Vector2::ZERO, |brain| brain.bind().get_move_direction())
     }
 
     fn get_tier_radius(&self, tier: i32) -> f32 {
@@ -233,6 +283,7 @@ impl Player {
         }
 
         let mut active_targets = HashMap::new();
+        let mut rejected = Vec::new();
         let mut did_hit_any = false;
 
         let targets = self.targets_in_range.clone();
@@ -254,6 +305,8 @@ impl Player {
                     target.instance_id().to_i64(),
                     LightningTarget { target, ray_count },
                 );
+            } else {
+                rejected.push(target);
             }
         }
 
@@ -266,7 +319,7 @@ impl Player {
             .get_node_as::<LightningComponent>("LightningComponent");
         lightning
             .bind_mut()
-            .update(delta as f32, &active_targets, self.team_color);
+            .update(delta as f32, &active_targets, &rejected, self.team_color);
 
         if active_targets.is_empty() {
             self.transition_state(PlayerState::Idle as i32);
@@ -346,34 +399,6 @@ impl ICharacterBody2D for Player {
         self.base_mut().queue_redraw();
     }
 
-    fn draw(&mut self) {
-        if !self.is_dead {
-            let alpha = 0.12 / TIER_COUNT as f32;
-            let mut ring_color = self.team_color;
-            ring_color.a = alpha;
-            for tier in (0..TIER_COUNT).rev() {
-                let radius = self.get_tier_radius(tier);
-                self.base_mut()
-                    .draw_circle(Vector2::ZERO, radius, ring_color);
-            }
-        }
-        if self.is_dead && self.revival_progress > 0.0 {
-            let tau = std::f32::consts::TAU;
-            let progress = self.revival_progress;
-            self.base_mut()
-                .draw_arc_ex(
-                    Vector2::ZERO,
-                    18.0,
-                    -std::f32::consts::FRAC_PI_2,
-                    -std::f32::consts::FRAC_PI_2 + tau * progress,
-                    32,
-                    Color::WHITE,
-                )
-                .width(3.0)
-                .done();
-        }
-    }
-
     fn physics_process(&mut self, delta: f64) {
         if self.is_dead {
             return;
@@ -398,7 +423,9 @@ impl ICharacterBody2D for Player {
 
         // Assuming GameConfig values for input_type
         // 0: Keyboard1, 1: Keyboard2, 2-9: GamepadLeft, 10-17: GamepadRight
-        let input_dir = if self.input_type >= 10 {
+        let input_dir = if self.input_type == GameConfig::BOT {
+            self.bot_direction()
+        } else if self.input_type >= 10 {
             // GamepadRight
             let dev = self.input_type - 10;
             Vector2::new(
@@ -437,14 +464,20 @@ impl ICharacterBody2D for Player {
     }
 }
 
+/// Draws the player's lightning: jittered, re-rolled polylines from the player to each
+/// target it damages (one per ray), a glow and sparks at the hit point, and a short
+/// flickering stub with deflect sparks when a ray meets a shield of another color.
 #[derive(GodotClass)]
-#[class(init, base = Node)]
+#[class(init, base = Node2D)]
 pub struct LightningComponent {
-    textures: Vec<Gd<Texture2D>>,
-    lines: HashMap<i64, Vec<Gd<Line2D>>>,
-    frame_timer: f32,
-    frame_index: usize,
-    base: Base<Node>,
+    bolts: HashMap<i64, Bolt>,
+    deflects: Vec<Deflect>,
+    color: Color,
+    jitter_timer: f32,
+    spark_timer: f32,
+    deflect_sfx_timer: f32,
+    time: f32,
+    base: Base<Node2D>,
 }
 
 struct LightningTarget {
@@ -452,128 +485,259 @@ struct LightningTarget {
     ray_count: i32,
 }
 
-const LIGHTNING_FPS: f32 = 12.0;
-const LIGHTNING_WIDTH: f32 = 80.0;
-const RAY_SPACING: f32 = 10.0;
+struct Bolt {
+    target: Gd<Node2D>,
+    ray_count: i32,
+    /// One jittered polyline per ray, in local coordinates.
+    paths: Vec<PackedVector2Array>,
+}
 
-#[godot_api]
+struct Deflect {
+    /// Shield contact point, local.
+    contact: Vector2,
+    shield_color: Color,
+    path: PackedVector2Array,
+}
+
+/// Bolt shapes re-roll this often (seconds): electric flicker without per-frame noise.
+const JITTER_INTERVAL: f32 = 1.0 / 30.0;
+const SPARK_INTERVAL: f32 = 0.14;
+const DEFLECT_SFX_INTERVAL: f32 = 0.3;
+const SEGMENT_LENGTH: f32 = 16.0;
+const JITTER_AMPLITUDE: f32 = 7.0;
+const RAY_SPACING: f32 = 8.0;
+
+/// Random jittered path from `from` to `to`; the bulge is largest mid-bolt.
+fn bolt_path(from: Vector2, to: Vector2, amplitude: f32) -> PackedVector2Array {
+    let delta = to - from;
+    let length = delta.length();
+    let segments = ((length / SEGMENT_LENGTH) as i32).clamp(3, 24);
+    let normal = if length > 0.0 {
+        Vector2::new(-delta.y, delta.x) / length
+    } else {
+        Vector2::ZERO
+    };
+    let mut points = PackedVector2Array::new();
+    for i in 0..=segments {
+        let t = i as f32 / segments as f32;
+        let envelope = (t * std::f32::consts::PI).sin();
+        let offset = if i == 0 || i == segments {
+            0.0
+        } else {
+            randf_range(-1.0, 1.0) as f32 * amplitude * envelope
+        };
+        points.push(from + delta * t + normal * offset);
+    }
+    points
+}
+
 impl LightningComponent {
     fn update(
         &mut self,
         delta: f32,
         active_targets: &HashMap<i64, LightningTarget>,
+        rejected: &[Gd<Node2D>],
         team_color: Color,
     ) {
-        self.cycle_frame(delta);
-        self.sync_lines(active_targets, team_color);
+        self.color = team_color;
+        self.time += delta;
+        self.bolts.retain(|id, _| active_targets.contains_key(id));
+        for (&id, info) in active_targets {
+            let bolt = self.bolts.entry(id).or_insert_with(|| Bolt {
+                target: info.target.clone(),
+                ray_count: 0,
+                paths: Vec::new(),
+            });
+            bolt.target = info.target.clone();
+            bolt.ray_count = info.ray_count;
+        }
+
+        self.jitter_timer -= delta;
+        if self.jitter_timer <= 0.0 {
+            self.jitter_timer = JITTER_INTERVAL;
+            self.reroll_bolts();
+            self.collect_deflects(rejected);
+        }
+
+        self.spark_timer -= delta;
+        self.deflect_sfx_timer -= delta;
+        if self.spark_timer <= 0.0 && (!self.bolts.is_empty() || !self.deflects.is_empty()) {
+            self.spark_timer = SPARK_INTERVAL;
+            self.emit_sparks();
+        }
+        self.base_mut().queue_redraw();
     }
 
     fn clear(&mut self) {
-        for lines in self.lines.values_mut() {
-            for line in lines {
-                line.queue_free();
-            }
-        }
-        self.lines.clear();
+        self.bolts.clear();
+        self.deflects.clear();
+        self.base_mut().queue_redraw();
     }
 
     fn remove_target(&mut self, target_id: i64) {
-        if let Some(lines) = self.lines.remove(&target_id) {
-            for mut line in lines {
-                line.queue_free();
+        self.bolts.remove(&target_id);
+    }
+
+    fn reroll_bolts(&mut self) {
+        let base = self.base().clone();
+        for bolt in self.bolts.values_mut() {
+            if !bolt.target.is_instance_valid() {
+                bolt.paths.clear();
+                continue;
             }
+            let target = base.to_local(bolt.target.get_global_position());
+            let perp = target.normalized_or_zero().orthogonal();
+            let rays = bolt.ray_count.max(1);
+            bolt.paths = (0..rays)
+                .map(|i| {
+                    let offset = perp * (i as f32 - (rays - 1) as f32 / 2.0) * RAY_SPACING;
+                    bolt_path(offset * 0.4, target + offset * 0.3, JITTER_AMPLITUDE)
+                })
+                .collect();
         }
     }
 
-    fn cycle_frame(&mut self, delta: f32) {
-        if self.textures.is_empty() {
-            return;
-        }
-        self.frame_timer += delta;
-        if self.frame_timer >= 1.0 / LIGHTNING_FPS {
-            self.frame_timer -= 1.0 / LIGHTNING_FPS;
-            self.frame_index = (self.frame_index + 1) % self.textures.len();
-            let tex = self.textures[self.frame_index].clone();
-            for lines in self.lines.values_mut() {
-                for line in lines {
-                    line.set_texture(&tex);
-                }
+    /// Rejected targets whose active shield has another color get a deflect stub.
+    fn collect_deflects(&mut self, rejected: &[Gd<Node2D>]) {
+        self.deflects.clear();
+        for target in rejected {
+            if !target.is_instance_valid() {
+                continue;
             }
+            let Some(mut health) = target.get_node_or_null("HealthComponent") else {
+                continue;
+            };
+            let layer = health.call("get_active_layer", &[]).to::<i32>();
+            if layer < 0 {
+                continue;
+            }
+            let shield_color = health.call("get_active_color", &[]).to::<Color>();
+            let radius = health
+                .call("get_layer_radius", &[layer.to_variant()])
+                .try_to::<f32>()
+                .unwrap_or(34.0);
+            let center = self.base().to_local(target.get_global_position());
+            if center.length() <= radius {
+                continue;
+            }
+            let contact = center - center.normalized_or_zero() * radius;
+            let path = bolt_path(Vector2::ZERO, contact, JITTER_AMPLITUDE * 0.8);
+            self.deflects.push(Deflect {
+                contact,
+                shield_color,
+                path,
+            });
         }
     }
 
-    fn sync_lines(&mut self, active_targets: &HashMap<i64, LightningTarget>, team_color: Color) {
-        let Some(mut parent) = self
-            .base()
-            .get_parent()
-            .and_then(|p| p.try_cast::<Node2D>().ok())
-        else {
-            return;
-        };
-
-        // Remove lines for targets no longer active
-        let to_remove: Vec<_> = self
-            .lines
-            .keys()
-            .copied()
-            .filter(|id| !active_targets.contains_key(id))
+    fn emit_sparks(&mut self) {
+        let base = self.base().clone();
+        let color = self.color;
+        let hits: Vec<Vector2> = self
+            .bolts
+            .values()
+            .filter(|b| b.target.is_instance_valid())
+            .map(|b| b.target.get_global_position())
             .collect();
-        for id in to_remove {
-            self.remove_target(id);
+        let deflects: Vec<(Vector2, Color)> = self
+            .deflects
+            .iter()
+            .map(|d| (base.to_global(d.contact), d.shield_color))
+            .collect();
+        let play_deflect = !deflects.is_empty() && self.deflect_sfx_timer <= 0.0;
+        if play_deflect {
+            self.deflect_sfx_timer = DEFLECT_SFX_INTERVAL;
         }
-
-        // Update or create lines for active targets
-        for (&target_id, info) in active_targets {
-            let lines = self.lines.entry(target_id).or_default();
-
-            while lines.len() < info.ray_count as usize {
-                let mut line = Line2D::new_alloc();
-                if !self.textures.is_empty() {
-                    line.set_texture(&self.textures[self.frame_index]);
-                }
-                line.set_texture_mode(godot::classes::line_2d::LineTextureMode::TILE);
-                line.set_width(LIGHTNING_WIDTH);
-                let mut line_color = team_color;
-                line_color.a = 0.8;
-                line.set_default_color(line_color);
-                line.set_z_index(-1);
-                parent.add_child(&line);
-                lines.push(line);
+        with_fx(|fx| {
+            for pos in hits {
+                fx.burst_style(pos, color, 4, BurstStyle::Sparks as i32, 0.7);
             }
-            while lines.len() > info.ray_count as usize {
-                let mut extra = lines.pop().unwrap();
-                extra.queue_free();
+            for (pos, shield_color) in &deflects {
+                fx.burst_style(*pos, Color::WHITE, 5, BurstStyle::Sparks as i32, 1.1);
+                fx.burst_style(*pos, *shield_color, 3, BurstStyle::Dots as i32, 0.8);
             }
+            if play_deflect && let Some((pos, _)) = deflects.first() {
+                fx.play_sfx("shield_deflect".into(), *pos, 0.12, 0.0);
+            }
+        });
+    }
 
-            let target_local = parent.to_local(info.target.get_global_position());
-            let perp = target_local
-                .normalized()
-                .rotated(std::f32::consts::FRAC_PI_2);
-            for (i, line) in lines.iter_mut().enumerate() {
-                let offset = perp * (i as f32 - (info.ray_count - 1) as f32 / 2.0) * RAY_SPACING;
-                line.clear_points();
-                line.add_point(target_local + offset);
-                line.add_point(Vector2::ZERO + offset);
-            }
-        }
+    fn draw_bolt(&mut self, path: &PackedVector2Array, color: Color, strength: f32) {
+        let glow = Color::from_rgba(color.r, color.g, color.b, 0.22 * strength);
+        let core = color.lightened(0.45);
+        let core = Color::from_rgba(core.r, core.g, core.b, 0.95 * strength);
+        let hot = Color::from_rgba(1.0, 1.0, 1.0, 0.85 * strength);
+        self.base_mut()
+            .draw_polyline_ex(path, glow)
+            .width(12.0)
+            .done();
+        self.base_mut()
+            .draw_polyline_ex(path, core)
+            .width(4.0)
+            .antialiased(true)
+            .done();
+        self.base_mut()
+            .draw_polyline_ex(path, hot)
+            .width(1.0)
+            .done();
     }
 }
 
 #[godot_api]
-impl INode for LightningComponent {
+impl INode2D for LightningComponent {
     fn ready(&mut self) {
-        let mut loader = ResourceLoader::singleton();
-        let tex1 = loader
-            .load("res://assets/kenney-particles/Rotated/spark_05_rotated.png")
-            .and_then(|r| r.try_cast::<Texture2D>().ok());
-        let tex2 = loader
-            .load("res://assets/kenney-particles/Rotated/spark_06_rotated.png")
-            .and_then(|r| r.try_cast::<Texture2D>().ok());
-        if let Some(t) = tex1 {
-            self.textures.push(t);
+        // Under the player sprites, over the arena.
+        self.base_mut().set_z_index(-1);
+    }
+
+    fn draw(&mut self) {
+        let color = self.color;
+        let flicker = 0.8 + 0.2 * (self.time * 53.0).sin();
+        let bolts: Vec<(Vec<PackedVector2Array>, Option<Vector2>)> = self
+            .bolts
+            .values()
+            .map(|b| {
+                let end = b.paths.first().and_then(|p| p.as_slice().last().copied());
+                (b.paths.clone(), end)
+            })
+            .collect();
+        for (paths, end) in bolts {
+            for path in &paths {
+                self.draw_bolt(path, color, flicker);
+            }
+            if let Some(end) = end {
+                let r = 7.0 + 3.0 * (self.time * 41.0).sin().abs();
+                self.base_mut().draw_circle(
+                    end,
+                    r * 1.8,
+                    Color::from_rgba(color.r, color.g, color.b, 0.25),
+                );
+                self.base_mut()
+                    .draw_circle(end, r * 0.6, Color::from_rgba(1.0, 1.0, 1.0, 0.9));
+            }
         }
-        if let Some(t) = tex2 {
-            self.textures.push(t);
+        let deflects: Vec<(PackedVector2Array, Vector2, Color)> = self
+            .deflects
+            .iter()
+            .map(|d| (d.path.clone(), d.contact, d.shield_color))
+            .collect();
+        for (path, contact, shield_color) in deflects {
+            // A weak, stuttering stub that never reaches the body.
+            if (self.time * 24.0).sin() > -0.3 {
+                self.draw_bolt(&path, color, 0.45);
+            }
+            let r = 9.0 + 4.0 * (self.time * 37.0).sin().abs();
+            self.base_mut()
+                .draw_arc_ex(
+                    contact,
+                    r,
+                    0.0,
+                    std::f32::consts::TAU,
+                    16,
+                    Color::from_rgba(shield_color.r, shield_color.g, shield_color.b, 0.8),
+                )
+                .width(2.0)
+                .done();
         }
     }
 }

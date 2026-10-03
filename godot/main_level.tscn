@@ -2,19 +2,25 @@
 
 [node name="Main Level" type="GameManager" unique_id=886601202]
 
-[node name="ScoreLabel" type="Label" parent="." unique_id=1901478740]
-offset_left = 26.0
-offset_top = 60.0
-offset_right = 206.0
-offset_bottom = 96.0
-text = "Score: 0"
+[node name="Arena" type="Arena" parent="." unique_id=1730452101]
 
-[node name="EnemySpawner" type="EnemySpawner" parent="." unique_id=79819931]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1402269733]
+position = Vector2(640, 360)
+ignore_rotation = false
+
+[node name="Conductor" type="Conductor" parent="." unique_id=1520331907]
+
+[node name="LevelDirector" type="LevelDirector" parent="." unique_id=79819931]
+
+[node name="DangerField" type="DangerField" parent="." unique_id=640118352]
 
 [node name="DebugLabel" type="Label" parent="." unique_id=1213846277]
-offset_left = 440.0
-offset_top = 16.0
-offset_right = 700.0
-offset_bottom = 400.0
+visible = false
+offset_left = 1020.0
+offset_top = 120.0
+offset_right = 1270.0
+offset_bottom = 364.0
 theme_override_colors/font_color = Color(0.8, 1, 0.8, 1)
 theme_override_font_sizes/font_size = 14
+
+[node name="LevelUi" type="LevelUi" parent="."]

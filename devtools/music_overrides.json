@@ -1,0 +1,12 @@
+{
+  "wonders-of-the-earth": {
+    "bpm": 140,
+    "note": "Autocorrelation locks onto the 2:3 sub-harmonic (~93.4); 140 verified by ear in webcam-motion-games."
+  },
+  "ouroboros": {
+    "note": "No override: the 107.17 estimate is the pulse. Its grid holds 54% of strong-onset weight (4.3x chance) and its eighth-note grid 80%; ~130 BPM scores at chance. 71.25 and 142.5 peaks are 2:3 and 4:3 of 107."
+  },
+  "voxel-revolution": {
+    "note": "No override: 122.2 matches the ~122 BPM tempo (61 is the half-time peak)."
+  }
+}

@@ -1,110 +1,71 @@
 # Just Metal Shapes
 
-`Just Metal Shapes` is a cooperative bullet-hell arena game blending the chaotic survival feel of **Just Shapes & Beats** with team-based combat inspired by **Full Metal Furies**.
+A cooperative rhythm bullet-hell for 1-8 local players, blending the music-driven
+dodging of **Just Shapes & Beats** with the color-coordinated team combat of
+**Full Metal Furies**. Any seat can be filled by an AI bot.
+
+Every level is one song. Lasers, bullet rings, sweeping walls, bombs and spikes are
+scheduled from a beat analysis of the track and telegraph before they hit; shielded
+enemies arrive on phrase boundaries and only break to the player whose color matches
+their shield.
 
 ## How to Play
 
+1. **Title → Level Select**: pick a level (later levels unlock as you clear earlier
+   ones) and a mode: Casual, Normal or Hardcore.
+2. **Lobby**: join with keyboard or gamepads, split a device into two players, and add
+   bots.
+3. **Survive the song**. Enemies inside your range ring take lightning damage when your
+   color matches their shield. Revive downed teammates by standing next to them for
+   2 seconds. If everyone goes down, the song rewinds to the last checkpoint (Hardcore:
+   game over).
+
 ### Controls
 
-- **Keyboard Player 1:** WASD or Arrow Keys
-- **Keyboard Player 2:** IJKL
-- **Gamepads:** Up to 8 gamepads supported, each can be split into 2 players (left stick + right stick)
+| | Keyboard | Gamepad |
+|---|---|---|
+| Move | WASD / Arrows (P1), IJKL (P2 when split) | Left stick (right stick when split) |
+| Pause | Esc | Start |
+| Menus | Arrows, Enter, Esc | D-pad / stick, A, B |
 
-### Main Menu
+Lobby: Enter / A join, Left / Right split, B / X add bot, Backspace / Y remove bot,
+Tab / RB bot skill, hold Space / Start to begin. Full details in `docs/spec/menus.md`.
 
-1. Press **Enter** (keyboard) or **A** (gamepad) to join
-2. Press **Left/Right** to toggle between single and split (2-player) mode per device
-3. **Hold Enter/A** for 1 second to start the game
+### Levels
 
-### Gameplay
+| # | Level | Music |
+|---|---|---|
+| 1 | Wonders of the Earth (tutorial) | Grand Project (Pixabay) |
+| 2 | Voxel Revolution | Kevin MacLeod (CC BY 4.0) |
+| 3 | Celtic | Alex Morgan (Pixabay) |
+| 4 | Ouroboros | Kevin MacLeod (CC BY 4.0) |
+| 5 | Surf Rock (finale) | Alex Morgan (Pixabay) |
 
-- Move to dodge enemy projectiles and contact damage
-- Enemies inside your **range ring** (the circle around your player) take continuous **lightning damage**
-- Your lightning color must **match the enemy's shield color** to deal damage — coordinate with teammates
-- You have **3 lives**; taking damage grants 3 seconds of invincibility (blinking)
-- When downed, a nearby alive teammate can **revive you** by staying within 60px for 2 seconds
-- Game ends when **all players are dead** simultaneously
+## Development
 
-## Game Architecture
+Godot 4.6+ with all gameplay, UI and tooling in a Rust GDExtension (`rust/`, gdext).
+See `CONTRIBUTING.md` for toolchain setup and Web export.
 
-### Game Flow
+| Command | What it does |
+|---|---|
+| `make build` | Build the native Rust extension |
+| `make test` | Rust unit tests (`rust/src/core/`: chart generation, timing, danger geometry, bots, scoring, saves) |
+| `make e2e` | Headless Godot end-to-end scenarios (`godot/tests/e2e/`), silent; fails on panics or leaks |
+| `make test-all` | Both |
+| `make screenshots` | Capture every UI screen and staged gameplay moments off-screen (`xvfb-run`, no audio) to `/tmp/jms_shots` |
+| `make analyze-music` | Re-run beat analysis for every track in `godot/music/` |
 
-```
-Main Menu (device selection) → Main Level (gameplay) → Game Over (restart / main menu)
-```
+Bots play whole levels in e2e: `godot --headless --path godot -s res://tests/run_e2e.gd -- --only=bot_full_level --bot-level=surf-rock`.
 
-### Enemies
+### Docs
 
-| Type | Spawn | Movement | Attack | Health | Shield |
-|------|-------|----------|--------|--------|--------|
-| **Static Shooter** | Inside viewport (with particle effect) | Stationary | Single projectile at nearest player every 2s | 3.0 | Random player color |
-| **Shotgun** | Outside viewport (circle edge) | Chases nearest player at 30px/s | 3-projectile fan every 3s | 3.0 | Random player color |
-| **Turret** | Inside viewport (with particle effect) | Stationary | Alternates cardinal/diagonal 4-shot patterns every 2s | 2.0 | Orange |
+- `docs/design/complete-game-plan.md`: system contracts (Conductor, chart, hazards, danger records, bots, UX flow)
+- `docs/architecture.md`: code layout and how the pieces connect
+- `docs/spec/`: gameplay specs (overview, player, enemies, hazards, levels, spawning, menus)
+- `docs/CREDITS.md` and `godot/music/CREDITS.md`: asset and music licenses
 
-- Enemy health scales with player count (health x number of players)
-- Spawn rate increases over time (intervals shrink to 30% of base over 5 minutes)
-- Shields must be depleted before health can be damaged; shield color must match the attacking player's color
+### Adding a song
 
-### Player
-
-- **Speed:** 220 px/s, clamped to viewport
-- **Damage:** 1.0 DPS continuous to all enemies in range (140px radius)
-- **Lightning effect:** Animated Line2D with spark textures, tinted to player color, only shown when damage actually lands
-- **Lives:** 3, with invincibility frames on hit
-- **Revival:** Dead players can be revived by nearby teammates
-
-### Components (Enemy)
-
-Enemies are built from reusable components:
-
-- **HealthComponent** — HP, shields, color-matching logic, visual rings
-- **ShooterComponent** — Base projectile firing (aimed at nearest player)
-  - **ShotgunShooterComponent** — Fan of projectiles
-  - **TurretShooterComponent** — Cardinal/diagonal alternating pattern
-- **ChaserComponent** — Moves toward nearest alive player
-- **TurnComponent** — Rotates sprite toward nearest player
-- **ContactDamageComponent** — Deals damage on body collision
-
-### Project Structure
-
-```
-scripts/
-  game_config.gd          # Singleton: player configs, input types, colors
-  game_manager.gd         # Game loop: spawning, scoring, difficulty, game over
-  main_menu.gd            # Device selection and player joining
-  player.gd               # Player movement, damage, lightning, death
-  spawn_effect.gd         # Particle burst before enemy spawn
-  player/
-    revival_component.gd   # Teammate revival mechanic
-  enemies/
-    static_shooter_enemy.gd
-    shotgun_enemy.gd
-    turret_enemy.gd
-    projectile.gd
-    components/
-      health_component.gd
-      shooter_component.gd
-      shotgun_shooter_component.gd
-      turret_shooter_component.gd
-      chaser_component.gd
-      turn_component.gd
-      contact_damage_component.gd
-
-scenes/
-  main_menu.tscn
-  player.tscn
-  static_shooter_enemy.tscn
-  shotgun_enemy.tscn
-  turret_enemy.tscn
-  projectile.tscn
-  spawn_effect.tscn
-
-main_level.tscn            # Main game scene
-project.godot              # Godot project config (720x768, Jolt physics)
-```
-
-## Design Goals
-
-- Keep the kinetic readability and pressure of JS&B
-- Add tactical co-op interactions through shield color matching and proximity-based damage
-- Support 1-8 players with automatic difficulty scaling
+Drop an `.ogg` into `godot/music/`, run `make analyze-music`, credit it in
+`godot/music/CREDITS.md`, and add a `LevelSpec` to `rust/src/level_catalog.rs`
+(see "Adding a level" in `docs/spec/levels.md`).

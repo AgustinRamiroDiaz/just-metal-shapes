@@ -22,6 +22,8 @@ face_tex_idle = ExtResource("5_face_idle")
 face_tex_attacking = ExtResource("6_face_attacking")
 face_tex_dead = ExtResource("7_face_dead")
 
+[node name="PlayerVisual" type="PlayerVisual" parent="." unique_id=1586240371]
+
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1031474399]
 material = SubResource("ShaderMaterial_player")
 position = Vector2(-5.9604645e-08, -1.7881393e-07)

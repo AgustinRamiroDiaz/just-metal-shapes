@@ -19,10 +19,10 @@ jobs:
         uses: Scony/godot-gdscript-toolkit@master
 
       - name: Check GDScript formatting
-        run: gdformat --check godot/scripts/
+        run: gdformat --check godot/scripts/ godot/tests/
 
       - name: Lint GDScript
-        run: gdlint godot/scripts/
+        run: gdlint godot/scripts/ godot/tests/
 
   rust:
     name: Rust

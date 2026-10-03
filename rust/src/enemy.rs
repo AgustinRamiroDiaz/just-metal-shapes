@@ -1,6 +1,10 @@
+use crate::core::danger::{DangerShape, V2};
+use crate::groups;
+use crate::hazards::{encode_shapes, to_v2};
 use godot::classes::{
-    Area2D, GpuParticles2D, IArea2D, IGpuParticles2D, INode, INode2D, IStaticBody2D, Node, Node2D,
-    PackedScene, ResourceLoader, Sprite2D, StaticBody2D, Time, Timer,
+    Area2D, CircleShape2D, CollisionShape2D, GpuParticles2D, IArea2D, IGpuParticles2D, INode,
+    INode2D, IStaticBody2D, Node, Node2D, PackedScene, ResourceLoader, Sprite2D, StaticBody2D,
+    Time, Timer,
 };
 use godot::global::randi_range;
 use godot::prelude::*;
@@ -10,6 +14,10 @@ const TAU: f32 = std::f32::consts::TAU;
 #[derive(GodotClass)]
 #[class(init, base = StaticBody2D)]
 struct BaseEnemy {
+    /// Contact-damage radius reported to `DangerField` (0 = no contact damage).
+    contact_radius: f32,
+    last_position: Vector2,
+    velocity: Vector2,
     base: Base<StaticBody2D>,
 }
 
@@ -37,6 +45,20 @@ impl BaseEnemy {
         did_damage
     }
 
+    /// Contact-damage circle with the enemy's measured velocity.
+    #[func]
+    fn danger_shapes(&self) -> PackedFloat32Array {
+        if self.contact_radius <= 0.0 {
+            return PackedFloat32Array::new();
+        }
+        encode_shapes(&[DangerShape::Circle {
+            center: to_v2(self.base().get_global_position()),
+            radius: self.contact_radius,
+            velocity: to_v2(self.velocity),
+            activates_in: 0.0,
+        }])
+    }
+
     fn on_died(&mut self) {
         self.signals().died().emit();
         self.base_mut().queue_free();
@@ -45,7 +67,38 @@ impl BaseEnemy {
 
 #[godot_api]
 impl IStaticBody2D for BaseEnemy {
-    fn ready(&mut self) {}
+    fn ready(&mut self) {
+        self.base_mut().add_to_group(groups::ENEMIES);
+        if let Some(contact) = self
+            .base()
+            .try_get_node_as::<Area2D>("ContactDamageComponent")
+        {
+            self.contact_radius = circle_radius(&contact.upcast()).unwrap_or(16.0);
+            self.base_mut().add_to_group(groups::DANGER);
+        }
+        self.last_position = self.base().get_global_position();
+    }
+
+    fn physics_process(&mut self, delta: f64) {
+        let position = self.base().get_global_position();
+        if delta > 0.0 {
+            self.velocity = (position - self.last_position) / delta as f32;
+        }
+        self.last_position = position;
+    }
+}
+
+/// Radius of the first `CollisionShape2D` child with a circle shape.
+fn circle_radius(node: &Gd<Node>) -> Option<f32> {
+    node.get_children().iter_shared().find_map(|child| {
+        child
+            .try_cast::<CollisionShape2D>()
+            .ok()?
+            .get_shape()?
+            .try_cast::<CircleShape2D>()
+            .ok()
+            .map(|circle| circle.get_radius())
+    })
 }
 
 #[derive(GodotClass)]
@@ -94,6 +147,15 @@ impl HealthComponent {
         } else {
             Color::WHITE
         }
+    }
+
+    /// Ring radius of shield layer `layer` (0 = outermost).
+    #[func]
+    fn get_layer_radius(&self, layer: i32) -> f32 {
+        if layer < 0 || layer as usize >= self.shield_fills.len() {
+            return SHIELD_BASE_RADIUS;
+        }
+        self.shield_radius(layer as usize)
     }
 
     #[func]
@@ -145,101 +207,130 @@ impl INode2D for HealthComponent {
     fn process(&mut self, delta: f64) {
         if self.damage_flash_timer > 0.0 {
             self.damage_flash_timer -= delta as f32;
-            self.base_mut().queue_redraw();
         }
+        // The active ring turns and breathes every frame.
+        self.base_mut().queue_redraw();
     }
 
+    /// Shield rings as plates (`SHIELD_SEGMENTS` arcs with gaps), built into two
+    /// batched line lists (glow, then track + core) so each enemy costs a couple of
+    /// draw calls however many layers it has.
     fn draw(&mut self) {
-        let pulse =
-            (Time::singleton().get_ticks_msec() as f32 / 1000.0 * PULSE_SPEED).sin() * 0.5 + 0.5;
-        let base_alpha = 0.5 + pulse * GLOW_INTENSITY;
-
-        self.base_mut()
-            .draw_arc_ex(
-                Vector2::ZERO,
-                SHIELD_BASE_RADIUS,
-                0.0,
-                TAU,
-                64,
-                Color::from_rgba(0.2, 0.2, 0.2, base_alpha * 0.6),
-            )
-            .width(6.0)
-            .done();
-
+        let seconds = Time::singleton().get_ticks_msec() as f32 / 1000.0;
+        let pulse = (seconds * PULSE_SPEED).sin() * 0.5 + 0.5;
         let active = self.get_active_layer();
+        let flash = (self.damage_flash_timer / DAMAGE_FLASH_DURATION).clamp(0.0, 1.0);
 
+        let mut glow = RingLines::default();
+        let mut core = RingLines::default();
         for i in (0..self.shield_fills.len()).rev() {
-            if self.shield_fills[i] <= 0.0 {
+            let fill = self.shield_fills[i];
+            if fill <= 0.0 {
                 continue;
             }
-
             let radius = self.shield_radius(i);
             let color = self.shield_colors.get(i).unwrap_or(Color::WHITE);
-
-            let mut shield_alpha = 1.0;
-            let mut shield_width = 6.0;
-            if i as i32 == active && self.damage_flash_timer > 0.0 {
-                let t = self.damage_flash_timer / DAMAGE_FLASH_DURATION;
-                shield_alpha = 1.0 + t * 0.8;
-                shield_width = 6.0 + t * 4.0;
-            }
-
-            let start = -std::f32::consts::FRAC_PI_2;
-            let end = start + TAU * self.shield_fills[i];
-            self.base_mut()
-                .draw_arc_ex(
-                    Vector2::ZERO,
-                    radius,
-                    start,
-                    end,
-                    64,
-                    Color::from_rgba(color.r, color.g, color.b, base_alpha),
+            let is_active = i as i32 == active;
+            let (alpha, glow_alpha, spin) = if is_active {
+                (
+                    0.85 + 0.15 * pulse,
+                    0.18 + 0.12 * pulse + 0.35 * flash,
+                    seconds * 0.8,
                 )
-                .width(6.0)
-                .done();
-            self.base_mut()
-                .draw_arc_ex(
-                    Vector2::ZERO,
-                    radius,
-                    start,
-                    end,
-                    64,
-                    Color::from_rgba(color.r, color.g, color.b, shield_alpha),
-                )
-                .width(shield_width)
-                .done();
+            } else {
+                (0.55, 0.08, 0.0)
+            };
+            let lift = if is_active { flash * 0.7 } else { 0.0 };
+            let core_color = Color::from_rgba(
+                color.r + (1.0 - color.r) * lift,
+                color.g + (1.0 - color.g) * lift,
+                color.b + (1.0 - color.b) * lift,
+                alpha,
+            );
+            // Faint full track behind the remaining plates.
+            core.arc(
+                radius,
+                0.0,
+                TAU,
+                Color::from_rgba(color.r, color.g, color.b, 0.12),
+            );
 
-            if i as i32 == active {
-                self.base_mut()
-                    .draw_arc_ex(
-                        Vector2::ZERO,
-                        radius + 4.0,
-                        start,
-                        end,
-                        64,
-                        Color::from_rgba(color.r, color.g, color.b, base_alpha * 0.3),
-                    )
-                    .width(2.0)
-                    .done();
+            let start = -std::f32::consts::FRAC_PI_2 + spin;
+            let seg = TAU / SHIELD_SEGMENTS as f32;
+            let end = TAU * fill;
+            for s in 0..SHIELD_SEGMENTS {
+                let a0 = s as f32 * seg;
+                if a0 >= end {
+                    break;
+                }
+                let a1 = (a0 + seg - SHIELD_GAP).min(end);
+                if a1 <= a0 {
+                    continue;
+                }
+                glow.arc(
+                    radius,
+                    start + a0,
+                    start + a1,
+                    Color::from_rgba(color.r, color.g, color.b, glow_alpha),
+                );
+                core.arc(radius, start + a0, start + a1, core_color);
             }
         }
+        if !glow.points.is_empty() {
+            self.base_mut()
+                .draw_multiline_colors_ex(&glow.points, &glow.colors)
+                .width(SHIELD_WIDTH + 6.0)
+                .done();
+        }
+        if !core.points.is_empty() {
+            self.base_mut()
+                .draw_multiline_colors_ex(&core.points, &core.colors)
+                .width(SHIELD_WIDTH)
+                .done();
+        }
 
-        let health_ratio = self.life / self.max_life.max(1.0);
-        if health_ratio > 0.0 {
+        let health_ratio = self.life / self.max_life.max(0.001);
+        if health_ratio > 0.0 && health_ratio < 1.0 {
             self.base_mut()
                 .draw_arc_ex(
                     Vector2::ZERO,
-                    28.0,
+                    HEALTH_RADIUS,
                     -std::f32::consts::FRAC_PI_2,
                     -std::f32::consts::FRAC_PI_2 + TAU * health_ratio,
                     32,
-                    Color::from_rgba(0.3, 0.8, 0.3, base_alpha),
+                    Color::from_rgba(1.0, 1.0, 1.0, 0.75),
                 )
-                .width(4.0)
+                .width(2.5)
+                .antialiased(true)
                 .done();
         }
     }
 }
+
+/// Arcs flattened into a `draw_multiline_colors` list (one color per segment).
+#[derive(Default)]
+struct RingLines {
+    points: PackedVector2Array,
+    colors: PackedColorArray,
+}
+
+impl RingLines {
+    fn arc(&mut self, radius: f32, from: f32, to: f32, color: Color) {
+        let steps = ((to - from) / ARC_STEP).ceil().max(1.0) as i32;
+        let mut previous = Vector2::from_angle(from) * radius;
+        for k in 1..=steps {
+            let angle = from + (to - from) * k as f32 / steps as f32;
+            let point = Vector2::from_angle(angle) * radius;
+            self.points.push(previous);
+            self.points.push(point);
+            self.colors.push(color);
+            previous = point;
+        }
+    }
+}
+
+/// Radians per line piece when flattening shield arcs.
+const ARC_STEP: f32 = 0.1;
 
 impl HealthComponent {
     fn init_shields(&mut self) {
@@ -272,15 +363,37 @@ impl HealthComponent {
 
 const DAMAGE_FLASH_DURATION: f32 = 0.4;
 const PULSE_SPEED: f32 = 4.0;
-const GLOW_INTENSITY: f32 = 0.4;
 const SHIELD_BASE_RADIUS: f32 = 34.0;
 const SHIELD_LAYER_SPACING: f32 = 8.0;
+const SHIELD_WIDTH: f32 = 4.0;
+/// Plates per shield ring and the gap between them (radians).
+const SHIELD_SEGMENTS: i32 = 12;
+const SHIELD_GAP: f32 = 0.09;
+/// Life arc, shown once the enemy has taken body damage.
+const HEALTH_RADIUS: f32 = 28.0;
 
 #[derive(GodotClass)]
 #[class(init, base = Area2D)]
 struct Mine {
     armed: bool,
+    #[init(val = ARM_TIME)]
+    arm_remaining: f32,
+    age: f32,
     base: Base<Area2D>,
+}
+
+#[godot_api]
+impl Mine {
+    /// The mine's blast circle; `activates_in` counts down until it arms.
+    #[func]
+    fn danger_shapes(&self) -> PackedFloat32Array {
+        encode_shapes(&[DangerShape::Circle {
+            center: to_v2(self.base().get_global_position()),
+            radius: MINE_RADIUS,
+            velocity: V2::ZERO,
+            activates_in: if self.armed { 0.0 } else { self.arm_remaining },
+        }])
+    }
 }
 
 #[godot_api]
@@ -288,6 +401,8 @@ impl IArea2D for Mine {
     fn ready(&mut self) {
         self.base_mut().set_collision_layer(0);
         self.base_mut().set_collision_mask(1);
+        self.base_mut().add_to_group(groups::MINES);
+        self.base_mut().add_to_group(groups::DANGER);
 
         let mine = self.to_gd();
         self.base_mut()
@@ -320,30 +435,70 @@ impl IArea2D for Mine {
         self.base_mut().queue_redraw();
     }
 
-    fn process(&mut self, _delta: f64) {
-        if self.armed {
-            self.base_mut().queue_redraw();
-        }
+    fn process(&mut self, delta: f64) {
+        self.arm_remaining = (self.arm_remaining - delta as f32).max(0.0);
+        self.age += delta as f32;
+        self.base_mut().queue_redraw();
     }
 
     fn draw(&mut self) {
-        let color = if self.armed {
-            Color::from_rgba(1.0, 0.3, 0.1, 1.0)
-        } else {
-            Color::from_rgba(0.5, 0.5, 0.5, 0.6)
-        };
-        self.base_mut()
-            .draw_circle(Vector2::ZERO, MINE_RADIUS, color);
-
-        if self.armed {
-            let pulse =
-                (Time::singleton().get_ticks_msec() as f32 / 1000.0 * 6.0).sin() * 0.3 + 0.7;
-            self.base_mut().draw_circle(
-                Vector2::ZERO,
-                MINE_RADIUS + 4.0,
-                Color::from_rgba(1.0, 0.5, 0.1, pulse * 0.4),
-            );
+        let glow = MINE_GLOW;
+        if !self.armed {
+            // Arming: fast blink with a ring closing in on the blast radius.
+            let t = 1.0 - (self.arm_remaining / ARM_TIME).clamp(0.0, 1.0);
+            let on = (self.age * 16.0).fract() < 0.5;
+            let core = if on {
+                Color::from_rgba(1.0, 0.95, 0.85, 0.9)
+            } else {
+                Color::from_rgba(glow.r, glow.g, glow.b, 0.5)
+            };
+            self.base_mut()
+                .draw_circle(Vector2::ZERO, MINE_RADIUS * 0.55, core);
+            self.base_mut()
+                .draw_arc_ex(
+                    Vector2::ZERO,
+                    MINE_RADIUS * (2.2 - 1.2 * t),
+                    0.0,
+                    TAU,
+                    24,
+                    Color::from_rgba(glow.r, glow.g, glow.b, 0.3 + 0.5 * t),
+                )
+                .width(1.5)
+                .done();
+            return;
         }
+        let pulse = (self.age * 5.0).sin() * 0.5 + 0.5;
+        self.base_mut().draw_circle(
+            Vector2::ZERO,
+            MINE_RADIUS * (1.5 + 0.3 * pulse),
+            Color::from_rgba(glow.r, glow.g, glow.b, 0.10 + 0.12 * pulse),
+        );
+        // Spikes, slowly turning.
+        let spin = self.age * 0.8;
+        for i in 0..6 {
+            let dir = Vector2::from_angle(spin + i as f32 * TAU / 6.0);
+            self.base_mut()
+                .draw_line_ex(
+                    dir * MINE_RADIUS * 0.6,
+                    dir * MINE_RADIUS * 1.35,
+                    Color::from_rgba(glow.r, glow.g, glow.b, 0.9),
+                )
+                .width(2.5)
+                .done();
+        }
+        self.base_mut().draw_circle(
+            Vector2::ZERO,
+            MINE_RADIUS,
+            Color::from_rgba(0.16, 0.07, 0.03, 1.0),
+        );
+        self.base_mut()
+            .draw_arc_ex(Vector2::ZERO, MINE_RADIUS, 0.0, TAU, 24, glow)
+            .width(2.5)
+            .antialiased(true)
+            .done();
+        let blink = Color::from_rgba(1.0, 0.95, 0.8, 0.4 + 0.6 * pulse);
+        self.base_mut()
+            .draw_circle(Vector2::ZERO, MINE_RADIUS * 0.35, blink);
     }
 }
 
@@ -369,6 +524,8 @@ impl Mine {
 const ARM_TIME: f32 = 0.5;
 const MINE_LIFETIME: f32 = 15.0;
 const MINE_RADIUS: f32 = 10.0;
+/// Enemy family amber, shared with projectiles and `EnemyVisual`.
+const MINE_GLOW: Color = crate::visuals::enemy_visual::ENEMY_GLOW;
 
 #[derive(GodotClass)]
 #[class(init, base = GpuParticles2D)]
@@ -376,6 +533,7 @@ struct SpawnEffect {
     #[var]
     #[init(val = 0.8)]
     duration: f64,
+    elapsed: f64,
 
     base: Base<GpuParticles2D>,
 }
@@ -388,6 +546,54 @@ impl SpawnEffect {
 
 #[godot_api]
 impl IGpuParticles2D for SpawnEffect {
+    fn process(&mut self, delta: f64) {
+        self.elapsed += delta;
+        if self.elapsed <= self.duration + 0.2 {
+            self.base_mut().queue_redraw();
+        }
+    }
+
+    /// Telegraph: a ring and four ticks closing in on the spawn point, landing as the
+    /// enemy appears.
+    fn draw(&mut self) {
+        let t = (self.elapsed / self.duration.max(0.01)).clamp(0.0, 1.0) as f32;
+        if self.elapsed > self.duration {
+            return;
+        }
+        let glow = MINE_GLOW;
+        let radius = 18.0 + 62.0 * (1.0 - t) * (1.0 - t);
+        let alpha = 0.25 + 0.6 * t;
+        self.base_mut()
+            .draw_arc_ex(
+                Vector2::ZERO,
+                radius,
+                0.0,
+                TAU,
+                40,
+                Color::from_rgba(glow.r, glow.g, glow.b, alpha),
+            )
+            .width(2.0)
+            .antialiased(true)
+            .done();
+        let spin = t * 1.5;
+        for i in 0..4 {
+            let dir = Vector2::from_angle(spin + i as f32 * TAU / 4.0);
+            self.base_mut()
+                .draw_line_ex(
+                    dir * (radius + 4.0),
+                    dir * (radius + 14.0),
+                    Color::from_rgba(1.0, 0.95, 0.85, alpha),
+                )
+                .width(2.0)
+                .done();
+        }
+        self.base_mut().draw_circle(
+            Vector2::ZERO,
+            4.0 + 6.0 * t,
+            Color::from_rgba(glow.r, glow.g, glow.b, 0.2 + 0.5 * t),
+        );
+    }
+
     fn ready(&mut self) {
         self.base_mut().set_emitting(true);
 
@@ -889,6 +1095,10 @@ impl MineDropperComponent {
         let Some(parent) = parent_as_node2d(self.base().get_parent()) else {
             return;
         };
+        // Find the container before instantiating: an unparented mine would leak.
+        let Some(mut container) = parent.get_parent() else {
+            return;
+        };
         let Some(mut mine) = self
             .mine_scene
             .as_ref()
@@ -898,9 +1108,7 @@ impl MineDropperComponent {
         };
 
         mine.set_global_position(parent.get_global_position());
-        if let Some(mut container) = parent.get_parent() {
-            container.add_child(&mine);
-        }
+        container.add_child(&mine);
     }
 }
 
@@ -916,11 +1124,13 @@ fn spawn_projectile(
     origin: Vector2,
     direction: Vector2,
 ) -> Option<Gd<Node>> {
+    // No current scene during a scene change; an unparented projectile would leak.
+    let mut current_scene = tree.get_current_scene()?;
     let mut projectile = scene.try_instantiate_as::<Area2D>()?;
     projectile.set_global_position(origin);
     projectile.set("direction", &direction.to_variant());
 
     let node = projectile.upcast::<Node>();
-    tree.get_current_scene()?.add_child(&node);
+    current_scene.add_child(&node);
     Some(node)
 }

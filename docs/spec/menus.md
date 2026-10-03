@@ -1,53 +1,63 @@
 # Menus
 
-## Main Menu
+All screens are Rust `Control` classes in `rust/src/ui/`, styled by one project theme,
+and fully usable with keyboard or any gamepad (mouse also works). Back is Esc / B on
+every screen.
 
-### Device Selection
+```
+Title -> Level Select -> Lobby -> Level (3-2-1 countdown) -> Results
+Title -> Settings | Credits
+Pause (in level) -> Resume | Restart | Settings | Quit to level select
+```
 
-The main menu detects all available input devices (keyboard + connected gamepads) and displays them in a list. Players join devices, optionally split them, and hold to start.
+## Title
 
-### Controls
+Play, Settings, Credits, Quit (desktop only). The menu track loops and the title pulses
+on its beat.
+
+## Level Select
+
+One card per catalog level: title, artist, difficulty pips, BPM, best rank and score,
+lock state. A focused card previews its song. Difficulty mode (Casual / Normal /
+Hardcore) is chosen here. Level N+1 unlocks when N is cleared; debug builds and the
+"Unlock all levels" setting unlock everything.
+
+## Lobby
+
+Seats for up to 8 players, any mix of humans and bots.
 
 | Action | Keyboard | Gamepad |
 |--------|----------|---------|
-| Join / Unjoin | Enter | A or Start |
-| Split toggle (2P per device) | Left / Right arrow | D-Pad Left / Right or Left Stick |
-| Start game | Hold Enter (1.0s) | Hold A (1.0s) |
+| Join | Enter | A |
+| Split device into 2 players | Left / Right | D-pad or left stick |
+| Add bot | B | X |
+| Remove bot | Backspace | Y |
+| Cycle bot skill (easy / normal / hard) | Tab | RB |
+| Leave (or back when not joined) | Esc | B |
+| Start | Hold Space or Enter | Hold Start or A |
 
-### Stick Input
+A bots-only run can be started from an unjoined device. Seats are named `P1`, `P2`, ...
+and `BOT 1`, `BOT 2`, ..., each with a unique color.
 
-- Threshold: 0.5 (axis must exceed to register direction)
-- Reset: 0.3 (must drop below to allow new direction)
-- Prevents repeated toggles from held stick
+## In Level
 
-### Device States
+HUD: song progress bar with section and checkpoint ticks, per-player life pips, team
+score, checkpoint and rewind toasts, tutorial hints on the first level. Esc / Start
+pauses; resuming runs a short countdown.
 
-Each device can be:
-- **Not joined** — shown as "not joined"
-- **Single** — one player per device
-- **Split (2P)** — two players per device (keyboard: WASD + IJKL; gamepad: left stick + right stick)
+## Results
 
-### Start Flow
+Rank (S/A/B/C/D), score, time, enemies destroyed, revives, hits taken, rewinds, and a
+new-best badge. Buttons: Next level (after a clear), Retry, Level select. A Hardcore wipe
+shows the game-over variant.
 
-1. At least one device must be joined
-2. Any joined device can hold their join button for 1.0 second
-3. A progress bar fills during the hold
-4. Releasing before 1.0s toggles the device back to unjoined
-5. On completion, `GameConfig.players` is populated and the game scene loads
+## Settings
 
-## Game Over Screen
+Persisted in `user://save.json` by the `SaveData` autoload: master / music / effects
+volume, screen shake, reduce flashing, audio offset (with calibration), fullscreen
+(desktop), show FPS (also shows the debug overlay in debug builds), unlock all levels.
 
-Shown when all players are dead with no revival possible.
+## Credits
 
-### Display
-- Semi-transparent black overlay (75% opacity)
-- "GAME OVER" title (red, 64pt)
-- Final score (32pt)
-- Two buttons: "Restart" and "Main Menu" (24pt)
-
-### Controls
-- "Restart" is focused by default
-- D-Pad / Arrow Keys navigate between buttons
-- A / Enter activates the focused button
-- "Restart" reloads the game level with the same player config
-- "Main Menu" returns to device selection
+Lists every asset and music credit, including the CC BY attributions the Kevin MacLeod
+tracks require (`rust/src/core/credits.rs`, kept in sync with `docs/CREDITS.md`).
