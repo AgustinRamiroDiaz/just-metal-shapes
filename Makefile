@@ -47,14 +47,16 @@ build:
 test:
 	cd $(RUST_CRATE) && cargo test
 
-# Imports first so a fresh checkout has its .godot/ cache, then fails on a non-zero exit
-# or on any Rust panic reported through Godot's output.
+# Imports first so a fresh checkout has its .godot/ cache, then fails on a non-zero exit,
+# on any Rust panic reported through Godot's output, or on leaks reported at exit.
 e2e: build
 	"$(GODOT_BIN)" --headless --audio-driver Dummy --path "$(GODOT_PROJECT)" --import >/dev/null 2>&1 || true
 	set -o pipefail; \
 		"$(GODOT_BIN)" --headless --audio-driver Dummy --path "$(GODOT_PROJECT)" -s res://tests/run_e2e.gd \
 			$(if $(ONLY),-- --only=$(ONLY)) 2>&1 | tee "$(E2E_LOG)"
 	@if grep -q "\[panic" "$(E2E_LOG)"; then echo "e2e: Rust panic in Godot output"; exit 1; fi
+	@if grep -qE "leaked at exit|still in use at exit|RIDs of type .* were leaked" "$(E2E_LOG)"; then \
+		echo "e2e: Godot reported leaks at exit"; exit 1; fi
 
 test-all: test e2e
 

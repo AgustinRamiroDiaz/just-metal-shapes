@@ -128,6 +128,11 @@ impl UiServices {
     /// Plays `res://assets/sfx/<name>.ogg` on the SFX bus.
     #[func]
     pub fn play_sfx(&mut self, name: GString) {
+        // The dummy driver (headless) never mixes, so a playback started here would never
+        // be released and leaks at exit.
+        if AudioServer::singleton().get_driver_name() == "Dummy" {
+            return;
+        }
         let Some(stream) = self.sfx_stream(&name.to_string()) else {
             return;
         };
