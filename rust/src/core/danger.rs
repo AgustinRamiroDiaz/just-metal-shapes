@@ -311,8 +311,10 @@ pub fn encode(shapes: &[DangerShape]) -> Vec<f32> {
 
 /// Decodes whole records; unknown tags and a trailing partial record are skipped.
 pub fn decode(data: &[f32]) -> Vec<DangerShape> {
-    data.chunks_exact(RECORD_LEN)
-        .filter_map(DangerShape::decode_record)
+    data.as_chunks::<RECORD_LEN>()
+        .0
+        .iter()
+        .filter_map(|record| DangerShape::decode_record(record))
         .collect()
 }
 

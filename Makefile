@@ -5,7 +5,8 @@ STANDARD_GODOT_BIN ?= /tmp/godot-4.6.2-standard/Godot_v4.6.2-stable_linux.x86_64
 GODOT_EXPORT_BIN ?= $(if $(wildcard $(STANDARD_GODOT_BIN)),$(STANDARD_GODOT_BIN),$(GODOT_BIN))
 GODOT_PROJECT ?= godot
 RUST_CRATE ?= rust
-RUST_NIGHTLY ?= nightly
+# Later nightlies dropped `-Z emscripten-wasm-eh` (see rust/.cargo/config.toml).
+RUST_NIGHTLY ?= nightly-2026-06-02
 EMSDK ?= /tmp/emsdk
 WEB_OUT ?= build/web
 WEB_PORT ?= 8060

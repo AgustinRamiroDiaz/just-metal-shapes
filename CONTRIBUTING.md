@@ -7,7 +7,7 @@ Thanks for helping with Just Metal Shapes. The project is a Godot 4 game with ga
 - Godot 4.6.2 for normal editor work.
 - A non-Mono/non-.NET Godot 4.6.2 editor for Web exports.
 - Rust stable for native extension checks.
-- Rust nightly for Web builds.
+- Rust `nightly-2026-06-02` for Web builds (later nightlies dropped `-Z emscripten-wasm-eh`).
 - Emscripten 3.1.74 through `emsdk` for Godot Rust Web builds.
 - Python 3 for serving local Web exports.
 
@@ -20,9 +20,9 @@ The Makefile will automatically use `/tmp/godot-4.6.2-standard/Godot_v4.6.2-stab
 Install the Rust pieces:
 
 ```sh
-rustup toolchain install nightly
-rustup component add rust-src --toolchain nightly
-rustup target add wasm32-unknown-emscripten --toolchain nightly
+rustup toolchain install nightly-2026-06-02
+rustup component add rust-src --toolchain nightly-2026-06-02
+rustup target add wasm32-unknown-emscripten --toolchain nightly-2026-06-02
 ```
 
 Install Emscripten:
@@ -77,7 +77,7 @@ http://127.0.0.1:8060
 The Web preset is configured for GDExtension support with thread support disabled. The Rust WASM build uses:
 
 ```sh
-cargo +nightly build --features nothreads -Zbuild-std --target wasm32-unknown-emscripten
+cargo +nightly-2026-06-02 build --features nothreads -Zbuild-std --target wasm32-unknown-emscripten
 ```
 
 Generated exports live in `build/` and are ignored by Git.
