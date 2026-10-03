@@ -1,5 +1,7 @@
 use godot::prelude::*;
 
+pub mod core;
+
 mod color_utils;
 mod enemy;
 mod game_config;
