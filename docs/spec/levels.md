@@ -5,13 +5,16 @@ palette, signature phrases (the highest `phrases` weight), hazard pool and enemy
 Difficulty rises with the hardest stretch of each chart (peak 8-bar hazard pressure,
 checked by `every_level_generates_a_playable_chart`).
 
-| # | Level | Song (BPM) | Identity | Hazards | Enemies |
+| # | Level | Song (BPM) | Identity | Hazards | Enemies (**new**) |
 |---|---|---|---|---|---|
-| 1 | `wonders-of-the-earth` (tutorial) | Grand Project (140) | Deep blue and cyan. Pulse grids, a few mirrored lasers, gapped rings; on-screen hints | Pulse, Laser, BulletRing | Static shooter, turret |
-| 2 | `voxel-revolution` | Kevin MacLeod (122) | Violet and lime, blocky. Spikes from alternating sides, walls with gaps | Pulse, Laser, Spikes, Wall, BulletRing | Static shooter, runner, turret |
-| 3 | `celtic` | Alex Morgan (126) | Forest green. A reel: rings on every kick, lasers trading sides, sweeps | Pulse, Laser, LaserSweep, BulletRing, Wall, Spikes, Spiral | Shooter, shotgun, runner, turret |
-| 4 | `ouroboros` | Kevin MacLeod (107) | Teal-black and gold, the serpent. Spiral risers, rotating sweep crosses, bomb pairs | All but Barrage | Turret, mine layer, shotgun, runner |
-| 5 | `surf-rock` (final) | Alex Morgan (147) | Wine red and orange. Snare barrages, bomb pairs, walls, then the finale | All nine | All five |
+| 1 | `wonders-of-the-earth` (tutorial) | Grand Project (140) | Deep blue and cyan. Pulse grids, a few mirrored lasers, gapped rings; on-screen hints | Pulse, Laser, BulletRing | **Pulser**, **Hopper**, static shooter, turret |
+| 2 | `voxel-revolution` | Kevin MacLeod (122) | Violet and lime, blocky. Spikes from alternating sides, walls with gaps | Pulse, Laser, Spikes, Wall, BulletRing | **Bouncer**, **Splitter**, static shooter, runner, turret, hopper, pulser |
+| 3 | `celtic` | Alex Morgan (126) | Forest green. A reel: rings on every kick, lasers trading sides, sweeps | Pulse, Laser, LaserSweep, BulletRing, Wall, Spikes, Spiral | **Dasher**, **Chameleon**, shooter, shotgun, runner, turret, hopper, bouncer, splitter |
+| 4 | `ouroboros` | Kevin MacLeod (107) | Teal-black and gold, the serpent. Spiral risers, rotating sweep crosses, bomb pairs | All but Barrage | **Lancer**, **Warden**, turret, mine layer, shotgun, runner, pulser, dasher, chameleon |
+| 5 | `surf-rock` (final) | Alex Morgan (147) | Wine red and orange. Snare barrages, bomb pairs, walls, then the finale | All nine | All thirteen |
+
+Each level's new enemies (`EnemyEntry::introduced`) arrive first and alone, so players
+meet one rule at a time before breakdown waves stack them (see `spawning.md`).
 
 ## Finale
 
