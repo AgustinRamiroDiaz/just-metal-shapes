@@ -6,7 +6,7 @@ use super::chart_gen::{EnemyEntry, LevelSpec, Palette, PatternEntry, Rgb};
 use super::timing::BEATS_PER_BAR;
 
 /// The analyses shipped in `godot/music/`.
-pub const REAL_ANALYSES: [(&str, &str); 3] = [
+pub const REAL_ANALYSES: [(&str, &str); 5] = [
     (
         "wonders-of-the-earth",
         include_str!("../../../godot/music/wonders-of-the-earth.analysis.json"),
@@ -14,6 +14,14 @@ pub const REAL_ANALYSES: [(&str, &str); 3] = [
     (
         "celtic",
         include_str!("../../../godot/music/celtic.analysis.json"),
+    ),
+    (
+        "voxel-revolution",
+        include_str!("../../../godot/music/voxel-revolution.analysis.json"),
+    ),
+    (
+        "ouroboros",
+        include_str!("../../../godot/music/ouroboros.analysis.json"),
     ),
     (
         "surf-rock",
@@ -122,6 +130,7 @@ pub fn test_spec(difficulty: u8) -> LevelSpec {
         palette: Palette {
             bg: Rgb::new(0.0, 0.0, 0.0),
             accent: Rgb::new(1.0, 0.0, 1.0),
+            danger: Rgb::new(1.0, 0.1, 0.5),
         },
         pattern_pool: EventKind::HAZARDS
             .iter()
@@ -131,7 +140,9 @@ pub fn test_spec(difficulty: u8) -> LevelSpec {
             EnemyEntry::new("res://scenes/static_shooter_enemy.tscn", false, 1.0),
             EnemyEntry::new("res://scenes/shotgun_enemy.tscn", true, 1.0),
         ],
+        phrases: Vec::new(),
         density: 1.0,
         tutorial: false,
+        finale: false,
     }
 }

@@ -1,6 +1,34 @@
 # Music credits
 
-All tracks are from [Pixabay Music](https://pixabay.com/music/) and are used under the
+| Level | Song id | Title | Artist | License |
+|---|---|---|---|---|
+| 1 | `wonders-of-the-earth` | Wonders of the Earth | Grand Project | Pixabay Content License |
+| 2 | `voxel-revolution` | Voxel Revolution | Kevin MacLeod | CC BY 4.0 |
+| 3 | `celtic` | Celtic | Alex Morgan | Pixabay Content License |
+| 4 | `ouroboros` | Ouroboros | Kevin MacLeod | CC BY 4.0 |
+| 5 | `surf-rock` | Surf Rock | Alex Morgan | Pixabay Content License |
+
+## Kevin MacLeod (incompetech.com), CC BY 4.0
+
+| Song id | Title | Source |
+|---|---|---|
+| `voxel-revolution` | Voxel Revolution | https://incompetech.com/music/royalty-free/index.html?isrc=USUAN2000025 |
+| `ouroboros` | Ouroboros | https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1400007 |
+
+Both were re-encoded from the incompetech MP3 to Ogg Vorbis without other edits.
+Attribution is required and must be shown in the game's credits:
+
+> "Voxel Revolution" Kevin MacLeod (incompetech.com)
+> Licensed under Creative Commons: By Attribution 4.0 License
+> http://creativecommons.org/licenses/by/4.0/
+
+> "Ouroboros" Kevin MacLeod (incompetech.com)
+> Licensed under Creative Commons: By Attribution 4.0 License
+> http://creativecommons.org/licenses/by/4.0/
+
+## Pixabay Music
+
+These tracks are from [Pixabay Music](https://pixabay.com/music/) and are used under the
 [Pixabay Content License](https://pixabay.com/service/license-summary/) (free for
 commercial and non-commercial use, no attribution required; credited here anyway).
 Files were re-encoded from the original MP3 to Ogg Vorbis (`ffmpeg -c:a libvorbis -q:a 5`)
