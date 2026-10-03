@@ -2,6 +2,12 @@
 
 [node name="Main Level" type="GameManager" unique_id=886601202]
 
+[node name="Arena" type="Arena" parent="." unique_id=1730452101]
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1402269733]
+position = Vector2(640, 360)
+ignore_rotation = false
+
 [node name="Conductor" type="Conductor" parent="." unique_id=1520331907]
 
 [node name="LevelDirector" type="LevelDirector" parent="." unique_id=79819931]

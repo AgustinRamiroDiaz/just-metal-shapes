@@ -2,6 +2,7 @@ use godot::prelude::*;
 
 pub mod core;
 
+pub mod arena;
 mod color_utils;
 pub mod conductor;
 pub mod danger_field;
@@ -15,11 +16,12 @@ pub mod hazards;
 pub mod level_catalog;
 mod manager;
 mod menu;
-mod player;
+pub mod player;
 mod projectile;
 mod state_machine;
 mod targeting;
 pub mod util;
+pub mod visuals;
 
 struct MyExtension;
 

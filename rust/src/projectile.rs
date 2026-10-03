@@ -7,6 +7,8 @@ use godot::classes::{
 use godot::prelude::*;
 
 const TAU: f32 = std::f32::consts::TAU;
+const PROJECTILE_GLOW: Color = crate::visuals::enemy_visual::ENEMY_GLOW;
+const TRAIL_STEPS: i32 = 4;
 
 #[derive(GodotClass)]
 #[class(init, base = Area2D)]
@@ -25,6 +27,7 @@ struct Projectile {
 
     #[init(val = 12.0)]
     radius: f32,
+    age: f32,
 
     base: Base<Area2D>,
 }
@@ -68,28 +71,53 @@ impl IArea2D for Projectile {
     }
 
     fn process(&mut self, delta: f64) {
+        self.age += delta as f32;
+        self.base_mut().queue_redraw();
         let movement = self.direction * self.speed * delta as f32;
         let new_position = self.base().get_position() + movement;
         self.base_mut().set_position(new_position);
     }
 
+    /// Amber orb (enemy family, distinct from level-accent hazards) with a white-hot
+    /// core and a tapered trail behind its direction of travel.
     fn draw(&mut self) {
-        let center = Vector2::ZERO;
         let radius = self.radius;
+        let back = -self.direction.normalized_or_zero();
+        let glow = PROJECTILE_GLOW;
+        let pulse = 0.5 + 0.5 * (self.age * 18.0).sin();
 
-        self.base_mut()
-            .draw_circle(center, radius, Color::from_rgba(1.0, 0.9, 0.2, 1.0));
+        for i in (1..=TRAIL_STEPS).rev() {
+            let t = i as f32 / TRAIL_STEPS as f32;
+            let center = back * radius * 2.6 * t;
+            self.base_mut().draw_circle(
+                center,
+                radius * (1.0 - 0.75 * t),
+                Color::from_rgba(glow.r, glow.g * 0.8, glow.b * 0.6, 0.35 * (1.0 - t)),
+            );
+        }
+        self.base_mut().draw_circle(
+            Vector2::ZERO,
+            radius * (1.45 + 0.1 * pulse),
+            Color::from_rgba(glow.r, glow.g, glow.b, 0.22),
+        );
+        self.base_mut().draw_circle(Vector2::ZERO, radius, glow);
         self.base_mut()
             .draw_arc_ex(
-                center,
+                Vector2::ZERO,
                 radius,
                 0.0,
                 TAU,
-                16,
-                Color::from_rgba(1.0, 0.6, 0.0, 1.0),
+                20,
+                Color::from_rgba(1.0, 0.85, 0.6, 1.0),
             )
             .width(1.5)
+            .antialiased(true)
             .done();
+        self.base_mut().draw_circle(
+            Vector2::ZERO,
+            radius * 0.5,
+            Color::from_rgba(1.0, 0.97, 0.88, 1.0),
+        );
     }
 }
 

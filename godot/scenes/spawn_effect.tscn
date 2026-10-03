@@ -13,7 +13,7 @@ gravity = Vector3(0, 0, 0)
 scale_min = 0.02
 scale_max = 0.1
 scale_over_velocity_min = 0.0
-color = Color(1, 1, 1, 1)
+color = Color(1, 0.62, 0.25, 1)
 color_ramp = null
 
 [node name="SpawnEffect" type="SpawnEffect"]
