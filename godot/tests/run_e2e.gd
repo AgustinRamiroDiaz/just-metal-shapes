@@ -118,6 +118,9 @@ func _drive(scenario: RefCounted, t: E2EContext) -> void:
 
 
 func _reset() -> void:
+	var fx := root.get_node_or_null("Fx")
+	if fx != null:
+		fx.reset()
 	Engine.time_scale = 1.0
 	paused = false
 	if current_scene != null:
@@ -128,7 +131,8 @@ func _reset() -> void:
 		config.selected_level_id = ""
 		config.difficulty_mode = GameConfig.NORMAL
 	for child in root.get_children():
-		if child != config:
+		# Project autoloads (Fx, SaveData, ...) persist across scenarios like in the game.
+		if child != config and not ProjectSettings.has_setting("autoload/" + child.name):
 			child.queue_free()
 	await process_frame
 	await process_frame

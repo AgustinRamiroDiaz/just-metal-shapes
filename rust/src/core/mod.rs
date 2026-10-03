@@ -8,6 +8,7 @@ pub mod bot;
 pub mod chart;
 pub mod chart_gen;
 pub mod danger;
+pub mod feel;
 pub mod mode;
 pub mod rng;
 pub mod scoring;

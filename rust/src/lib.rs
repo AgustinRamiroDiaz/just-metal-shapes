@@ -8,6 +8,7 @@ pub mod danger_field;
 pub mod director;
 mod enemy;
 pub mod enemy_spawn;
+pub mod fx;
 mod game_config;
 pub mod groups;
 pub mod hazards;
