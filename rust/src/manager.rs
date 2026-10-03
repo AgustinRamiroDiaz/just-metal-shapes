@@ -4,6 +4,9 @@
 //! The level is cleared when the Conductor emits `song_finished`. When every player is
 //! down the song rewinds to the last checkpoint (players revived, arena cleared), or,
 //! in hardcore mode, the run ends.
+//!
+//! UI (HUD, countdown display, pause, results) lives in the `LevelUi` child, which
+//! listens to the signals below.
 
 use crate::conductor::Conductor;
 use crate::core::mode::DifficultyMode;
@@ -13,15 +16,10 @@ use crate::game_config::{GameConfig, PlayerConfig};
 use crate::groups;
 use crate::player::Player;
 use crate::util::dict_set;
-use godot::classes::{
-    Button, CanvasLayer, CenterContainer, CharacterBody2D, ColorRect, Control, INode2D, Label,
-    Node2D, Os, PackedScene, ResourceLoader, SceneTree, VBoxContainer,
-};
+use godot::classes::{CharacterBody2D, INode2D, Label, Node2D, Os, PackedScene, ResourceLoader};
 use godot::prelude::*;
 
 const COUNTDOWN_SECONDS: f64 = 3.0;
-/// How long "GO!" stays up after the countdown.
-const GO_SECONDS: f64 = 0.6;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum LevelState {
@@ -57,11 +55,9 @@ pub struct GameManager {
     #[init(val = LevelState::Loading)]
     state: LevelState,
     countdown_left: f64,
-    go_left: f64,
     stats: RunStats,
     mode: DifficultyMode,
     viewport_rect: Rect2,
-    countdown_label: Option<Gd<Label>>,
 
     base: Base<Node2D>,
 }
@@ -77,6 +73,9 @@ impl GameManager {
     fn level_cleared(score: i64);
     #[signal]
     fn game_over(score: i64);
+    /// The selected level could not be loaded; the level never starts.
+    #[signal]
+    fn level_failed();
     /// All players were down; the song rewound to `beat`. `count` is rewinds so far.
     #[signal]
     fn rewound(count: i64, beat: f64);
@@ -231,8 +230,6 @@ impl GameManager {
 
     fn start_song(&mut self) {
         self.state = LevelState::Playing;
-        self.go_left = GO_SECONDS;
-        self.set_countdown_text("GO!");
         self.signals().countdown_tick().emit(0);
         self.conductor().bind_mut().play(0.0);
         self.signals().level_started().emit();
@@ -259,99 +256,10 @@ impl GameManager {
                 rank.as_str()
             );
             self.signals().level_cleared().emit(score);
-            self.show_end_screen("LEVEL CLEAR", Color::from_rgb(0.4, 1.0, 0.5), score);
         } else {
             godot_print!("GameManager: GAME OVER score={score}");
             self.signals().game_over().emit(score);
-            self.show_end_screen("GAME OVER", Color::from_rgb(1.0, 0.2, 0.2), score);
         }
-    }
-
-    fn set_countdown_text(&mut self, text: &str) {
-        if let Some(label) = self.countdown_label.as_mut() {
-            label.set_text(text);
-            label.set_visible(!text.is_empty());
-        }
-    }
-
-    fn create_countdown_label(&mut self) {
-        let mut canvas = CanvasLayer::new_alloc();
-        canvas.set_name("CountdownLayer");
-        self.base_mut().add_child(&canvas);
-        let mut center = CenterContainer::new_alloc();
-        center.set_anchors_and_offsets_preset(godot::classes::control::LayoutPreset::FULL_RECT);
-        center.set_mouse_filter(godot::classes::control::MouseFilter::IGNORE);
-        canvas.add_child(&center);
-        let label = Self::make_label("", 96, Some(Color::from_rgb(1.0, 0.95, 0.6)));
-        center.add_child(&label);
-        self.countdown_label = Some(label);
-    }
-
-    fn show_end_screen(&mut self, title: &str, color: Color, score: i64) {
-        let mut canvas = CanvasLayer::new_alloc();
-        canvas.set_name("EndScreen");
-        self.base_mut().add_child(&canvas);
-
-        let mut overlay = ColorRect::new_alloc();
-        overlay.set_color(Color::from_rgba(0.0, 0.0, 0.0, 0.75));
-        overlay.set_anchors_and_offsets_preset(godot::classes::control::LayoutPreset::FULL_RECT);
-        canvas.add_child(&overlay);
-
-        let mut center = CenterContainer::new_alloc();
-        center.set_anchors_and_offsets_preset(godot::classes::control::LayoutPreset::FULL_RECT);
-        canvas.add_child(&center);
-
-        let mut vbox = VBoxContainer::new_alloc();
-        vbox.set_alignment(godot::classes::box_container::AlignmentMode::CENTER);
-        center.add_child(&vbox);
-
-        vbox.add_child(&Self::make_label(title, 64, Some(color)));
-        vbox.add_child(&Self::make_label(&format!("Score: {score}"), 32, None));
-        if self.stats.rewinds > 0 {
-            let rewinds = format!("Rewinds: {}", self.stats.rewinds);
-            vbox.add_child(&Self::make_label(&rewinds, 24, None));
-        }
-
-        let mut spacer = Control::new_alloc();
-        spacer.set_custom_minimum_size(Vector2::new(0.0, 32.0));
-        vbox.add_child(&spacer);
-
-        let mut restart_btn = Self::scene_button("Restart", "on_restart", "res://main_level.tscn");
-        vbox.add_child(&restart_btn);
-
-        let menu_btn = Self::scene_button("Main Menu", "on_menu", "res://scenes/main_menu.tscn");
-        vbox.add_child(&menu_btn);
-
-        restart_btn.call_deferred("grab_focus", &[]);
-    }
-
-    fn make_label(text: &str, font_size: i32, font_color: Option<Color>) -> Gd<Label> {
-        let mut label = Label::new_alloc();
-        label.set_text(text);
-        label.add_theme_font_size_override("font_size", font_size);
-        label.set_horizontal_alignment(godot::global::HorizontalAlignment::CENTER);
-        if let Some(color) = font_color {
-            label.add_theme_color_override("font_color", color);
-        }
-        label
-    }
-
-    fn scene_button(
-        text: &str,
-        callback_name: &'static str,
-        scene_path: &'static str,
-    ) -> Gd<Button> {
-        let mut button = Button::new_alloc();
-        button.set_text(text);
-        button.add_theme_font_size_override("font_size", 24);
-        button.connect(
-            "pressed",
-            &Callable::from_fn(callback_name, move |_args| {
-                change_scene_to_file(scene_path);
-                Variant::nil()
-            }),
-        );
-        button
     }
 
     fn spawn_players(&mut self) {
@@ -445,15 +353,13 @@ impl GameManager {
         player.set("move_down_action", &StringName::from(down).to_variant());
     }
 
-    fn update_ui(&mut self) {
-        let score = self.get_score();
-        let mut score_label = self.base().get_node_as::<Label>("ScoreLabel");
-        score_label.set_text(&format!("Score: {score}"));
-        self.update_debug_label();
-    }
-
+    /// Fills `DebugLabel` while it is visible (the HUD shows it with the FPS setting in
+    /// debug builds).
     fn update_debug_label(&mut self) {
-        if !Os::singleton().is_debug_build() {
+        let Some(mut debug_label) = self.base().try_get_node_as::<Label>("DebugLabel") else {
+            return;
+        };
+        if !debug_label.is_visible() || !Os::singleton().is_debug_build() {
             return;
         }
         let conductor = self.conductor();
@@ -490,7 +396,6 @@ impl GameManager {
             format!("hazards: {hazards}"),
             format!("rewinds: {}", self.stats.rewinds),
         ];
-        let mut debug_label = self.base().get_node_as::<Label>("DebugLabel");
         debug_label.set_text(&lines.join("\n"));
     }
 }
@@ -517,55 +422,32 @@ impl INode2D for GameManager {
         self.mode = current_mode(&self.to_gd().upcast());
         self.stats.mode = self.mode;
 
-        let mut debug_label = self.base().get_node_as::<Label>("DebugLabel");
-        debug_label.set_visible(Os::singleton().is_debug_build());
-        self.create_countdown_label();
-
         if !director.bind_mut().load_level(GString::new()) {
             godot_error!("GameManager: level failed to load");
             self.state = LevelState::GameOver;
-            self.show_end_screen("LEVEL FAILED TO LOAD", Color::from_rgb(1.0, 0.2, 0.2), 0);
+            self.signals().level_failed().emit();
             return;
         }
         self.stats.difficulty = director.bind().level().map_or(1, |level| level.difficulty);
         self.state = LevelState::Countdown;
         self.countdown_left = self.countdown_seconds;
         let shown = self.countdown_left.ceil() as i64;
-        self.set_countdown_text(&shown.to_string());
         self.signals().countdown_tick().emit(shown);
     }
 
     fn process(&mut self, delta: f64) {
-        match self.state {
-            LevelState::Countdown => {
-                let before = self.countdown_left.ceil() as i64;
-                self.countdown_left -= delta;
-                if self.countdown_left <= 0.0 {
-                    self.start_song();
-                } else {
-                    let now = self.countdown_left.ceil() as i64;
-                    if now != before {
-                        self.set_countdown_text(&now.to_string());
-                        self.signals().countdown_tick().emit(now);
-                    }
+        if self.state == LevelState::Countdown {
+            let before = self.countdown_left.ceil() as i64;
+            self.countdown_left -= delta;
+            if self.countdown_left <= 0.0 {
+                self.start_song();
+            } else {
+                let now = self.countdown_left.ceil() as i64;
+                if now != before {
+                    self.signals().countdown_tick().emit(now);
                 }
             }
-            LevelState::Playing if self.go_left > 0.0 => {
-                self.go_left -= delta;
-                if self.go_left <= 0.0 {
-                    self.set_countdown_text("");
-                }
-            }
-            _ => {}
         }
-        self.update_ui();
+        self.update_debug_label();
     }
-}
-
-fn change_scene_to_file(scene_path: &str) {
-    let mut tree = godot::classes::Engine::singleton()
-        .get_main_loop()
-        .and_then(|l| l.try_cast::<SceneTree>().ok())
-        .unwrap();
-    tree.change_scene_to_file(scene_path);
 }

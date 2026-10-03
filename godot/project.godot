@@ -11,13 +11,15 @@ config_version=5
 [application]
 
 config/name="Just Metal Shapes"
-run/main_scene="res://scenes/main_menu.tscn"
+run/main_scene="res://scenes/ui/title.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
 
 GameConfig="*res://scenes/autoload/game_config.tscn"
+SaveData="*res://scenes/autoload/save_data.tscn"
+Ui="*res://scenes/autoload/ui.tscn"
 
 [display]
 
@@ -26,6 +28,10 @@ window/size/viewport_height=720
 window/size/mode=2
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
+
+[gui]
+
+theme/custom="res://theme/main_theme.tres"
 
 [dotnet]
 
