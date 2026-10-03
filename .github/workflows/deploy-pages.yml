@@ -28,11 +28,13 @@ jobs:
           use-dotnet: false
           include-templates: true
 
+      # Pinned: later nightlies dropped `-Z emscripten-wasm-eh`, which
+      # rust/.cargo/config.toml needs to match Godot's web templates.
       - name: Setup Rust nightly for Web
         run: |
-          rustup toolchain install nightly
-          rustup component add rust-src --toolchain nightly
-          rustup target add wasm32-unknown-emscripten --toolchain nightly
+          rustup toolchain install nightly-2026-06-02
+          rustup component add rust-src --toolchain nightly-2026-06-02
+          rustup target add wasm32-unknown-emscripten --toolchain nightly-2026-06-02
 
       - name: Setup Emscripten
         uses: emscripten-core/setup-emsdk@v16
@@ -42,7 +44,7 @@ jobs:
       - name: Build Rust GDExtension for Web
         run: |
           cd rust
-          GDRUST_GODOT_BIN=godot cargo +nightly build \
+          GDRUST_GODOT_BIN=godot cargo +nightly-2026-06-02 build \
             --release \
             --features nothreads \
             -Zbuild-std \
