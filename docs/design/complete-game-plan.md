@@ -211,6 +211,42 @@ hit flash + knockback ring, death shatter, revive burst; enemy spawn scale-in an
 death explosion; arena background shader pulsing on beats; UI tweens on every screen
 transition.
 
+Interface detail (`rust/src/fx.rs`, autoload `/root/Fx`):
+
+- `shake(strength)` adds trauma (0.15 small, 0.35 medium, 0.7 large) to the viewport
+  `Camera2D` offset/roll, scaled by `SaveData.screen_shake` (bool or 0..1 float; on
+  without SaveData). `hitstop(seconds)` dips `Engine.time_scale` relative to the current
+  scale for at most 0.12 real seconds, with a cooldown; pausing or another time-scale
+  change cancels it. `burst(pos, color, amount)` and `burst_style(pos, color, amount,
+  style, speed)` (`Fx.BURST_SPARKS|DOTS|SHARDS`) use a pool of CPUParticles2D;
+  `flash(color, seconds)`, `ring(pos, color, radius, seconds)`, `sweep(color, seconds)`,
+  `rewind_effect(seconds)`; `play_sfx(name, pos = screen center, pitch_jitter = 0.06,
+  volume_db = 0)` plays `assets/sfx/<name>.ogg` on bus `SFX` (else `Master`) with
+  per-sound voice limits and retrigger throttling. Rust callers use `fx::with_fx`.
+- Overlays (flash, rewind) are on CanvasLayer 5; HUD and menus should use layer 10+.
+  World effects draw at z 50 (above players, enemies, hazards); the `Arena` background
+  sits at z -1000.
+- Level scene: `Arena` (background + director/conductor signal glue) and a `Camera2D`
+  centered on the arena. Presentation nodes live in `rust/src/visuals/`
+  (`PlayerVisual`, `EnemyVisual`) and never change gameplay state.
+
+### Visual language and palette
+
+Color says who owns a shape. Keep these families apart so danger reads at a glance:
+
+| Owner | Color | Shape language |
+|---|---|---|
+| Arena | level `bg` + `accent` at low alpha (grid, hexagon motif, pulses) | thin lines, never solid fills |
+| Hazards | level `accent` (and `hazard_color` variants, hot pink `(1, 0.25, 0.45)`) | telegraph outline/fill, then a solid white-flash hit |
+| Enemies | metal bodies (cool gray-white ramp) with an amber core ring `(1, 0.55, 0.15)` | Kenney simple-space silhouettes, one per type |
+| Enemy projectiles and mines | amber family: white-hot core, amber `(1, 0.55, 0.15)` glow and trail | round orbs with trails; mines are dark cores with amber spikes |
+| Shields | the matching player's team color | segmented plate rings around enemies |
+| Players | team color (`GameConfig.get_player_colors`) | rounded bodies with faces, range ring, lightning |
+
+Rules: hazards never use amber; enemy-owned things never use the level accent; white is
+reserved for impacts (hit frames, flashes, sparks). No level accent should be close to
+amber (current accents: cyan, lime, pink).
+
 ## Testing
 
 - Unit: `cargo test` over `core::*` (analysis parsing, chart generation invariants

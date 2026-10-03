@@ -84,6 +84,8 @@ A level is one song. The game loop is split by responsibility:
 
 ```
 Main Level (Node2D + GameManager)      main_level.tscn
+  ├── Arena            (background shader; routes director presentation signals to Fx)
+  ├── Camera2D         (fixed on the arena; Fx shakes its offset)
   ├── Conductor        (song time, beat/bar/section signals, seek/pause)
   ├── LevelDirector    (analysis -> chart -> spawns events on time)
   ├── DangerField      (per-physics-frame DangerSnapshot of every hazard)
@@ -140,6 +142,18 @@ Groups (`groups.rs`): `players`, `enemies`, `hazards`, `danger`, `enemy_projecti
   (`check*`, `wait_until`, `change_scene`, `start_level`, input injection) and typically
   set `Conductor.use_clock` and `Engine.time_scale`.
 - `make test-all`: both.
+
+### Presentation
+
+The `Fx` autoload (`fx.rs`) owns shake, hit-stop, pooled particle bursts, flashes, rings,
+the checkpoint sweep, the rewind overlay and gameplay SFX. Visual-only component nodes
+in `rust/src/visuals/` sit in the entity scenes and read gameplay state without changing
+it: `PlayerVisual` (squash/stretch, beat bounce, trail, range ring, hit/down/revive) and
+`EnemyVisual` (spawn pop, damage flash, aim/recoil/muzzle flash, shield-break plates,
+death explosion). Enemy bodies are a `Sprite2D` pivot (rotated by `TurnComponent`) with
+a `Body` child sprite. Tunable feel math (trauma, hit-stop, squash, beat envelopes) is in
+`core/feel.rs`. `godot/tests/capture_screens.gd` stages gameplay moments and saves
+screenshots plus a frame-time sample for visual checks (needs a display).
 
 ## Shared Utilities
 
