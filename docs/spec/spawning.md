@@ -2,72 +2,50 @@
 
 ## Enemy Spawning
 
-### Base Interval
+Enemies come from the level chart as `SpawnEnemy` events; nothing spawns on a timer.
+`core/chart_gen.rs` places them on phrase boundaries (see `levels.md` for each level's
+enemy pool):
 
-The base spawn interval is 7.0 seconds. Each enemy type has a multiplier applied to this base.
+| Section | Enemy spawns |
+|---------|--------------|
+| intro, outro, finale | none |
+| breakdown | mirrored pairs (the co-op combat phase) |
+| main | likelier when the current phrase is light on hazards |
+| build | half as often as main |
 
-| Enemy | Multiplier | Initial Interval |
-|-------|------------|------------------|
-| Static Shooter | 1.0x | 7.0s |
-| Runner | 1.2x | 8.4s |
-| Shotgun | 1.5x | 10.5s |
-| Turret | 2.0x | 14.0s |
-| Mine Layer | 2.5x | 17.5s |
-
-### Difficulty Scaling
-
-Spawn intervals decrease over time:
-
-```
-difficulty_factor = 1.0 - min(game_time / 300.0, 0.7)
-effective_interval = base_interval * multiplier * difficulty_factor
-```
-
-| Time | Factor | Static Shooter Interval |
-|------|--------|-------------------------|
-| 0s | 1.0 | 7.0s |
-| 60s | 0.8 | 5.6s |
-| 150s | 0.5 | 3.5s |
-| 300s+ | 0.3 | 2.1s (cap) |
-
-The difficulty caps at 30% of original intervals after 5 minutes.
+Each event picks a scene from the level's `enemy_pool` (`params.variant`) and its warning
+time is how long the spawn effect plays.
 
 ### Spawn Locations
 
-**Inside viewport** (Static Shooter, Turret):
-- Random position within viewport, 50px margin from edges
-- A particle burst effect plays for 0.8 seconds before the enemy appears
+`enemy_spawn.rs` places the enemy:
 
-**Outside viewport** (Shotgun, Runner, Mine Layer):
-- Random angle on a circle centered on the viewport
-- Circle radius: half the viewport diagonal + 50px
-- Enemy appears immediately (no spawn effect)
+**Inside the arena** (static shooter, turret): at the event's arena position. A particle
+burst plays for the event's telegraph time, then the enemy appears.
+
+**Outside the arena** (shotgun, runner, mine layer): at `params.angle` on a circle around
+the arena center, radius half the arena diagonal + 50px, and the enemy chases inward.
 
 ### Multiplayer Scaling
 
-Enemy `max_life` is multiplied by the total number of players at spawn time. This applies to all enemy types. With 1 player, values are unchanged.
+Enemy `max_life` is multiplied by the number of players at spawn time.
+
+### Rewinds
+
+A checkpoint rewind clears enemies, enemy projectiles and mines; the chart respawns
+enemies as the song replays.
 
 ## Player Spawning
 
-Players spawn at 8 preset positions distributed across the viewport:
+Players spawn at 8 preset positions relative to the viewport, in seat order:
 
-| Index | Position (relative to viewport) |
-|-------|-------------------------------|
-| 0 | (33.3%, 39.0%) |
-| 1 | (33.3%, 61.2%) |
-| 2 | (66.7%, 39.0%) |
-| 3 | (66.7%, 61.2%) |
-| 4 | (50.0%, 26.0%) |
-| 5 | (50.0%, 70.3%) |
-| 6 | (16.7%, 50.2%) |
-| 7 | (83.3%, 50.2%) |
-
-## Spawn Effect
-
-Inside-viewport enemies get a particle burst before appearing:
-- Texture: dirt_03.png
-- 16 particles, sphere emission (8px radius)
-- Omnidirectional, velocity 40-80 px/s
-- Particle lifetime: 0.6s
-- Emission duration: 0.8s (enemy appears after this)
-- Explosiveness: 0.8 (near-instant burst)
+| Index | Position |
+|-------|----------|
+| 0 | (40%, 42%) |
+| 1 | (40%, 58%) |
+| 2 | (60%, 42%) |
+| 3 | (60%, 58%) |
+| 4 | (50%, 30%) |
+| 5 | (50%, 70%) |
+| 6 | (30%, 50%) |
+| 7 | (70%, 50%) |

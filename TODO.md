@@ -4,17 +4,7 @@
 
 With invincibility frames.
 
-## Add pause
-
-## Add restart button when game is over
-
-# UI
-
-## Lightning effect for damaging enemies
-
 # Ideas for later
-
-## More enemy types
 
 ## Make enemies drop powerups
 
@@ -30,3 +20,5 @@ You should do 1 DPS divided by the number of enemies.
 # Minor improvements
 
 - Allow players to select their color
+- Sounds for enemy shots and rewinds (no fitting SFX in the current packs)
+- Bots: predict rotating sweeps better (hard bots still take a few hits on Ouroboros and Surf Rock)
