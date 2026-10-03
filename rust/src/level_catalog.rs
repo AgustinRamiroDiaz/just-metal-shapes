@@ -17,6 +17,14 @@ const SHOTGUN: &str = "res://scenes/shotgun_enemy.tscn";
 const TURRET: &str = "res://scenes/turret_enemy.tscn";
 const RUNNER: &str = "res://scenes/runner_enemy.tscn";
 const MINE_LAYER: &str = "res://scenes/mine_layer_enemy.tscn";
+const HOPPER: &str = "res://scenes/hopper_enemy.tscn";
+const PULSER: &str = "res://scenes/pulser_enemy.tscn";
+const BOUNCER: &str = "res://scenes/bouncer_enemy.tscn";
+const SPLITTER: &str = "res://scenes/splitter_enemy.tscn";
+const DASHER: &str = "res://scenes/dasher_enemy.tscn";
+const CHAMELEON: &str = "res://scenes/chameleon_enemy.tscn";
+const LANCER: &str = "res://scenes/lancer_enemy.tscn";
+const WARDEN: &str = "res://scenes/warden_enemy.tscn";
 
 use SectionType::{Breakdown, Build, Intro, Main, Outro};
 
@@ -79,8 +87,10 @@ pub fn all_levels() -> Vec<LevelSpec> {
         PhraseEntry::new(Phrase::RingsOnKicks, 2.0),
     ];
     wonders.enemy_pool = vec![
-        EnemyEntry::new(STATIC_SHOOTER, false, 2.0),
-        EnemyEntry::new(TURRET, false, 1.0),
+        EnemyEntry::new(PULSER, false, 1.2).introduced(),
+        EnemyEntry::new(HOPPER, false, 1.2).introduced(),
+        EnemyEntry::new(STATIC_SHOOTER, false, 1.5),
+        EnemyEntry::new(TURRET, false, 0.8),
     ];
 
     // 2. Voxel Revolution: blocky geometry. Spikes from the sides and walls with gaps.
@@ -115,9 +125,13 @@ pub fn all_levels() -> Vec<LevelSpec> {
         PhraseEntry::new(Phrase::Breather, 1.0),
     ];
     voxel.enemy_pool = vec![
-        EnemyEntry::new(STATIC_SHOOTER, false, 1.5),
+        EnemyEntry::new(BOUNCER, false, 1.3).introduced(),
+        EnemyEntry::new(SPLITTER, false, 1.0).introduced(),
+        EnemyEntry::new(STATIC_SHOOTER, false, 1.0),
         EnemyEntry::new(RUNNER, true, 1.0),
-        EnemyEntry::new(TURRET, false, 1.0),
+        EnemyEntry::new(TURRET, false, 0.7),
+        EnemyEntry::new(HOPPER, false, 0.8),
+        EnemyEntry::new(PULSER, false, 0.7),
     ];
 
     // 3. Celtic: a reel. Rings on every kick and lasers trading sides, with sweeps.
@@ -155,10 +169,15 @@ pub fn all_levels() -> Vec<LevelSpec> {
         PhraseEntry::new(Phrase::Scatter, 0.5),
     ];
     celtic.enemy_pool = vec![
-        EnemyEntry::new(STATIC_SHOOTER, false, 1.0),
-        EnemyEntry::new(SHOTGUN, true, 1.0),
-        EnemyEntry::new(RUNNER, true, 1.0),
-        EnemyEntry::new(TURRET, false, 0.7),
+        EnemyEntry::new(DASHER, false, 1.2).introduced(),
+        EnemyEntry::new(CHAMELEON, false, 1.0).introduced(),
+        EnemyEntry::new(STATIC_SHOOTER, false, 0.7),
+        EnemyEntry::new(SHOTGUN, true, 0.9),
+        EnemyEntry::new(RUNNER, true, 0.8),
+        EnemyEntry::new(TURRET, false, 0.5),
+        EnemyEntry::new(HOPPER, false, 0.8),
+        EnemyEntry::new(BOUNCER, false, 0.8),
+        EnemyEntry::new(SPLITTER, false, 0.6),
     ];
 
     // 4. Ouroboros: the serpent. Spirals, rotating sweeps and bombs; mine layers.
@@ -198,10 +217,17 @@ pub fn all_levels() -> Vec<LevelSpec> {
         PhraseEntry::new(Phrase::Scatter, 0.5),
     ];
     ouroboros.enemy_pool = vec![
-        EnemyEntry::new(TURRET, false, 1.2),
-        EnemyEntry::new(MINE_LAYER, true, 1.0),
-        EnemyEntry::new(SHOTGUN, true, 1.0),
-        EnemyEntry::new(RUNNER, true, 0.8),
+        EnemyEntry::new(LANCER, false, 1.2).introduced(),
+        EnemyEntry::new(WARDEN, false, 0.8)
+            .introduced()
+            .supporting(),
+        EnemyEntry::new(TURRET, false, 0.8),
+        EnemyEntry::new(MINE_LAYER, true, 0.9),
+        EnemyEntry::new(SHOTGUN, true, 0.8),
+        EnemyEntry::new(RUNNER, true, 0.6),
+        EnemyEntry::new(PULSER, false, 0.7),
+        EnemyEntry::new(DASHER, false, 0.9),
+        EnemyEntry::new(CHAMELEON, false, 0.6),
     ];
 
     // 5. Surf Rock (final): everything, aimed barrages on the snare, bomb pairs, and the
@@ -244,11 +270,19 @@ pub fn all_levels() -> Vec<LevelSpec> {
         PhraseEntry::new(Phrase::Scatter, 0.6),
     ];
     surf.enemy_pool = vec![
-        EnemyEntry::new(STATIC_SHOOTER, false, 1.0),
-        EnemyEntry::new(SHOTGUN, true, 1.0),
-        EnemyEntry::new(RUNNER, true, 1.2),
-        EnemyEntry::new(TURRET, false, 1.0),
-        EnemyEntry::new(MINE_LAYER, true, 0.8),
+        EnemyEntry::new(STATIC_SHOOTER, false, 0.6),
+        EnemyEntry::new(SHOTGUN, true, 0.8),
+        EnemyEntry::new(RUNNER, true, 0.8),
+        EnemyEntry::new(TURRET, false, 0.6),
+        EnemyEntry::new(MINE_LAYER, true, 0.6),
+        EnemyEntry::new(HOPPER, false, 0.8),
+        EnemyEntry::new(PULSER, false, 0.7),
+        EnemyEntry::new(BOUNCER, false, 0.8),
+        EnemyEntry::new(SPLITTER, false, 0.7),
+        EnemyEntry::new(DASHER, false, 1.0),
+        EnemyEntry::new(CHAMELEON, false, 0.8),
+        EnemyEntry::new(LANCER, false, 1.0),
+        EnemyEntry::new(WARDEN, false, 0.6).supporting(),
     ];
 
     let mut levels = vec![wonders, voxel, celtic, ouroboros, surf];

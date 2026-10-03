@@ -21,7 +21,8 @@ use crate::util::dict_set;
 use godot::classes::{INode, Node, Node2D, Time, Timer};
 use godot::prelude::*;
 
-/// Contact radius assumed for enemies (their real contact circles are danger shapes).
+/// Smallest distance bots keep from an enemy they attack; enemies with a longer reach
+/// report it through `get_threat_radius()` (their shapes are in the danger snapshot).
 const ENEMY_CONTACT_RADIUS: f32 = 24.0;
 /// Danger radius around a pending enemy spawn (the largest enemy contact circle).
 const SPAWN_DANGER_RADIUS: f32 = 28.0;
@@ -309,9 +310,19 @@ impl BotBrain {
                 }
                 None => true,
             };
+            let contact_radius = if enemy.has_method("get_threat_radius") {
+                enemy
+                    .clone()
+                    .call("get_threat_radius", &[])
+                    .try_to::<f32>()
+                    .unwrap_or(ENEMY_CONTACT_RADIUS)
+                    .max(ENEMY_CONTACT_RADIUS)
+            } else {
+                ENEMY_CONTACT_RADIUS
+            };
             self.enemies.push(BotEnemy {
                 position: to_v2(enemy.get_global_position()),
-                contact_radius: ENEMY_CONTACT_RADIUS,
+                contact_radius,
                 damageable,
             });
         }

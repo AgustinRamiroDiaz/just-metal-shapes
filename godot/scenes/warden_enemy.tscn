@@ -1,16 +1,16 @@
 [gd_scene format=3]
 
-[ext_resource type="Texture2D" path="res://assets/kenney_simple-space/ship_sidesA.png" id="2_body"]
+[ext_resource type="Texture2D" path="res://assets/kenney_simple-space/ship_sidesD.png" id="2_body"]
 [ext_resource type="Shader" path="res://shaders/enemy_body.gdshader" id="3_body_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_body"]
 resource_local_to_scene = true
 shader = ExtResource("3_body_shader")
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_mine_layer"]
-radius = 26.0
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 28.0
 
-[node name="MineLayerEnemy" type="BaseEnemy"]
+[node name="WardenEnemy" type="BaseEnemy"]
 collision_layer = 2
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
@@ -18,26 +18,26 @@ collision_layer = 2
 [node name="Body" type="Sprite2D" parent="Sprite2D"]
 material = SubResource("ShaderMaterial_body")
 rotation = 1.5707964
-scale = Vector2(0.9, 0.9)
+scale = Vector2(1.0, 1.0)
 texture = ExtResource("2_body")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("CircleShape2D_mine_layer")
+shape = SubResource("CircleShape2D_body")
 
 [node name="HealthComponent" type="HealthComponent" parent="."]
 max_life = 4.0
-auto_shield_layers = 3
+auto_shield_layers = 2
 
 [node name="ChaserComponent" type="ChaserComponent" parent="."]
-move_speed = 20.0
+move_speed = 16.0
 
-[node name="MineDropperComponent" type="MineDropperComponent" parent="."]
+[node name="WardComponent" type="WardComponent" parent="."]
 
 [node name="ContactDamageComponent" type="ContactDamageComponent" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ContactDamageComponent"]
-shape = SubResource("CircleShape2D_mine_layer")
+shape = SubResource("CircleShape2D_body")
 
 [node name="EnemyVisual" type="EnemyVisual" parent="."]
-body_radius = 26.0
+body_radius = 28.0
 face_motion = true

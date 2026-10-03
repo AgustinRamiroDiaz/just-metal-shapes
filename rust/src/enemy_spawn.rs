@@ -78,7 +78,17 @@ fn place_enemy(
     enemy.set_global_position(position);
     parent.add_child(&enemy);
 
-    let players = player_count(&parent);
+    scale_health(&enemy.clone().upcast(), &parent);
+
+    enemy.connect("died", &director.callable("_on_enemy_died"));
+    let mut director = director;
+    director.emit_signal("enemy_spawned", &[enemy.to_variant()]);
+}
+
+/// Multiplies an enemy's `max_life` (and life) by the number of seats. `node` is any
+/// node in the tree (used to reach `GameConfig`).
+pub fn scale_health(enemy: &Gd<Node>, node: &Gd<Node>) {
+    let players = player_count(node);
     if players > 1
         && let Some(mut health) = enemy.get_node_or_null("HealthComponent")
     {
@@ -86,10 +96,6 @@ fn place_enemy(
         health.set("max_life", &max_life.to_variant());
         health.set("life", &max_life.to_variant());
     }
-
-    enemy.connect("died", &director.callable("_on_enemy_died"));
-    let mut director = director;
-    director.emit_signal("enemy_spawned", &[enemy.to_variant()]);
 }
 
 fn player_count(node: &Gd<Node>) -> usize {

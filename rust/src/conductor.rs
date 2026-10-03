@@ -418,6 +418,7 @@ impl Conductor {
 #[godot_api]
 impl INode for Conductor {
     fn ready(&mut self) {
+        self.base_mut().add_to_group(crate::groups::CONDUCTOR);
         self.ensure_player();
         self.dummy_driver = AudioServer::singleton().get_driver_name() == "Dummy";
         if self.dummy_driver {

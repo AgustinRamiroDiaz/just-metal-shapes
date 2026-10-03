@@ -11,3 +11,5 @@ pub const ENEMY_PROJECTILES: &str = "enemy_projectiles";
 pub const MINES: &str = "mines";
 /// Pending enemy spawn effects (freeing one cancels its enemy).
 pub const SPAWN_EFFECTS: &str = "spawn_effects";
+/// The level's `Conductor` (enemies read song time from it).
+pub const CONDUCTOR: &str = "conductor";
