@@ -75,8 +75,14 @@ Player (CharacterBody2D + player.gd)
   ├── CollisionShape2D
   ├── RevivalComponent         (teammate revival mechanic)
   ├── LightningComponent       (visual lightning rays to damaged targets)
-  └── RangeArea                (Area2D detecting enemies in range)
+  ├── RangeArea                (Area2D detecting enemies in range)
+  └── BotBrain                 (bot seats only: move direction from core::bot)
 ```
+
+A Player whose `input_type` is `GameConfig.BOT` moves along its `BotBrain`'s
+`get_move_direction()` instead of reading `Input`. The brain decides at a fixed rate
+from the `DangerField` snapshot, enemies' shield colors and teammates, delays the
+result by its reaction time and smooths it (`bot_brain.rs`, `core/bot.rs`).
 
 ## Game Management
 
@@ -154,6 +160,11 @@ death explosion). Enemy bodies are a `Sprite2D` pivot (rotated by `TurnComponent
 a `Body` child sprite. Tunable feel math (trauma, hit-stop, squash, beat envelopes) is in
 `core/feel.rs`. `godot/tests/capture_screens.gd` stages gameplay moments and saves
 screenshots plus a frame-time sample for visual checks (needs a display).
+
+Bot scenarios (`test_bot_*`) use `tests/bot_arena.gd` for a bare arena (DangerField +
+players, scripted danger records) and scale `Engine.physics_ticks_per_second` with the
+time scale so bots keep their decision rate. `test_bot_full_level` plays the first level
+with bots only (`-- --bot-level=<id>` for another level).
 
 ## Shared Utilities
 

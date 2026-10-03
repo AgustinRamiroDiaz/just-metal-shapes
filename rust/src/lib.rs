@@ -3,6 +3,7 @@ use godot::prelude::*;
 pub mod core;
 
 pub mod arena;
+mod bot_brain;
 mod color_utils;
 pub mod conductor;
 pub mod danger_field;

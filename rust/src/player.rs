@@ -1,4 +1,6 @@
+use crate::bot_brain::BotBrain;
 use crate::fx::{BurstStyle, with_fx};
+use crate::game_config::GameConfig;
 use crate::state_machine::StateMachine;
 use godot::classes::{
     Area2D, CharacterBody2D, CircleShape2D, CollisionShape2D, ICharacterBody2D, INode, INode2D,
@@ -223,6 +225,13 @@ impl Player {
         value.signum() * (value.abs() - self.joystick_deadzone) / (1.0 - self.joystick_deadzone)
     }
 
+    /// Heading from the `BotBrain` child (zero without one).
+    fn bot_direction(&self) -> Vector2 {
+        self.base()
+            .try_get_node_as::<BotBrain>("BotBrain")
+            .map_or(Vector2::ZERO, |brain| brain.bind().get_move_direction())
+    }
+
     fn get_tier_radius(&self, tier: i32) -> f32 {
         self.range_radius * ((tier + 1) as f32 / TIER_COUNT as f32)
     }
@@ -414,7 +423,9 @@ impl ICharacterBody2D for Player {
 
         // Assuming GameConfig values for input_type
         // 0: Keyboard1, 1: Keyboard2, 2-9: GamepadLeft, 10-17: GamepadRight
-        let input_dir = if self.input_type >= 10 {
+        let input_dir = if self.input_type == GameConfig::BOT {
+            self.bot_direction()
+        } else if self.input_type >= 10 {
             // GamepadRight
             let dev = self.input_type - 10;
             Vector2::new(
