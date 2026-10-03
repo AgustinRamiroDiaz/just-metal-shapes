@@ -323,8 +323,13 @@ pub struct HopComponent {
     hop_height: f32,
     /// Landing shockwave radius (px); 0 = none.
     #[var]
-    #[init(val = 68.0)]
+    #[init(val = 52.0)]
     shockwave_radius: f32,
+    /// Hops stop this far short of the target (px), so the body lands beside a
+    /// player who stands still and the shockwave does the hurting.
+    #[var]
+    #[init(val = 48.0)]
+    standoff: f32,
     #[var]
     #[init(val = StringName::from("players"))]
     target_group: StringName,
@@ -395,6 +400,12 @@ impl HopComponent {
         }
     }
 
+    /// How close a player can safely stand (bots keep outside it).
+    #[func]
+    fn get_threat_radius(&self) -> f32 {
+        self.shockwave_radius
+    }
+
     /// The landing circle: pending through the crouch and airtime, active briefly
     /// after touchdown.
     #[func]
@@ -440,7 +451,8 @@ impl HopComponent {
                     SEPARATION_RADIUS,
                 );
                 let direction = (heading + apart * 1.2).normalized_or_zero();
-                from + direction * to_target.length().min(self.hop_distance)
+                let reach = (to_target.length() - self.standoff).max(0.0);
+                from + direction * reach.min(self.hop_distance)
             }
             None => from,
         };

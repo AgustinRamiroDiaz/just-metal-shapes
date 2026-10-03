@@ -112,6 +112,24 @@ impl BaseEnemy {
         records
     }
 
+    /// How close a player can stand without being hurt: the contact radius, or a
+    /// component's larger reach (a Hopper's shockwave). Bots hold this distance.
+    #[func]
+    fn get_threat_radius(&self) -> f32 {
+        let mut radius = self.contact_radius;
+        for part in &self.danger_parts {
+            if part.is_instance_valid() && part.has_method("get_threat_radius") {
+                let mut part = part.clone();
+                let reach = part
+                    .call("get_threat_radius", &[])
+                    .try_to::<f32>()
+                    .unwrap_or(0.0);
+                radius = radius.max(reach);
+            }
+        }
+        radius
+    }
+
     fn on_died(&mut self) {
         self.signals().died().emit();
         self.base_mut().queue_free();

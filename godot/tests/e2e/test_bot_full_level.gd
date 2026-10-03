@@ -1,6 +1,6 @@
 ## Bots only (no humans) play the first level to the end at raised time scale and clear
 ## it. Physics ticks scale with the time scale so bots keep their per-song-second
-## decision rate. Prints run stats and per-bot decision stats.
+## decision rate. Prints run stats, per-bot decision stats and what the hits came from.
 extends RefCounted
 
 const E2EContext = preload("res://tests/e2e_context.gd")
@@ -55,9 +55,21 @@ func _play(t: E2EContext) -> void:
 	var travel := {"px": 0.0}
 	var last_positions := {}
 	var hits := {}
+	var sources := {}
 	for bot in bots:
 		hits[bot] = 0
-		bot.damaged.connect(func(_lives: int) -> void: hits[bot] += 1)
+		bot.damaged.connect(
+			func(_lives: int) -> void:
+				hits[bot] += 1
+				# Deferred: the attacker may be mid-update when the hit lands.
+				var at: Vector2 = bot.global_position
+				(
+					(func() -> void:
+						var source := _hit_source(t, at)
+						sources[source] = sources.get(source, 0) + 1)
+					. call_deferred()
+				)
+		)
 	await t.wait_until(
 		func() -> bool:
 			for bot in bots:
@@ -110,6 +122,40 @@ func _play(t: E2EContext) -> void:
 			)
 		)
 		t.check(s.decisions > 1000, "bot made decisions")
+	t.note("  hits by source: %s" % [sources])
 	t.check(manager.is_level_clear(), "bots cleared the level")
 	t.check(stats.completed, "run stats: completed")
 	t.check(travelled > 2000.0, "bots moved (%.0f px)" % travelled)
+
+
+## Best guess at what hit a bot at `pos`: an enemy projectile or mine, an enemy's body,
+## an enemy attack shape (landing, lane, beam), or else a chart hazard.
+func _hit_source(t: E2EContext, pos: Vector2) -> String:
+	for group in ["enemy_projectiles", "mines"]:
+		for node in t.tree.get_nodes_in_group(group):
+			if node.global_position.distance_to(pos) < 36.0:
+				return group
+	for enemy in t.tree.get_nodes_in_group("enemies"):
+		var kind: String = enemy.scene_file_path.get_file().get_basename()
+		var records: PackedFloat32Array = enemy.danger_shapes()
+		# Skip the contact circle (the first record); look for active attack shapes.
+		for i in range(10, records.size(), 10):
+			if records[i + (6 if int(records[i]) <= 1 else 8)] > 0.0:
+				continue
+			var near := INF
+			match int(records[i]):
+				0:
+					near = pos.distance_to(Vector2(records[i + 1], records[i + 2])) - records[i + 3]
+				1:
+					var a := Vector2(records[i + 1], records[i + 2])
+					var b := Vector2(records[i + 3], records[i + 4])
+					near = (
+						pos.distance_to(Geometry2D.get_closest_point_to_segment(pos, a, b))
+						- records[i + 5]
+					)
+			if near < 16.0:
+				return "attack:" + kind
+	for enemy in t.tree.get_nodes_in_group("enemies"):
+		if enemy.global_position.distance_to(pos) < 50.0:
+			return "contact:" + enemy.scene_file_path.get_file().get_basename()
+	return "hazard"

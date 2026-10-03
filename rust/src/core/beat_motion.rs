@@ -185,7 +185,7 @@ pub struct HopShape {
 impl Default for HopShape {
     fn default() -> Self {
         Self {
-            crouch: 0.4,
+            crouch: 0.55,
             air: 0.45,
             settle: 0.5,
         }

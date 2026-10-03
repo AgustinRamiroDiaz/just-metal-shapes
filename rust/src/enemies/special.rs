@@ -33,6 +33,9 @@ pub struct SplitComponent {
     spread: f32,
 
     scene: Option<Gd<PackedScene>>,
+    /// Player colors, read at spawn: deaths happen while the killing player is busy
+    /// (its properties cannot be read then).
+    colors: Vec<Color>,
     base: Base<Node>,
 }
 
@@ -49,8 +52,7 @@ impl SplitComponent {
         let Some(scene) = self.scene.clone() else {
             return;
         };
-        let tree = self.base().get_tree();
-        let colors = player_colors(&tree);
+        let colors = self.colors.clone();
         let seed = randi_range(0, 7) as usize;
         let origin = parent.get_global_position();
         // Who listens to the parent's death (director, manager) hears the pieces too;
@@ -106,6 +108,7 @@ impl SplitComponent {
 impl INode for SplitComponent {
     fn ready(&mut self) {
         self.scene = load_packed_scene(&self.piece_scene.to_string());
+        self.colors = player_colors(&self.base().get_tree());
         if let Some(mut parent) = self.base().get_parent()
             && parent.has_signal("died")
         {
