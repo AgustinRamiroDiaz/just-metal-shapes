@@ -24,7 +24,8 @@
 //!   phase), occasionally in main sections whose phrase is light on hazards, never in
 //!   the finale.
 //! - Scripted levels (`LevelSpec::cues`, lyric cues) place their enemies, hazards and
-//!   captions at the cue times, rounded to the nearest half beat. Their hazards are
+//!   captions at the cue times, rounded to the nearest half beat (cues past the song's
+//!   end are skipped, so a cut song can share its full version's cues). Their hazards are
 //!   committed before the phrases' and follow the same caps; the generated enemies
 //!   only arrive in phrases away from cues.
 //! - Safe path: proposals are committed in time order; the summed `coverage` of
@@ -605,7 +606,8 @@ impl<'a> Generator<'a> {
         let mut hazards: Vec<Proposal> = Vec::new();
         for cue in &cues {
             let beat = self.cue_beat(cue);
-            if beat < ENEMY_TELEGRAPH_BEATS {
+            let end = self.analysis.duration_seconds - END_MARGIN_SECONDS;
+            if beat < ENEMY_TELEGRAPH_BEATS || self.timing.beat_to_seconds(beat) > end {
                 continue;
             }
             let intensity = self.bar_intensity(beat.floor() as i64);

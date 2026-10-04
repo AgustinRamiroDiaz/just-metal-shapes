@@ -1,11 +1,13 @@
 ## Visual check for Las Huevas: plays the level with two god-mode bots, jumps to a few
 ## lyric cues and saves a frame just after each word lands (its enemy popping in, its
-## caption up), plus one from a band jam.
+## caption up), plus one from a band jam. Moments past the song's end are skipped, so
+## the 3:27 cut gets the first verse and `--level=las-huevas-full` gets both.
 ##
 ## Needs a renderer (not --headless); off-screen and silent:
 ##   xvfb-run -a -s "-screen 0 1280x720x24" \
 ##       godot --audio-driver Dummy --path godot \
-##       -s res://tests/tools/lyric_shots.gd -- --out=/tmp/jms_shots/lyrics
+##       -s res://tests/tools/lyric_shots.gd -- --out=/tmp/jms_shots/lyrics \
+##       [--level=las-huevas-full]
 extends SceneTree
 
 ## Shot name -> song seconds to capture at (each cue time plus a beat or so).
@@ -24,12 +26,15 @@ const MOMENTS := {
 }
 
 var out_dir := "/tmp/jms_shots/lyrics"
+var level_id := "las-huevas"
 
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--out="):
 			out_dir = arg.trim_prefix("--out=")
+		elif arg.begins_with("--level="):
+			level_id = arg.trim_prefix("--level=")
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	_run()
 
@@ -43,7 +48,7 @@ func _run() -> void:
 		config.players.append(
 			PlayerConfig.new_bot(GameConfig.BOT_NORMAL, colors[i], "Bot %d" % (i + 1))
 		)
-	config.selected_level_id = "las-huevas"
+	config.selected_level_id = level_id
 	change_scene_to_file("res://main_level.tscn")
 	await _frames(3)
 	var manager := current_scene
@@ -54,6 +59,8 @@ func _run() -> void:
 		p.god_mode = true
 	for shot in MOMENTS:
 		var at: float = MOMENTS[shot]
+		if at > conductor.get_duration() - 1.0:
+			continue
 		# Lead in by a few seconds so the cue's spawn effect and caption play out.
 		conductor.seek(at - 4.0)
 		await _seconds(4.0)

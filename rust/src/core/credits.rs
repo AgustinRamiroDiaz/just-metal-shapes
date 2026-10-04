@@ -96,7 +96,7 @@ pub const CREDITS: &[Credit] = &[
         Music,
         "Las Huevas (en vivo)",
         "Banzai FC ft. Wos",
-        "Rights not cleared",
+        "Used with permission",
         "live at Centro Cultural Konex, 2017",
     ),
     credit(

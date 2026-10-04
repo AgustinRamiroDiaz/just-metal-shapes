@@ -680,15 +680,50 @@ pub fn all_levels() -> Vec<LevelSpec> {
         EnemyEntry::new(WARDEN, false, 0.6).supporting(),
     ];
 
-    // 6. Las Huevas (bonus): a live, improvised freestyle. Every enemy is a lyric
-    // reference arriving on its word (`las-huevas.cues.json`); the band's jams between
-    // the verses carry the hazards, and "se vienen los climas" opens the finale.
+    // 6. Las Huevas (bonus): the first 3:27 of a live, improvised freestyle (the intro,
+    // the first verse and the start of the band's jam).
+    let huevas = las_huevas("las-huevas", "Las Huevas (en vivo)", 0x5EED_0006);
+
+    let mut levels = vec![wonders, voxel, celtic, ouroboros, surf, huevas];
+    levels.iter_mut().for_each(pulse_only_intro);
+    levels
+}
+
+/// Levels that play by id but are listed nowhere (level select, gym, campaign order):
+/// the full 9-minute Las Huevas, kept for a later boss battle.
+pub fn hidden_levels() -> Vec<LevelSpec> {
+    let mut full = las_huevas(
+        "las-huevas-full",
+        "Las Huevas (en vivo, completa)",
+        0x5EED_0007,
+    );
+    pulse_only_intro(&mut full);
+    vec![full]
+}
+
+/// Intro sections stay pulse-only on every level so the first hits are readable.
+fn pulse_only_intro(spec: &mut LevelSpec) {
+    for entry in &mut spec.pattern_pool {
+        if entry.sections.is_empty() && entry.kind != EventKind::Pulse {
+            entry.sections = vec![Build, Main, Breakdown, Outro];
+        }
+    }
+    if !spec.pattern_pool.iter().any(|e| e.allowed_in(Intro)) {
+        spec.pattern_pool[0].sections.clear();
+    }
+}
+
+/// Las Huevas: every enemy is a lyric reference arriving on its word
+/// (`las-huevas.cues.json`, shared by both cuts; cues past the song's end are skipped),
+/// and the band's jams carry the hazards. The full cut's "se vienen los climas" opens
+/// its finale.
+fn las_huevas(id: &str, title: &str, seed: u64) -> LevelSpec {
     let mut huevas = level(
-        "las-huevas",
-        "Las Huevas (en vivo)",
+        id,
+        title,
         "Banzai FC ft. Wos",
         5,
-        0x5EED_0006,
+        seed,
         Palette {
             bg: Rgb::new(0.04, 0.06, 0.13),
             accent: Rgb::new(0.48, 0.76, 1.0),
@@ -719,24 +754,15 @@ pub fn all_levels() -> Vec<LevelSpec> {
     ];
     // Compiled in and checked by `las_huevas_cues_load`.
     apply_cue_sheet(&mut huevas, LAS_HUEVAS_CUES).expect("las-huevas cue sheet");
-
-    let mut levels = vec![wonders, voxel, celtic, ouroboros, surf, huevas];
-    // Intro sections stay pulse-only on every level so the first hits are readable.
-    for spec in &mut levels {
-        for entry in &mut spec.pattern_pool {
-            if entry.sections.is_empty() && entry.kind != EventKind::Pulse {
-                entry.sections = vec![Build, Main, Breakdown, Outro];
-            }
-        }
-        if !spec.pattern_pool.iter().any(|e| e.allowed_in(Intro)) {
-            spec.pattern_pool[0].sections.clear();
-        }
-    }
-    levels
+    huevas
 }
 
+/// A listed or hidden level by id.
 pub fn find_level(id: &str) -> Option<LevelSpec> {
-    all_levels().into_iter().find(|spec| spec.id == id)
+    all_levels()
+        .into_iter()
+        .chain(hidden_levels())
+        .find(|spec| spec.id == id)
 }
 
 pub fn first_level_id() -> String {
@@ -819,12 +845,14 @@ impl LevelCatalog {
             .unwrap_or_default()
     }
 
-    /// Level dictionary by id (empty if unknown).
+    /// Level dictionary by id (empty if unknown). Hidden levels are found too; their
+    /// `index` follows the listed ones.
     #[func]
     pub fn find_level(id: GString) -> VarDictionary {
         let id = id.to_string();
         all_levels()
             .iter()
+            .chain(hidden_levels().iter())
             .enumerate()
             .find(|(_, spec)| spec.id == id)
             .map(|(i, spec)| level_to_dictionary(spec, i))
@@ -1065,7 +1093,7 @@ mod tests {
     /// cap, for every level in every difficulty mode.
     #[test]
     fn every_level_keeps_a_safe_path_in_every_mode() {
-        for spec in all_levels() {
+        for spec in all_levels().into_iter().chain(hidden_levels()) {
             for mode in [
                 DifficultyMode::Casual,
                 DifficultyMode::Normal,
@@ -1125,7 +1153,7 @@ mod tests {
 
     #[test]
     fn las_huevas_cues_load() {
-        let spec = find_level("las-huevas").unwrap();
+        let spec = find_level("las-huevas-full").unwrap();
         let enemies = spec
             .cues
             .iter()
@@ -1174,7 +1202,7 @@ mod tests {
     /// group size and lifetime; generated enemies keep clear of them.
     #[test]
     fn las_huevas_enemies_arrive_on_their_words() {
-        let spec = find_level("las-huevas").unwrap();
+        let spec = find_level("las-huevas-full").unwrap();
         let chart = chart(&spec);
         let timing = chart.timing();
         assert!(timing.beat_times.is_some());
@@ -1242,5 +1270,52 @@ mod tests {
             })
             .count();
         assert_eq!(placed, hazard_cues);
+    }
+
+    /// The 3:27 cut plays the first verse's cues and skips the rest; the full version
+    /// stays playable by id but is not listed.
+    #[test]
+    fn las_huevas_cut_plays_the_first_verse() {
+        let cut = find_level("las-huevas").unwrap();
+        let full = find_level("las-huevas-full").unwrap();
+        assert!(all_levels().iter().all(|l| l.id != full.id));
+        assert_eq!(cut.cues, full.cues);
+        let analysis = analysis(&cut.id);
+        assert!(analysis.duration_seconds < 210.0);
+        let chart = chart(&cut);
+        let timing = chart.timing();
+        let in_song = |c: &&Cue| c.time < analysis.duration_seconds - 1.0;
+        let wanted = cut
+            .cues
+            .iter()
+            .filter(in_song)
+            .filter(|c| matches!(c.action, CueAction::Enemy { .. }))
+            .count();
+        let scripted: Vec<&ChartEvent> = chart
+            .events
+            .iter()
+            .filter(|e| e.kind == EventKind::SpawnEnemy && e.params.duration_beats > 0.0)
+            .collect();
+        assert!(wanted >= 10, "{wanted} cues in the cut");
+        assert_eq!(scripted.len(), wanted);
+        assert!(
+            chart
+                .events
+                .iter()
+                .all(|e| timing.beat_to_seconds(e.end_beat()) <= analysis.duration_seconds)
+        );
+        // The finale lands in the jam after the verse.
+        let finale_flash = chart
+            .events
+            .iter()
+            .filter(|e| e.kind == EventKind::Flash && e.params.intensity >= 1.0)
+            .map(|e| timing.beat_to_seconds(e.beat))
+            .fold(0.0, f64::max);
+        assert!(finale_flash > 158.0, "finale at {finale_flash}s");
+        let dict_full = {
+            let mut ids = hidden_levels().into_iter().map(|l| l.id);
+            ids.next()
+        };
+        assert_eq!(dict_full.as_deref(), Some("las-huevas-full"));
     }
 }

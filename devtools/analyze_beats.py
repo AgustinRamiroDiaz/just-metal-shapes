@@ -252,10 +252,13 @@ def aggregate_bars(
     return bars
 
 
-def infer_sections(bars: list[dict[str, object]]) -> list[dict[str, object]]:
+def infer_sections(bars: list[dict[str, object]], outro_bars: int | None = None) -> list[dict[str, object]]:
+    """Sections from bar-novelty boundaries. With `outro_bars`, the outro is exactly the
+    last that many bars (songs cut short, where the last novelty boundary is far back)."""
     if not bars:
         return []
-    boundaries = [0]
+    tail = len(bars) - outro_bars if outro_bars else len(bars)
+    boundaries = [0] + ([tail] if outro_bars else [])
     candidates = sorted(
         range(1, len(bars)),
         key=lambda index: float(bars[index]["novelty"]),
@@ -264,7 +267,7 @@ def infer_sections(bars: list[dict[str, object]]) -> list[dict[str, object]]:
     for index in candidates:
         if float(bars[index]["novelty"]) < 0.62:
             break
-        if all(abs(index - boundary) >= 4 for boundary in boundaries):
+        if index < tail and all(abs(index - boundary) >= 4 for boundary in boundaries):
             boundaries.append(index)
     boundaries = sorted(boundaries) + [len(bars)]
     sections: list[dict[str, object]] = []
@@ -405,6 +408,7 @@ def main() -> None:
     parser.add_argument("--offset", type=float, help="Override the detected first-beat offset in seconds")
     parser.add_argument("--track-tempo", action="store_true", help="Follow tempo drift (live recordings)")
     parser.add_argument("--tightness", type=float, default=400, help="Tempo tracking stiffness")
+    parser.add_argument("--outro-bars", type=int, help="Make the last N bars the outro")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
@@ -425,7 +429,7 @@ def main() -> None:
     beats = aggregate_at_beats(audio, envelope, beat_times, seconds_per_beat)
     onsets = extract_quantized_onsets(envelope, beat_times, duration)
     bars = aggregate_bars(beats, onsets)
-    sections = infer_sections(bars)
+    sections = infer_sections(bars, args.outro_bars)
 
     result = {
         "source": args.audio.name,

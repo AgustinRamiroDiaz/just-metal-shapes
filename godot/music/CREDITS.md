@@ -7,7 +7,8 @@
 | 3 | `celtic` | Celtic | Alex Morgan | Pixabay Content License |
 | 4 | `ouroboros` | Ouroboros | Kevin MacLeod | CC BY 4.0 |
 | 5 | `surf-rock` | Surf Rock | Alex Morgan | Pixabay Content License |
-| Bonus | `las-huevas` | Las Huevas (en vivo) | Banzai FC ft. Wos | Rights not cleared |
+| Bonus | `las-huevas` | Las Huevas (en vivo) | Banzai FC ft. Wos | Used with permission |
+| Hidden | `las-huevas-full` | Las Huevas (en vivo) | Banzai FC ft. Wos | Used with permission |
 
 ## Kevin MacLeod (incompetech.com), CC BY 4.0
 
@@ -47,14 +48,17 @@ artist finds the page with the matching id.
 
 ## Las Huevas (bonus level)
 
-`las-huevas` is "Las Huevas" by Banzai FC featuring Wos, recorded live at Centro Cultural
-Konex (2017), re-encoded from the supplied MP3 to Ogg Vorbis (`-q:a 4`). It is a
-commercial recording with no license on file: **redistribution rights are not cleared**,
-so it must not ship in a public build until they are.
+"Las Huevas" by Banzai FC featuring Wos, recorded live at Centro Cultural Konex (2017),
+is used with permission. Both files are re-encoded from the supplied MP3 to Ogg Vorbis
+(`-q:a 4`):
 
-The band's tempo drifts (live), so its analysis uses a tracked tempo map
-(`trackTempo` in `devtools/music_overrides.json`). Lyric cues for the level live in
-`las-huevas.cues.json`.
+- `las-huevas-full`: the whole 9-minute recording (the hidden level).
+- `las-huevas`: its first 3:27 with a 2.5 s fade-out (`-t 207 -af
+  "afade=t=out:st=204.5:d=2.5"`): the intro, the first verse and the start of the jam.
+
+The band's tempo drifts (live), so both analyses use a tracked tempo map (`trackTempo`
+in `devtools/music_overrides.json`); the cut also sets `outroBars`. Lyric cues for both
+levels live in `las-huevas.cues.json`.
 
 ## Adding a track
 

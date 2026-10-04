@@ -10,9 +10,11 @@ The song id is the file stem, which is what `LevelSpec.analysis_path` points at.
 Extra arguments after `--` are forwarded to analyze_beats.py (e.g. `-- --bpm 128`).
 
 Per-track fixes live in devtools/music_overrides.json, keyed by song id:
-    {"<id>": {"bpm": 140, "offset": 0.0, "minBpm": 70, "maxBpm": 180, "trackTempo": true}}
-Use them when the tempo estimate locks onto a harmonic of the real tempo, or (trackTempo)
-when a live recording's tempo drifts.
+    {"<id>": {"bpm": 140, "offset": 0.0, "minBpm": 70, "maxBpm": 180, "trackTempo": true,
+              "outroBars": 2}}
+Use them when the tempo estimate locks onto a harmonic of the real tempo, when a live
+recording's tempo drifts (trackTempo), or when a song cut short needs its outro limited to
+the last bars (outroBars).
 """
 
 from __future__ import annotations
@@ -27,7 +29,13 @@ ROOT = Path(__file__).resolve().parents[1]
 MUSIC_DIR = ROOT / "godot" / "music"
 ANALYZER = Path(__file__).resolve().parent / "analyze_beats.py"
 OVERRIDES = Path(__file__).resolve().parent / "music_overrides.json"
-OVERRIDE_FLAGS = {"bpm": "--bpm", "offset": "--offset", "minBpm": "--min-bpm", "maxBpm": "--max-bpm"}
+OVERRIDE_FLAGS = {
+    "bpm": "--bpm",
+    "offset": "--offset",
+    "minBpm": "--min-bpm",
+    "maxBpm": "--max-bpm",
+    "outroBars": "--outro-bars",
+}
 OVERRIDE_SWITCHES = {"trackTempo": "--track-tempo"}
 AUDIO_EXTENSIONS = {".ogg", ".mp3", ".wav", ".flac"}
 

@@ -6,7 +6,7 @@ use super::chart_gen::{EnemyEntry, LevelSpec, Palette, PatternEntry, Rgb};
 use super::timing::BEATS_PER_BAR;
 
 /// The analyses shipped in `godot/music/`.
-pub const REAL_ANALYSES: [(&str, &str); 6] = [
+pub const REAL_ANALYSES: [(&str, &str); 7] = [
     (
         "wonders-of-the-earth",
         include_str!("../../../godot/music/wonders-of-the-earth.analysis.json"),
@@ -30,6 +30,10 @@ pub const REAL_ANALYSES: [(&str, &str); 6] = [
     (
         "las-huevas",
         include_str!("../../../godot/music/las-huevas.analysis.json"),
+    ),
+    (
+        "las-huevas-full",
+        include_str!("../../../godot/music/las-huevas-full.analysis.json"),
     ),
 ];
 

@@ -13,14 +13,19 @@ each chart (peak 8-bar hazard pressure, checked by
 | 3 | `celtic` | Alex Morgan (126) | Forest green. A reel: rings on every kick, lasers trading sides, sweeps | Pulse, Laser, LaserSweep, BulletRing, Wall, Spikes, Spiral | **Dasher**, **Chameleon**, shooter, shotgun, runner, turret, hopper, bouncer, splitter |
 | 4 | `ouroboros` | Kevin MacLeod (107) | Teal-black and gold, the serpent. Spiral risers, rotating sweep crosses, bomb pairs | All but Barrage | **Lancer**, **Warden**, turret, mine layer, shotgun, runner, pulser, dasher, chameleon |
 | 5 | `surf-rock` (final) | Alex Morgan (147) | Wine red and orange. Snare barrages, bomb pairs, walls, then the finale | All nine | All thirteen |
-| Bonus | `las-huevas` | Banzai FC ft. Wos (~96, live, tempo map) | Navy and celeste. A 9-minute live freestyle: every enemy is a lyric reference arriving on its word, with the word as a caption; the band's jams carry the hazards; "se vienen los climas" opens the finale | All but Spiral | The 21 lyric enemies (see `enemies.md`) |
+| Bonus | `las-huevas` | Banzai FC ft. Wos (~96, live, tempo map) | Navy and celeste. The first 3:27 of a live freestyle: every enemy is a lyric reference arriving on its word, with the word as a caption; the band's jam after the verse carries the hazards and the finale | All but Spiral | The first verse's lyric enemies (see `enemies.md`) |
+
+`las-huevas-full` (hidden: `level_catalog::hidden_levels`) is the whole 9-minute
+recording with both verses and all 21 lyric enemies, kept for a later boss battle. It
+plays by id (`GameConfig.selected_level_id`) but is not in the level select, the gym's
+song list or the campaign order.
 
 Each level's new enemies (`EnemyEntry::introduced`) arrive first and alone, so players
 meet one rule at a time before breakdown waves stack them (see `spawning.md`).
 
 ## Las Huevas: lyric cues
 
-`las-huevas` is scripted from `godot/music/las-huevas.cues.json` (loaded by
+`las-huevas` and `las-huevas-full` are scripted from `godot/music/las-huevas.cues.json` (loaded by
 `level_catalog::apply_cue_sheet`). Each cue has a song time `t` (the sung word, from a
 Whisper large-v3 transcription of the Demucs-isolated vocals), a position, an optional
 `caption` (a few words of the line) and one action:
@@ -33,11 +38,13 @@ Whisper large-v3 transcription of the Demucs-isolated vocals), a position, an op
 `chart_gen` places cues on the nearest half beat of the tempo map. A cue enemy spawns
 `ENEMY_TELEGRAPH_BEATS` early so it appears on its word, and its `Caption` event pops the
 caption over it (`Hud._on_caption`). Cue hazards are committed before the phrases' and
-never thinned (the safe-path caps still apply). Generated enemies only arrive in phrases
-at least `CUE_CLEARANCE_BEATS` from a cue enemy, so the band's jams (158-305 s and
-445-530 s) bring a few from the same pool and the verses stay scripted.
+never thinned (the safe-path caps still apply). Cues past the song's end are skipped, so
+the cut plays the first verse's. Generated enemies only arrive in phrases at least
+`CUE_CLEARANCE_BEATS` from a cue enemy, so the band's jams (from 158 s; 445-530 s in the
+full recording) bring a few from the same pool and the verses stay scripted.
 
-The level is difficulty 5 and also sets `finale`. Lines about real people and politics
+Both are difficulty 5 and set `finale`: the cut's lands on the jam (about 2:50-3:20), the
+full version's after "se vienen los climas". Lines about real people and politics
 (Santiago Maldonado, an election) and the swearing get no cues.
 
 ## Finale
@@ -58,12 +65,13 @@ default ffmpeg lacks Vorbis). Per-song decisions live in `devtools/music_overrid
   and its eighth-note grid 80%. 130 BPM scores at chance, and the 71.25 and 142.5
   peaks are 2:3 and 4:3 of 107.
 - `voxel-revolution`: 122.2 as estimated (61 is the half-time peak).
-- `las-huevas`: a live band drifting between ~93 and ~99 BPM, so `trackTempo` tracks
-  every beat (dynamic programming over the onset envelope, smoothed over 8 beats, beat 0
+- `las-huevas` / `las-huevas-full`: a live band drifting between ~93 and ~99 BPM, so
+  `trackTempo` tracks every beat (dynamic programming over the onset envelope, smoothed over 8 beats, beat 0
   on the strongest kick phase). The analysis sets `variableTempo` and the chart carries
   the beat times; `core::timing::Timing` interpolates between them. Tracked beats line
   up with onsets at 2.07 vs 1.24 off-beat; a fixed 96.3 BPM grid scored 0.76 vs 0.73
-  (chance).
+  (chance). The cut ends mid-jam, so `outroBars: 2` keeps its outro to the fade (the
+  last novelty boundary would otherwise make the whole jam an outro).
 
 ## Adding a level
 
