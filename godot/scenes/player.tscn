@@ -5,6 +5,8 @@
 [ext_resource type="Texture2D" uid="uid://bhnisht3o3jpd" path="res://assets/kenney_shape-characters/PNG/Default/face_f.png" id="5_face_idle"]
 [ext_resource type="Texture2D" uid="uid://57jotb1siyyj" path="res://assets/kenney_shape-characters/PNG/Default/face_g.png" id="6_face_attacking"]
 [ext_resource type="Texture2D" uid="uid://dm7s8yxecxpb3" path="res://assets/kenney_shape-characters/PNG/Default/face_j.png" id="7_face_dead"]
+[ext_resource type="Texture2D" path="res://assets/kenney_shape-characters/PNG/Default/face_h.png" id="8_face_hurt"]
+[ext_resource type="Texture2D" path="res://assets/kenney_shape-characters/PNG/Default/face_i.png" id="9_face_critical"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_player"]
 resource_local_to_scene = true
@@ -21,6 +23,8 @@ radius = 140.0
 face_tex_idle = ExtResource("5_face_idle")
 face_tex_attacking = ExtResource("6_face_attacking")
 face_tex_dead = ExtResource("7_face_dead")
+face_tex_hurt = ExtResource("8_face_hurt")
+face_tex_critical = ExtResource("9_face_critical")
 
 [node name="PlayerVisual" type="PlayerVisual" parent="." unique_id=1586240371]
 

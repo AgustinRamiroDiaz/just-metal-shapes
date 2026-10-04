@@ -22,6 +22,7 @@ use crate::game_config::{GameConfig, PlayerConfig};
 use crate::groups;
 use crate::level_catalog::ENEMY_KINDS;
 use crate::player::Player;
+use crate::ui::lobby::seat_names;
 use crate::util::dict_set;
 use godot::classes::{CharacterBody2D, INode2D, Label, Node2D, Os, PackedScene, ResourceLoader};
 use godot::prelude::*;
@@ -321,6 +322,11 @@ impl GameManager {
     fn spawn_players(&mut self) {
         let players_cfg = self.player_configs_or_default();
         let spawn_positions = self.spawn_positions();
+        let types: Vec<i32> = players_cfg
+            .iter_shared()
+            .map(|cfg| cfg.bind().input_type)
+            .collect();
+        let seat_names = seat_names(&types);
 
         for (spawn_index, cfg) in players_cfg.iter_shared().enumerate() {
             let Some(scene) = &self.player_scene else {
@@ -335,7 +341,12 @@ impl GameManager {
             if let Some(actions) = Self::keyboard_actions(cfg.input_type) {
                 Self::set_keyboard_actions(&mut p, actions);
             }
-            p.set_meta("display_name", &cfg.display_name.to_variant());
+            let name = if cfg.display_name.is_empty() {
+                GString::from(&seat_names[spawn_index])
+            } else {
+                cfg.display_name.clone()
+            };
+            p.set_meta("display_name", &name.to_variant());
             if cfg.input_type == GameConfig::BOT {
                 let mut brain = BotBrain::new_alloc();
                 brain.set_name("BotBrain");

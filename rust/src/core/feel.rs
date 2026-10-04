@@ -174,6 +174,39 @@ pub fn section_energy(section_type: &str, intensity: f32) -> f32 {
     (base * 0.7 + intensity.clamp(0.0, 1.0) * 0.3).clamp(0.0, 1.0)
 }
 
+/// Seconds the life pips and name tag stay fully visible after a change.
+pub const INDICATOR_HOLD: f32 = 2.0;
+/// Seconds they take to fade to their resting opacity afterwards.
+pub const INDICATOR_FADE: f32 = 0.6;
+/// Resting opacity of the life pips while a player is missing lives.
+pub const DAMAGED_PIP_ALPHA: f32 = 0.45;
+
+/// Fades from 1 (during `INDICATOR_HOLD`) down to `rest` over `INDICATOR_FADE`.
+fn held_then_rest(seconds_since: f32, rest: f32) -> f32 {
+    let t = ((seconds_since - INDICATOR_HOLD) / INDICATOR_FADE).clamp(0.0, 1.0);
+    1.0 + (rest - 1.0) * t
+}
+
+/// Opacity of a player's life pips: solid right after their lives change, then faint
+/// while hurt and gone at full health.
+pub fn life_pip_alpha(lives: i32, max_lives: i32, seconds_since_change: f32) -> f32 {
+    let rest = if lives >= max_lives {
+        0.0
+    } else {
+        DAMAGED_PIP_ALPHA
+    };
+    held_then_rest(seconds_since_change, rest)
+}
+
+/// Opacity of a player's name tag: shown at the level start and while downed.
+pub fn name_tag_alpha(seconds_since_start: f32, downed: bool) -> f32 {
+    if downed {
+        1.0
+    } else {
+        held_then_rest(seconds_since_start, 0.0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -324,5 +357,27 @@ mod tests {
             let e = section_energy(kind, 2.0);
             assert!((0.0..=1.0).contains(&e));
         }
+    }
+
+    #[test]
+    fn life_pips_fade_to_nothing_at_full_health() {
+        assert_eq!(life_pip_alpha(3, 3, 0.0), 1.0);
+        assert_eq!(life_pip_alpha(3, 3, INDICATOR_HOLD), 1.0);
+        let mid = life_pip_alpha(3, 3, INDICATOR_HOLD + INDICATOR_FADE * 0.5);
+        assert!(mid > 0.0 && mid < 1.0);
+        assert_eq!(life_pip_alpha(3, 3, 10.0), 0.0);
+    }
+
+    #[test]
+    fn life_pips_stay_faint_while_hurt() {
+        assert_eq!(life_pip_alpha(2, 3, 0.5), 1.0);
+        assert_eq!(life_pip_alpha(1, 3, 10.0), DAMAGED_PIP_ALPHA);
+    }
+
+    #[test]
+    fn name_tags_show_at_start_and_while_down() {
+        assert_eq!(name_tag_alpha(0.0, false), 1.0);
+        assert_eq!(name_tag_alpha(10.0, false), 0.0);
+        assert_eq!(name_tag_alpha(10.0, true), 1.0);
     }
 }

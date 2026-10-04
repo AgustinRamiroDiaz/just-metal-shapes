@@ -1,17 +1,13 @@
-//! `Hud`: song progress (section ticks, checkpoint markers), team score, per-player
-//! panels (lives, downed/revive state), countdown, and toasts for checkpoints, rewinds
-//! and tutorial hints. Driven by `GameManager`, `Conductor` and `LevelDirector` signals;
+//! `Hud`: song progress (section ticks, checkpoint markers), team score, countdown, and
+//! toasts for checkpoints, rewinds and tutorial hints. Lives, names and revives are
+//! drawn on the players themselves (`PlayerVisual`). Driven by `GameManager`, `Conductor` and `LevelDirector` signals;
 //! per-frame reads are limited to song time, score and revive progress.
 
-use super::lobby::seat_names;
 use super::widgets::tag;
-use super::{FontKind, font, label, palette, play_sfx};
+use super::{FontKind, label, palette, play_sfx};
 use crate::conductor::Conductor;
 use crate::core::analysis::SongAnalysis;
 use crate::director::LevelDirector;
-use crate::game_config::GameConfig;
-use crate::groups;
-use crate::player::Player;
 use crate::save::save_data;
 use godot::classes::control::{LayoutPreset, MouseFilter, SizeFlags};
 use godot::classes::tween::{EaseType, TransitionType};
@@ -40,8 +36,6 @@ pub struct Hud {
     top_row: Option<Gd<HBoxContainer>>,
     shown_score: f64,
     title_label: Option<Gd<Label>>,
-    panels: Vec<Gd<PlayerPanel>>,
-    panel_row: Option<Gd<HBoxContainer>>,
     count_label: Option<Gd<Label>>,
     count_hide_in: f64,
     toast: Option<Gd<PanelContainer>>,
@@ -97,11 +91,6 @@ impl Hud {
             .and_then(|c| c.try_cast::<Label>().ok())
             .map(|l| l.get_text())
             .unwrap_or_default()
-    }
-
-    #[func]
-    pub fn get_player_panel_count(&self) -> i64 {
-        self.panels.len() as i64
     }
 
     #[func]
@@ -179,34 +168,9 @@ impl Hud {
         }
     }
 
+    /// The level is loaded only after the HUD's `ready`.
     #[func]
-    fn _setup_players(&mut self) {
-        let Some(mut row) = self.panel_row.clone() else {
-            return;
-        };
-        let players: Vec<Gd<Player>> = self
-            .base()
-            .get_tree()
-            .get_nodes_in_group(groups::PLAYERS)
-            .iter_shared()
-            .filter_map(|n| n.try_cast::<Player>().ok())
-            .collect();
-        let types: Vec<i32> = players.iter().map(|p| p.bind().input_type).collect();
-        let names = seat_names(&types);
-        for (i, player) in players.into_iter().enumerate() {
-            let mut panel = PlayerPanel::new_alloc();
-            {
-                let mut p = panel.bind_mut();
-                p.name = names[i].clone();
-                p.color = player.bind().team_color;
-                p.lives = player.bind().lives;
-                p.bot = types[i] == GameConfig::BOT;
-                p.player = Some(player.clone());
-            }
-            row.add_child(&panel);
-            super::fade_in(&panel.clone().upcast(), 0.1 + i as f64 * 0.05, 0.3);
-            self.panels.push(panel);
-        }
+    fn _setup_level_info(&mut self) {
         self.setup_level_info();
     }
 }
@@ -364,27 +328,16 @@ impl Hud {
         count.set_visible(false);
         root.add_child(&count);
 
-        // Hint above the player panels.
+        // Tutorial hint near the bottom edge.
         let mut hint = label("", FontKind::Ui, 26, palette::TEXT);
         hint.set_anchors_and_offsets_preset(LayoutPreset::BOTTOM_WIDE);
-        hint.set_offset(godot::builtin::Side::TOP, -150.0);
-        hint.set_offset(godot::builtin::Side::BOTTOM, -104.0);
+        hint.set_offset(godot::builtin::Side::TOP, -84.0);
+        hint.set_offset(godot::builtin::Side::BOTTOM, -38.0);
         hint.set_horizontal_alignment(HorizontalAlignment::CENTER);
         hint.add_theme_constant_override("outline_size", 10);
         hint.add_theme_color_override("font_outline_color", palette::VOID);
         hint.set_visible(false);
         root.add_child(&hint);
-
-        // Player panels along the bottom.
-        let mut panels = HBoxContainer::new_alloc();
-        panels.set_anchors_and_offsets_preset(LayoutPreset::CENTER_BOTTOM);
-        panels.set_h_grow_direction(godot::classes::control::GrowDirection::BOTH);
-        panels.set_v_grow_direction(godot::classes::control::GrowDirection::BEGIN);
-        panels.set_offset(godot::builtin::Side::BOTTOM, -14.0);
-        panels.set_alignment(godot::classes::box_container::AlignmentMode::CENTER);
-        panels.add_theme_constant_override("separation", 10);
-        panels.set_mouse_filter(MouseFilter::IGNORE);
-        root.add_child(&panels);
 
         self.title_label = Some(title);
         self.time_label = Some(time_label);
@@ -397,7 +350,6 @@ impl Hud {
         self.toast = Some(toast);
         self.count_label = Some(count);
         self.hint_label = Some(hint);
-        self.panel_row = Some(panels);
     }
 }
 
@@ -442,7 +394,7 @@ impl ICanvasLayer for Hud {
         if let Some(mut save) = save_data(&this.clone().upcast()) {
             save.connect("settings_changed", &this.callable("_on_settings_changed"));
         }
-        self.base_mut().call_deferred("_setup_players", &[]);
+        self.base_mut().call_deferred("_setup_level_info", &[]);
         self.base_mut().call_deferred("_on_settings_changed", &[]);
     }
 
@@ -611,174 +563,5 @@ impl IControl for SongProgress {
             ),
             palette::TEXT,
         );
-    }
-}
-
-/// One player's panel: color, name, life pips; dims when down and shows revive progress.
-#[derive(GodotClass)]
-#[class(init, base = Control)]
-pub struct PlayerPanel {
-    pub name: String,
-    pub color: Color,
-    pub lives: i32,
-    pub bot: bool,
-    pub player: Option<Gd<Player>>,
-    /// Per-pip flash after a loss, 1 -> 0.
-    pip_flash: [f32; 3],
-    down: bool,
-    revive: f32,
-    pop: f32,
-    base: Base<Control>,
-}
-
-#[godot_api]
-impl PlayerPanel {
-    #[func]
-    fn _on_damaged(&mut self, lives_left: i32) {
-        let lost_from = lives_left.max(0) as usize;
-        for i in lost_from..(self.lives.max(0) as usize).min(3) {
-            self.pip_flash[i] = 1.0;
-        }
-        self.lives = lives_left;
-        self.pop = 1.0;
-    }
-
-    #[func]
-    fn _on_revived(&mut self) {
-        self.pop = 1.0;
-    }
-}
-
-#[godot_api]
-impl IControl for PlayerPanel {
-    fn ready(&mut self) {
-        self.base_mut()
-            .set_custom_minimum_size(Vector2::new(132.0, 54.0));
-        self.base_mut().set_mouse_filter(MouseFilter::IGNORE);
-        let this = self.to_gd();
-        if let Some(mut player) = self.player.clone() {
-            player.connect("damaged", &this.callable("_on_damaged"));
-            player.connect("revived", &this.callable("_on_revived"));
-        }
-    }
-
-    fn process(&mut self, delta: f64) {
-        let real = (delta / Engine::singleton().get_time_scale().max(0.001)) as f32;
-        if let Some(player) = self.player.clone().filter(|p| p.is_instance_valid()) {
-            let p = player.bind();
-            self.down = p.is_dead;
-            self.revive = p.revival_progress;
-            if !p.is_dead && p.lives != self.lives {
-                self.lives = p.lives;
-            }
-        }
-        for flash in &mut self.pip_flash {
-            *flash = (*flash - real * 2.5).max(0.0);
-        }
-        self.pop = (self.pop - real * 4.0).max(0.0);
-        self.base_mut().queue_redraw();
-    }
-
-    fn draw(&mut self) {
-        let size = self.base().get_size();
-        let lean = 10.0;
-        let lift = -4.0 * self.pop;
-        let bg = if self.down {
-            palette::PANEL.with_alpha(0.55)
-        } else {
-            palette::PANEL.with_alpha(0.9)
-        };
-        let body = PackedVector2Array::from(&[
-            Vector2::new(lean, lift),
-            Vector2::new(size.x, lift),
-            Vector2::new(size.x - lean, size.y + lift),
-            Vector2::new(0.0, size.y + lift),
-        ]);
-        self.base_mut().draw_colored_polygon(&body, bg);
-        let color = if self.down {
-            self.color.darkened(0.5)
-        } else {
-            self.color
-        };
-        // Color edge on the left.
-        let edge = PackedVector2Array::from(&[
-            Vector2::new(lean, lift),
-            Vector2::new(lean + 8.0, lift),
-            Vector2::new(8.0, size.y + lift),
-            Vector2::new(0.0, size.y + lift),
-        ]);
-        self.base_mut().draw_colored_polygon(&edge, color);
-
-        if let Some(ui_font) = font(FontKind::Narrow) {
-            let name_color = if self.down {
-                palette::MIST
-            } else {
-                palette::TEXT
-            };
-            let name = self.name.clone();
-            self.base_mut()
-                .draw_string_ex(&ui_font, Vector2::new(20.0, 22.0 + lift), &name)
-                .font_size(20)
-                .modulate(name_color)
-                .done();
-            if self.down {
-                let text = if self.revive > 0.0 {
-                    "Reviving"
-                } else {
-                    "Down"
-                };
-                self.base_mut()
-                    .draw_string_ex(&ui_font, Vector2::new(20.0, 44.0 + lift), text)
-                    .font_size(16)
-                    .modulate(palette::HOT)
-                    .done();
-            }
-        }
-        if self.down {
-            let width = (size.x - 40.0) * self.revive.clamp(0.0, 1.0);
-            let color = self.color;
-            self.base_mut().draw_rect(
-                Rect2::new(
-                    Vector2::new(20.0, size.y - 6.0 + lift),
-                    Vector2::new(width, 3.0),
-                ),
-                color,
-            );
-            return;
-        }
-        for i in 0..3 {
-            let x = 20.0 + i as f32 * 20.0;
-            let y = 32.0 + lift;
-            let alive = (i as i32) < self.lives;
-            let flash = self.pip_flash[i];
-            let grow = 1.0 + flash * 0.6;
-            let w = 14.0 * grow;
-            let h = 12.0 * grow;
-            let cx = x + 7.0;
-            let cy = y + 6.0;
-            let points = PackedVector2Array::from(&[
-                Vector2::new(cx - w * 0.5 + 3.0, cy - h * 0.5),
-                Vector2::new(cx + w * 0.5, cy - h * 0.5),
-                Vector2::new(cx + w * 0.5 - 3.0, cy + h * 0.5),
-                Vector2::new(cx - w * 0.5, cy + h * 0.5),
-            ]);
-            let pip = if alive {
-                self.color
-            } else if flash > 0.0 {
-                palette::HOT.lerp(Color::WHITE, flash as f64)
-            } else {
-                palette::STEEL
-            };
-            self.base_mut().draw_colored_polygon(&points, pip);
-        }
-        if self.bot
-            && let Some(mono) = font(FontKind::Narrow)
-        {
-            self.base_mut()
-                .draw_string_ex(&mono, Vector2::new(size.x - 34.0, 22.0 + lift), "AI")
-                .font_size(14)
-                .modulate(palette::MIST)
-                .done();
-        }
     }
 }

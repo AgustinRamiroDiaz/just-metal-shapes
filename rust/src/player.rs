@@ -46,6 +46,12 @@ pub struct Player {
     pub face_tex_attacking: Option<Gd<Texture2D>>,
     #[export]
     pub face_tex_dead: Option<Gd<Texture2D>>,
+    /// Idle face with two lives left (`face_tex_idle` when unset).
+    #[export]
+    pub face_tex_hurt: Option<Gd<Texture2D>>,
+    /// Idle face on the last life (`face_tex_hurt` when unset).
+    #[export]
+    pub face_tex_critical: Option<Gd<Texture2D>>,
 
     #[var]
     pub is_dead: bool,
@@ -90,9 +96,9 @@ impl Player {
         let mut face_sprite = self.base().get_node_as::<Sprite2D>("FaceSprite");
         match to {
             0 => {
-                // Idle
-                if let Some(tex) = &self.face_tex_idle {
-                    face_sprite.set_texture(tex);
+                // Idle: the face shows how many lives are left.
+                if let Some(tex) = self.idle_face() {
+                    face_sprite.set_texture(&tex);
                 }
             }
             1 => {
@@ -109,6 +115,19 @@ impl Player {
             }
             _ => {}
         }
+    }
+
+    fn idle_face(&self) -> Option<Gd<Texture2D>> {
+        let hurt = self.face_tex_hurt.clone().or(self.face_tex_idle.clone());
+        match self.lives {
+            l if l >= MAX_LIVES => self.face_tex_idle.clone(),
+            2 => hurt,
+            _ => self.face_tex_critical.clone().or(hurt),
+        }
+    }
+
+    fn current_state(&self) -> Option<i32> {
+        self.sm.as_ref().map(|sm| sm.bind().get_current_state())
     }
 
     fn transition_state(&mut self, next: i32) {
@@ -178,6 +197,8 @@ impl Player {
             // Downed look (ghosted body, revive zone) is drawn by `PlayerVisual`.
             self.base_mut().set_modulate(Color::WHITE);
             self.base_mut().emit_signal("died", &[]);
+        } else if self.current_state() == Some(PlayerState::Idle as i32) {
+            self.apply_state_visuals(PlayerState::Idle as i32);
         }
         true
     }
@@ -202,6 +223,7 @@ impl Player {
         self.invincible_timer = INVINCIBILITY_DURATION;
         self.base_mut().set_modulate(Color::WHITE);
         self.force_state(PlayerState::Idle as i32);
+        self.apply_state_visuals(PlayerState::Idle as i32);
         self.base_mut().queue_redraw();
     }
 

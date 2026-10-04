@@ -40,6 +40,18 @@ The player's attack range (140px radius) is divided into 3 equal tiers. Enemies 
 - Invincibility after hit: 3.0 seconds (visual blink at 6 Hz)
 - Death: grayed out sprite, emits `died` signal
 
+### Showing lives and names
+
+There is no HUD panel per player; everything sits on the player (`PlayerVisual`):
+
+- **Face** by lives left: 3 `face_f` (determined), 2 `face_h` (worried), 1 `face_i`
+  (scared), down `face_j`; `face_g` while attacking.
+- **Life pips**: one dot per life in a row under the body, spent lives hollow, the
+  life just lost bursting outward. Solid for 2 s after any change (and at the level
+  start), then fading over 0.6 s to 45% while hurt, or out of sight at full health.
+- **Name tag** (`P1`, `BOT 1`, ...) above the body for the first 2 s of the level and
+  while down.
+
 ## Revival
 
 - A nearby alive player within 60px can revive a dead player
