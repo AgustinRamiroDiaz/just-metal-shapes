@@ -4,8 +4,8 @@
 //! Draws one full-screen rect with `shaders/arena.gdshader` in the level palette
 //! (`LevelDirector.get_level_info()` `bg_color`/`accent_color`) and reacts to:
 //!
-//! - `Conductor.beat`: small brightness/grid kick that decays within the beat;
-//! - `LevelDirector.arena_pulse`: bar kick (grid zoom, motif swell, center shockwave);
+//! - `LevelDirector.arena_pulse`: a soft glow on each bar (nothing moves on single
+//!   beats: the background stays calm so hazards and enemies read first);
 //! - `palette_shift`: section energy (intro calm, main bright) eased over ~a second;
 //! - `camera_kick`: `Fx.shake`;
 //! - `flash`: `Fx.flash`;
@@ -44,9 +44,7 @@ pub struct Arena {
     #[init(val = 0.35)]
     target_energy: f32,
     bar_pulse: f32,
-    beat_pulse: f32,
     grid_offset: Vector2,
-    motif_angle: f32,
     rect: Rect2,
 
     director: Option<Gd<LevelDirector>>,
@@ -64,11 +62,6 @@ impl Arena {
     }
 
     #[func]
-    pub fn get_beat_pulse(&self) -> f32 {
-        self.beat_pulse
-    }
-
-    #[func]
     pub fn get_energy(&self) -> f32 {
         self.energy
     }
@@ -76,11 +69,6 @@ impl Arena {
     #[func]
     pub fn get_accent_color(&self) -> Color {
         self.accent_color
-    }
-
-    #[func]
-    fn _on_beat(&mut self, _index: i64) {
-        self.beat_pulse = 1.0;
     }
 
     #[func]
@@ -152,9 +140,6 @@ impl Arena {
                 director.connect(signal, &this.callable(method));
             }
         }
-        if let Some(mut conductor) = self.conductor.clone() {
-            conductor.connect("beat", &this.callable("_on_beat"));
-        }
     }
 
     fn load_palette(&mut self) {
@@ -192,16 +177,14 @@ impl Arena {
             return;
         };
         let rect = self.rect;
-        let params: [(&str, Variant); 10] = [
+        let params: [(&str, Variant); 8] = [
             ("bg_color", self.bg_color.to_variant()),
             ("accent_color", self.accent_color.to_variant()),
             ("energy", self.energy.to_variant()),
             ("bar_pulse", self.bar_pulse.to_variant()),
-            ("beat_pulse", self.beat_pulse.to_variant()),
             ("grid_offset", self.grid_offset.to_variant()),
             ("arena_origin", rect.position.to_variant()),
             ("arena_size", rect.size.to_variant()),
-            ("motif_angle", self.motif_angle.to_variant()),
             ("grid_size", 64.0f32.to_variant()),
         ];
         for (name, value) in params {
@@ -245,18 +228,15 @@ impl INode2D for Arena {
         self.load_palette();
         let spb = self.seconds_per_beat();
         self.bar_pulse = decay(self.bar_pulse, dt, spb * 0.3);
-        self.beat_pulse = decay(self.beat_pulse, dt, spb * 0.15);
         let ease = 1.0 - (-dt * 1.5).exp();
         self.energy += (self.target_energy - self.energy) * ease;
 
-        // Grid drifts diagonally; faster with energy and on kicks.
-        let speed = 6.0 + 30.0 * self.energy + 60.0 * self.bar_pulse;
+        // Grid drifts slowly and steadily; a little faster in energetic sections.
+        let speed = 4.0 + 10.0 * self.energy;
         self.grid_offset += Vector2::new(0.8, 0.6) * speed * dt;
         let wrap = 64.0 * 4.0;
         self.grid_offset.x = self.grid_offset.x.rem_euclid(wrap);
         self.grid_offset.y = self.grid_offset.y.rem_euclid(wrap);
-        self.motif_angle =
-            (self.motif_angle + dt * (0.04 + 0.12 * self.energy)) % std::f32::consts::TAU;
 
         self.push_uniforms();
     }

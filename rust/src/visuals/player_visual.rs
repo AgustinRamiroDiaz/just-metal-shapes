@@ -3,7 +3,7 @@
 //!
 //! Reads the player's state each frame and owns everything cosmetic: squash/stretch
 //! and tilt along the velocity, a beat-synced idle bounce, a team-color afterimage
-//! trail at speed, the range ring breathing on the beat, the hit flash/knockback ring,
+//! trail at speed, a steady range ring, the hit flash/knockback ring,
 //! the downed ghost with its revive zone and progress ring, and the revive pop. It
 //! never changes gameplay state.
 
@@ -249,17 +249,17 @@ impl PlayerVisual {
         }
     }
 
+    // Steady on purpose: with several players, rings flashing on every beat were noise.
     fn draw_range(&mut self, s: &Snapshot) {
-        let breathe = 1.0 + 0.03 * self.beat;
         let mut fill = s.color;
         fill.a = 0.035;
         for tier in (0..RANGE_TIERS).rev() {
-            let radius = s.range_radius * (tier + 1) as f32 / RANGE_TIERS as f32 * breathe;
+            let radius = s.range_radius * (tier + 1) as f32 / RANGE_TIERS as f32;
             self.base_mut().draw_circle(Vector2::ZERO, radius, fill);
         }
         let mut edge = s.color;
-        edge.a = 0.16 + 0.22 * self.beat;
-        let radius = s.range_radius * breathe;
+        edge.a = 0.24;
+        let radius = s.range_radius;
         self.base_mut()
             .draw_arc_ex(Vector2::ZERO, radius, 0.0, TAU, 64, edge)
             .width(1.5)

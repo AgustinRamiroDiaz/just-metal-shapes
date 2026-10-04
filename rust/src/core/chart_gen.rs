@@ -15,7 +15,8 @@
 //!   outro become a set piece that layers two phrases at a time.
 //! - Silent beats get no hazard, enemy, `ArenaPulse`, `CameraKick`, `Flash` or
 //!   `PaletteShift`. `Checkpoint` and `ShowHint` are structural and are always placed.
-//! - Every non-silent downbeat gets an `ArenaPulse`; strong accents add a `CameraKick`.
+//! - Every non-silent downbeat gets an `ArenaPulse`; strong accents add a `CameraKick`
+//!   (at most one every two bars).
 //! - Each section start gets a `Checkpoint` (variant = section index).
 //! - Tutorial levels show `HINTS` during the opening bars.
 //! - The first appearance of each hazard kind gets one extra beat of telegraph.
@@ -393,6 +394,8 @@ pub const INTRODUCTION_BEATS: f64 = 1.0;
 const STRONG_ACCENT: f32 = 0.75;
 const KICK_ACCENT: f32 = 0.85;
 const KICK_ONSET: f32 = 0.6;
+/// Camera kicks are at least this many beats apart, so the screen stays readable.
+const KICK_MIN_GAP_BEATS: f64 = 8.0;
 const PHRASE_NOVELTY: f32 = 0.85;
 /// Weight multiplier for repeating the previous phrase.
 const REPEAT_PENALTY: f32 = 0.25;
@@ -670,7 +673,16 @@ impl<'a> Generator<'a> {
                 },
             );
         }
-        if beat.accent >= KICK_ACCENT && beat.onset_strength >= KICK_ONSET {
+        let since_kick = self
+            .events
+            .iter()
+            .rev()
+            .find(|e| e.kind == EventKind::CameraKick)
+            .map_or(f64::INFINITY, |kick| beat.beat as f64 - kick.beat);
+        if beat.accent >= KICK_ACCENT
+            && beat.onset_strength >= KICK_ONSET
+            && since_kick >= KICK_MIN_GAP_BEATS
+        {
             self.push(
                 beat.beat as f64,
                 0.0,
@@ -1969,6 +1981,26 @@ mod tests {
                     "{name} d{difficulty}: {peak} concurrent"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn camera_kicks_are_spaced_out() {
+        let mut analysis = synthetic_analysis(120.0, 64);
+        for beat in analysis.beats.iter_mut() {
+            beat.accent = 1.0;
+            beat.onset_strength = 1.0;
+        }
+        let chart = generate_chart(&analysis, &test_spec(3), 0);
+        let kicks: Vec<f64> = chart
+            .events
+            .iter()
+            .filter(|e| e.kind == EventKind::CameraKick)
+            .map(|e| e.beat)
+            .collect();
+        assert!(kicks.len() > 2);
+        for pair in kicks.windows(2) {
+            assert!(pair[1] - pair[0] >= KICK_MIN_GAP_BEATS, "kicks at {pair:?}");
         }
     }
 

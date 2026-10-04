@@ -290,7 +290,7 @@ Color says who owns a shape. Keep these families apart so danger reads at a glan
 
 | Owner | Color | Shape language |
 |---|---|---|
-| Arena | level `bg` + `accent` at low alpha (grid, hexagon motif, pulses) | thin lines, never solid fills |
+| Arena | level `bg` + `accent` at low alpha (slow grid, soft bar glow) | thin lines, never solid fills; calm, nothing moves on single beats |
 | Hazards | level `accent` (and `hazard_color` variants, hot pink `(1, 0.25, 0.45)`) | telegraph outline/fill, then a solid white-flash hit |
 | Enemies | metal bodies (cool gray-white ramp) with an amber core ring `(1, 0.55, 0.15)` | Kenney simple-space silhouettes, one per type |
 | Enemy projectiles and mines | amber family: white-hot core, amber `(1, 0.55, 0.15)` glow and trail | round orbs with trails; mines are dark cores with amber spikes |

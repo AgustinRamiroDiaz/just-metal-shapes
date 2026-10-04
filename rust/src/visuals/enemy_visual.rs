@@ -6,7 +6,7 @@
 //! (anticipation: the body coils and an amber ring closes in toward the action beat),
 //! `get_pose()` (hop lift and squash/stretch) and `get_aim()` (turn toward an attack
 //! before it fires). It owns the spawn pop, the damage flash, the shield-layer break
-//! animation, the beat-synced core pulse and the death explosion. It never changes
+//! animation and the death explosion. It never changes
 //! gameplay state.
 
 use crate::core::feel::decay;
@@ -360,7 +360,7 @@ impl EnemyVisual {
             pivot.set_scale(Vector2::new(sq, 1.0 / sq) * size);
             let current = pivot.get_rotation();
             let sway = if self.face_motion {
-                0.07 * (self.beat as f32 * std::f32::consts::PI).sin()
+                0.04 * (self.beat as f32 * std::f32::consts::PI).sin()
             } else {
                 0.0
             };
@@ -429,8 +429,6 @@ impl INode2D for EnemyVisual {
 
     fn draw(&mut self) {
         let r = self.body_radius;
-        // The core ring kicks on every beat.
-        let pulse = (1.0 - self.beat.rem_euclid(1.0) as f32).powi(3);
         // Dark core behind the metal body plus a thin amber ring: the enemy family
         // marker, kept clear of the player-colored shield rings outside it.
         let glow = ENEMY_GLOW;
@@ -454,7 +452,7 @@ impl INode2D for EnemyVisual {
                 0.0,
                 TAU,
                 32,
-                Color::from_rgba(glow.r, glow.g, glow.b, 0.10 + 0.08 * pulse + 0.3 * flash),
+                Color::from_rgba(glow.r, glow.g, glow.b, 0.12 + 0.3 * flash),
             )
             .width(7.0)
             .done();
@@ -465,7 +463,7 @@ impl INode2D for EnemyVisual {
                 0.0,
                 TAU,
                 32,
-                Color::from_rgba(glow.r, glow.g, glow.b, 0.65 + 0.25 * pulse),
+                Color::from_rgba(glow.r, glow.g, glow.b, 0.75),
             )
             .width(1.5)
             .antialiased(true)
