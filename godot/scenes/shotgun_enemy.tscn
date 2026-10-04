@@ -28,7 +28,6 @@ shape = SubResource("CircleShape2D_shotgun")
 auto_shield_layers = 3
 
 [node name="ShotgunShooterComponent" type="ShotgunShooterComponent" parent="."]
-shoot_interval = 3.0
 
 [node name="ChaserComponent" type="ChaserComponent" parent="."]
 

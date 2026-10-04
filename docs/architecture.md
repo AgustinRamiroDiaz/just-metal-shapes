@@ -10,58 +10,58 @@ Every entity in the game is defined by **what components it has**, not by what c
 
 ### BaseEnemy
 
-All enemies use `base_enemy.gd` directly. It provides the minimal shared contract:
+All enemies use the `BaseEnemy` class (`rust/src/enemies/mod.rs`) directly. It provides
+the minimal shared contract:
 
-- `died` signal
-- Wires `HealthComponent.died` to `queue_free()`
+- `died` signal, emitted when its `HealthComponent` runs out of life, then `queue_free()`
 - Exposes `take_damage()` that delegates to `HealthComponent`
+- `danger_shapes()`: its contact circle plus every component's
+  `component_danger_shapes()`
 
 There are no per-enemy scripts. Enemy behavior is defined purely by scene composition.
 
 ### Example: How Enemies Are Built
 
 ```
-ShotgunEnemy (StaticBody2D + base_enemy.gd)
+ShotgunEnemy (BaseEnemy)
   ├── Sprite2D
   ├── CollisionShape2D
   ├── HealthComponent            (HP, shields, color matching)
-  ├── ShotgunShooterComponent    (fires fan of projectiles on timer)
+  ├── ShotgunShooterComponent    (fires a fan of projectiles on its beat cadence)
   ├── ChaserComponent            (moves toward nearest player)
   ├── TurnComponent              (rotates sprite toward target)
   └── ContactDamageComponent     (deals damage on body collision)
 ```
 
 ```
-MineLayerEnemy (StaticBody2D + base_enemy.gd)
+MineLayerEnemy (BaseEnemy)
   ├── Sprite2D
   ├── CollisionShape2D
   ├── HealthComponent
   ├── ChaserComponent
-  ├── MineDropperComponent       (drops mines on timer)
+  ├── MineDropperComponent       (drops a mine each bar)
   └── ContactDamageComponent
 ```
 
-To create a new enemy type, you create a new `.tscn` scene, attach `base_enemy.gd`, and add whichever components define its behavior. No code changes needed.
+To create a new enemy type, you create a new `.tscn` scene with a `BaseEnemy` root and add whichever components define its behavior. No code changes needed.
 
 ### Available Enemy Components
 
-| Component | Responsibility |
-|---|---|
-| `HealthComponent` | HP, shield with color matching, damage flash, visual rings |
-| `ShooterComponent` | Fires single aimed projectile at nearest player on timer |
-| `ShotgunShooterComponent` | Fires fan of projectiles based on sprite rotation |
-| `TurretShooterComponent` | Fires alternating cardinal/diagonal projectile patterns |
-| `ChaserComponent` | Moves toward nearest alive player |
-| `ColorChaserComponent` | Moves toward nearest player whose color doesn't match its shield |
-| `TurnComponent` | Rotates sprite toward nearest player |
-| `MineDropperComponent` | Drops mines at current position on timer |
-| `ContactDamageComponent` | Deals damage to players on body contact |
+The full list, with each enemy type's rule and cadence, is in `docs/spec/enemies.md`.
+Movement: `ChaserComponent`, `ColorChaserComponent`, `TurnComponent`, `HopComponent`,
+`BounceComponent`, `DashComponent`. Attacks: `ShooterComponent`,
+`ShotgunShooterComponent`, `TurretShooterComponent`, `MineDropperComponent`,
+`RingEmitterComponent`, `LanceComponent`. Shields: `HealthComponent`, `SplitComponent`,
+`ChameleonComponent`, `WardComponent`. Contact: `ContactDamageComponent`.
 
 ### Component Independence
 
 Components are designed to be self-contained:
 
-- Each component manages its own state and timing (using `Timer` nodes)
+- Each component manages its own state. Timed components are beat-locked: a
+  `BeatDriver` reads the song beat from the `Conductor` (group `conductor`) every frame
+  and fires on the component's cadence (`every_beats`, `offset_beats`, `windup_beats`),
+  so they survive frame drops, pauses, seeks and rewinds (`core/beat_motion.rs`)
 - Components read from the scene tree (groups, parent position) rather than referencing siblings directly
 - When a component needs optional context from a sibling (e.g., `ColorChaserComponent` reading shield color from `HealthComponent`), it uses `get_node_or_null()` in `_ready()` and falls back to defaults
 
@@ -180,7 +180,7 @@ Static utility classes avoid duplicating logic across components:
 
 ### New enemy type
 1. Create a `.tscn` scene
-2. Set the root to `StaticBody2D` with `base_enemy.gd`
+2. Set the root to `BaseEnemy`
 3. Add a `HealthComponent` and whichever behavior components you need
 4. Add an `EnemyEntry` for it to the levels' `enemy_pool` in `level_catalog.rs`
 
@@ -193,10 +193,12 @@ Drop `godot/music/<id>.ogg`, run `make analyze-music`, credit it in
 `godot/music/CREDITS.md`, and add a `LevelSpec` in `level_catalog.rs`.
 
 ### New enemy component
-1. Create a script extending `Node` (or `Node2D` if it draws)
-2. Use `Timer` nodes for periodic actions
-3. Use `Targeting.get_nearest_alive()` for player lookups
-4. Read parent position via `(get_parent() as Node2D).global_position`
+1. Add a Rust class in `rust/src/enemies/` extending `Node` (or `Node2D` if it draws)
+2. Hold a `BeatDriver` for periodic actions; emit `acted(action_beat, song_beat)` and
+   expose `get_cadence()` and `get_windup()` (plus `get_pose()` / `get_aim()` /
+   `get_marker()` for `EnemyVisual` when useful)
+3. Report anything that hurts through `component_danger_shapes()`
+4. Use `enemies::nearest_alive()` for player lookups
 5. Attach it to any enemy scene that needs the behavior
 
 ### New player component

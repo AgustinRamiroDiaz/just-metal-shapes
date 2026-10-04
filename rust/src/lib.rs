@@ -8,7 +8,7 @@ mod color_utils;
 pub mod conductor;
 pub mod danger_field;
 pub mod director;
-mod enemy;
+pub mod enemies;
 pub mod enemy_spawn;
 pub mod fx;
 mod game_config;

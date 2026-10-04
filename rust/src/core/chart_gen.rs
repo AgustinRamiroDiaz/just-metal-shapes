@@ -293,6 +293,12 @@ pub struct EnemyEntry {
     /// Spawn just outside the arena edge (chasers) instead of inside with a spawn effect.
     pub spawn_outside: bool,
     pub weight: f32,
+    /// New in this level: the level's first enemy spawns introduce each such entry
+    /// on its own, in pool order, before the pool mixes.
+    pub intro: bool,
+    /// Only does something next to other enemies (the Warden): always arrives with a
+    /// companion from the rest of the pool.
+    pub support: bool,
 }
 
 impl EnemyEntry {
@@ -301,7 +307,21 @@ impl EnemyEntry {
             scene: scene.to_string(),
             spawn_outside,
             weight,
+            intro: false,
+            support: false,
         }
+    }
+
+    /// Marks the entry as introduced by this level.
+    pub fn introduced(mut self) -> Self {
+        self.intro = true;
+        self
+    }
+
+    /// Marks the entry as a support enemy (never alone).
+    pub fn supporting(mut self) -> Self {
+        self.support = true;
+        self
     }
 }
 
@@ -357,6 +377,14 @@ pub const LEAD_IN_BEATS: f64 = 4.0;
 pub const END_MARGIN_SECONDS: f64 = 0.5;
 /// Warning time for enemy spawns (the spawn effect plays for this long).
 pub const ENEMY_TELEGRAPH_BEATS: f64 = 2.0;
+/// Beats between the arrivals of an enemy wave (one per bar).
+pub const WAVE_STAGGER_BEATS: i64 = 4;
+/// Arrivals this close together count as several enemies alive at once; hazards are
+/// thinned from the first of them until this long after the last.
+pub const WAVE_THIN_BEATS: f64 = 16.0;
+/// A main phrase with at most this many hazards per bar may bring a wave.
+const MAIN_WAVE_MAX_HAZARDS_PER_BAR: f32 = 2.0;
+const MAIN_WAVE_CHANCE: f64 = 0.45;
 pub const HINT_DURATION_BEATS: f64 = 6.0;
 pub const HINT_SPACING_BEATS: f64 = 8.0;
 /// Extra telegraph the first hazard of each kind gets.
@@ -438,6 +466,8 @@ struct Generator<'a> {
     events: Vec<ChartEvent>,
     proposals: Vec<Proposal>,
     next_group: u32,
+    /// Thin hazards under enemy waves (off only to measure the effect in tests).
+    thin_waves: bool,
 }
 
 /// Builds the chart for a level. Same inputs and seed always give the same chart.
@@ -485,6 +515,7 @@ impl<'a> Generator<'a> {
             events: Vec::new(),
             proposals: Vec::new(),
             next_group: 0,
+            thin_waves: true,
         }
     }
 
@@ -1492,11 +1523,26 @@ impl<'a> Generator<'a> {
             .count()
     }
 
+    /// Places `SpawnEnemy` events on phrase boundaries. The level's `intro` entries
+    /// arrive first, one at a time. Breakdowns bring waves of different enemies, one
+    /// per bar (2, or 3 from difficulty 4); mains and builds bring single enemies,
+    /// likelier in phrases light on hazards, and a light main phrase sometimes brings
+    /// a wave. Hazards under a wave are thinned. A `support` enemy always brings a
+    /// companion.
     fn place_enemies(&mut self, plan: &[PlannedPhrase], rng: &mut Rng) {
         if self.spec.enemy_pool.is_empty() {
             return;
         }
         let difficulty_scale = 0.6 + 0.2 * (self.difficulty - 1) as f32;
+        let mut intros: std::collections::VecDeque<usize> = self
+            .spec
+            .enemy_pool
+            .iter()
+            .enumerate()
+            .filter(|(_, e)| e.intro)
+            .map(|(i, _)| i)
+            .collect();
+        let wave_size = if self.difficulty >= 4 { 3 } else { 2 };
         let mut per_section: Vec<usize> = vec![0; self.analysis.sections.len()];
         for (index, planned) in plan.iter().enumerate() {
             let ctx = &planned.ctx;
@@ -1508,8 +1554,8 @@ impl<'a> Generator<'a> {
             let section_bars = (section.end_bar - section.start_bar).max(1) as usize;
             let (limit, wanted) = match ctx.section_type {
                 SectionType::Breakdown => {
-                    let pair = self.difficulty >= 3 && ctx.bars() >= 4;
-                    ((section_bars / 2).max(2), if pair { 2 } else { 1 })
+                    let wave = ctx.bars() >= 4;
+                    ((section_bars / 2).max(2), if wave { wave_size } else { 1 })
                 }
                 SectionType::Main | SectionType::Build => {
                     // Lighter phrases are likelier to bring an enemy; builds half as often.
@@ -1525,7 +1571,17 @@ impl<'a> Generator<'a> {
                         && plan.get(index + 1).is_none_or(|next| {
                             self.analysis.section_index_for_beat(next.ctx.start) != section_index
                         });
-                    let wanted = usize::from(last_chance || rng.chance(chance as f64));
+                    let mut wanted = usize::from(last_chance || rng.chance(chance as f64));
+                    // A light main phrase can bring a whole wave instead.
+                    if main
+                        && wanted == 1
+                        && self.difficulty >= 2
+                        && ctx.bars() >= 4
+                        && per_bar <= MAIN_WAVE_MAX_HAZARDS_PER_BAR
+                        && rng.chance(MAIN_WAVE_CHANCE)
+                    {
+                        wanted = wave_size;
+                    }
                     let limit = if main {
                         section_bars / 4
                     } else {
@@ -1536,38 +1592,68 @@ impl<'a> Generator<'a> {
                 _ => continue,
             };
             let room = limit.saturating_sub(per_section[section_index]);
-            let wanted = wanted.min(room);
+            let mut wanted = wanted.min(room);
             if wanted == 0 {
                 continue;
             }
-            let Some(beat) = (ctx.start..ctx.end)
-                .step_by(4)
-                .find(|beat| !self.beat_is_silent(*beat))
-            else {
-                continue;
-            };
-            if (beat as f64) < ENEMY_TELEGRAPH_BEATS {
+            // Bar lines in the phrase that can take an arrival.
+            let slots: Vec<i64> = (ctx.start..ctx.end)
+                .step_by(WAVE_STAGGER_BEATS as usize)
+                .filter(|beat| !self.beat_is_silent(*beat) && *beat as f64 >= ENEMY_TELEGRAPH_BEATS)
+                .collect();
+            if slots.is_empty() {
                 continue;
             }
+            // Introductions come alone (a support enemy with one companion).
+            let mut variants: Vec<usize> = Vec::new();
+            if let Some(intro) = intros.pop_front() {
+                variants.push(intro);
+            } else {
+                let mut weights: Vec<f32> = self.spec.enemy_pool.iter().map(|e| e.weight).collect();
+                while variants.len() < wanted {
+                    let Some(variant) = rng.weighted_index(&weights) else {
+                        break;
+                    };
+                    variants.push(variant);
+                    // A wave mixes different enemies while the pool allows it.
+                    if weights.iter().filter(|w| **w > 0.0).count() > 1 {
+                        weights[variant] = 0.0;
+                    }
+                }
+            }
+            if variants.len() == 1 && self.spec.enemy_pool[variants[0]].support {
+                let weights: Vec<f32> = self
+                    .spec
+                    .enemy_pool
+                    .iter()
+                    .map(|e| if e.support { 0.0 } else { e.weight })
+                    .collect();
+                if let Some(companion) = rng.weighted_index(&weights) {
+                    variants.push(companion);
+                }
+            }
+            wanted = variants.len();
             let x = rng.range_f32(0.18, 0.4);
             let y = rng.range_f32(0.2, 0.8);
             let angle = rng.range_f32(0.0, TAU);
-            for k in 0..wanted {
-                let weights: Vec<f32> = self.spec.enemy_pool.iter().map(|e| e.weight).collect();
-                let Some(variant) = rng.weighted_index(&weights) else {
-                    return;
-                };
-                // The second enemy of a pair mirrors the first.
-                let (ex, ey, ea) = if k == 0 {
-                    (x, y, angle)
+            let staggered = wanted > 1 && !self.spec.enemy_pool[variants[0]].support;
+            for (k, variant) in variants.iter().enumerate() {
+                let beat = if staggered {
+                    slots[k.min(slots.len() - 1)]
                 } else {
-                    (1.0 - x, 1.0 - y, angle + PI)
+                    slots[0]
+                };
+                // Later arrivals mirror the first, then fill the middle band.
+                let (ex, ey, ea) = match k {
+                    0 => (x, y, angle),
+                    1 => (1.0 - x, 1.0 - y, angle + PI),
+                    _ => (0.5, if y < 0.5 { 0.78 } else { 0.22 }, angle + PI / 2.0),
                 };
                 let params = PatternParams {
                     x: ex,
                     y: ey,
                     angle: ea.rem_euclid(TAU),
-                    variant: variant as u32,
+                    variant: *variant as u32,
                     intensity: section.intensity,
                     ..PatternParams::default()
                 };
@@ -1579,6 +1665,54 @@ impl<'a> Generator<'a> {
                 );
                 per_section[section_index] += 1;
             }
+        }
+        if self.thin_waves {
+            self.thin_hazards();
+        }
+    }
+
+    /// Where several enemies are likely alive (an arrival with another arrival in the
+    /// `WAVE_THIN_BEATS` before it), drops the hazards hitting on every other hit beat
+    /// for the next `WAVE_THIN_BEATS` (whole beats at a time, so mirrored groups stay
+    /// whole). Overlapping windows merge so no stretch is thinned twice.
+    fn thin_hazards(&mut self) {
+        let mut arrivals: Vec<f64> = self
+            .events
+            .iter()
+            .filter(|e| e.kind == EventKind::SpawnEnemy)
+            .map(|e| e.beat)
+            .collect();
+        arrivals.sort_by(f64::total_cmp);
+        let mut windows: Vec<(f64, f64)> = Vec::new();
+        for (i, &beat) in arrivals.iter().enumerate() {
+            let crowded = arrivals[..i]
+                .iter()
+                .any(|&earlier| beat - earlier < WAVE_THIN_BEATS);
+            if !crowded {
+                continue;
+            }
+            let start = arrivals[..i]
+                .iter()
+                .copied()
+                .filter(|&earlier| beat - earlier < WAVE_THIN_BEATS)
+                .fold(beat, f64::min);
+            match windows.last_mut() {
+                Some(last) if start <= last.1 => last.1 = last.1.max(beat + WAVE_THIN_BEATS),
+                _ => windows.push((start, beat + WAVE_THIN_BEATS)),
+            }
+        }
+        for (start, end) in windows {
+            let mut beats: Vec<f64> = self
+                .events
+                .iter()
+                .filter(|e| e.kind.is_hazard() && e.beat >= start && e.beat < end)
+                .map(|e| e.beat)
+                .collect();
+            beats.sort_by(f64::total_cmp);
+            beats.dedup();
+            let dropped: Vec<f64> = beats.into_iter().skip(1).step_by(2).collect();
+            self.events
+                .retain(|e| !(e.kind.is_hazard() && dropped.contains(&e.beat)));
         }
     }
 }
@@ -2304,6 +2438,141 @@ mod tests {
         spec.tutorial = false;
         let chart = generate_chart(&analysis, &spec, 1);
         assert_eq!(chart.count_kind(EventKind::ShowHint), 0);
+    }
+
+    /// A pool with two new enemies (one of them support) and three familiar ones.
+    fn intro_spec(difficulty: u8) -> LevelSpec {
+        let mut spec = test_spec(difficulty);
+        spec.enemy_pool = vec![
+            EnemyEntry::new("new_a", false, 1.0).introduced(),
+            EnemyEntry::new("new_support", false, 1.0)
+                .introduced()
+                .supporting(),
+            EnemyEntry::new("old_a", false, 1.0),
+            EnemyEntry::new("old_b", true, 1.0),
+            EnemyEntry::new("old_c", false, 1.0),
+        ];
+        spec
+    }
+
+    fn spawns(chart: &Chart) -> Vec<&ChartEvent> {
+        chart
+            .events
+            .iter()
+            .filter(|e| e.kind == EventKind::SpawnEnemy)
+            .collect()
+    }
+
+    #[test]
+    fn new_enemies_are_introduced_first_and_alone() {
+        for (name, analysis) in all_inputs() {
+            let spec = intro_spec(3);
+            let chart = generate_chart(&analysis, &spec, 4);
+            let spawns = spawns(&chart);
+            assert!(spawns.len() >= 3, "{name}");
+            // First beat: only the first new enemy.
+            let first_beat = spawns[0].beat;
+            let first: Vec<u32> = spawns
+                .iter()
+                .filter(|e| e.beat == first_beat)
+                .map(|e| e.params.variant)
+                .collect();
+            assert_eq!(first, vec![0], "{name}: first arrival");
+            // Second arrival: the support enemy plus one non-support companion.
+            let second_beat = spawns.iter().find(|e| e.beat > first_beat).unwrap().beat;
+            let second: Vec<u32> = spawns
+                .iter()
+                .filter(|e| (e.beat - second_beat).abs() < 8.5 && e.beat >= second_beat)
+                .take(2)
+                .map(|e| e.params.variant)
+                .collect();
+            assert_eq!(second[0], 1, "{name}: support introduced second");
+            assert!(second.len() == 2 && second[1] >= 2, "{name}: {second:?}");
+        }
+    }
+
+    #[test]
+    fn support_enemies_never_arrive_alone() {
+        for (name, analysis) in all_inputs() {
+            for difficulty in 1..=5 {
+                let mut spec = intro_spec(difficulty);
+                for entry in &mut spec.enemy_pool {
+                    entry.intro = false;
+                }
+                let chart = generate_chart(&analysis, &spec, 9);
+                let spawns = spawns(&chart);
+                for (i, event) in spawns.iter().enumerate() {
+                    if event.params.variant != 1 {
+                        continue;
+                    }
+                    let near = spawns.iter().enumerate().any(|(j, other)| {
+                        j != i
+                            && other.params.variant != 1
+                            && (other.beat - event.beat).abs() <= 12.0
+                    });
+                    assert!(near, "{name} d{difficulty}: lone support at {}", event.beat);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn waves_mix_enemies_one_per_bar_and_thin_hazards() {
+        let mut waves_found = 0;
+        let mut thinned = 0;
+        for (name, analysis) in all_inputs() {
+            let mut spec = intro_spec(4);
+            for entry in &mut spec.enemy_pool {
+                entry.intro = false;
+            }
+            let chart = generate_chart(&analysis, &spec, 3);
+            let spawns = spawns(&chart);
+            let mut unthinned = Generator::new(&analysis, &spec, 3);
+            unthinned.thin_waves = false;
+            unthinned.run();
+            // Distinct hazard hit beats in the wave's window.
+            let count = |events: &[ChartEvent], start: f64| {
+                let mut beats: Vec<f64> = events
+                    .iter()
+                    .filter(|e| {
+                        e.kind.is_hazard() && e.beat >= start && e.beat < start + WAVE_THIN_BEATS
+                    })
+                    .map(|e| e.beat)
+                    .collect();
+                beats.dedup();
+                beats.len()
+            };
+            let mut previous_arrival = f64::NEG_INFINITY;
+            for pair in spawns.windows(2) {
+                if pair[1].beat - pair[0].beat != WAVE_STAGGER_BEATS as f64
+                    || pair[0].params.variant == 1
+                {
+                    continue;
+                }
+                // Only a wave's first arrival opens its thinning window.
+                let continues = pair[0].beat == previous_arrival;
+                previous_arrival = pair[1].beat;
+                if continues {
+                    continue;
+                }
+                waves_found += 1;
+                assert_ne!(
+                    pair[0].params.variant, pair[1].params.variant,
+                    "{name}: a wave mixes enemies"
+                );
+                let before = count(&unthinned.events, pair[0].beat);
+                if before > 1 {
+                    thinned += 1;
+                    assert!(
+                        count(&chart.events, pair[0].beat) < before,
+                        "{name}: hazards thinned under the wave at {}",
+                        pair[0].beat
+                    );
+                }
+            }
+        }
+        assert!(waves_found > 0, "some song has an enemy wave");
+        assert!(thinned > 0, "some wave lands on hazards and thins them");
     }
 
     #[test]

@@ -1,112 +1,124 @@
 # Enemies
 
-All enemies use the same base script (`base_enemy.gd`) with behavior defined by attached components. Every enemy has a `HealthComponent` and `ContactDamageComponent` (1 damage on touch).
+Every enemy is a `BaseEnemy` scene (`rust/src/enemies/`) built from components. Each has
+a `HealthComponent`, a `ContactDamageComponent` (1 damage on touch) and an `EnemyVisual`.
+Each type follows one rule you can learn in a few seconds; the challenge comes from
+stacking several at once.
 
-## Shield System
+## Shields
 
-- Enemies can have a colored shield (depletes before HP)
-- Player lightning must match the shield color to deal damage
-- Shield is a 0-1 ratio; once depleted, health takes damage regardless of color
-- Shield color is randomly assigned to one of the active player colors at spawn (except turret, which has a fixed orange shield)
+- Enemies carry colored shield layers that deplete before life.
+- Lightning breaks a layer only if the player's color matches it. Once every layer is
+  gone, any color damages life.
+- `auto_shield_layers` picks each layer's color at random from the players in the level
+  (the Splitter's pieces and the Chameleon set theirs explicitly).
+- A **ward** is an extra outer layer a Warden lends in its own color. It is drawn with
+  six wide plates (ordinary layers have twelve) and drops when the Warden dies.
+- Enemy life is multiplied by the number of seats at spawn.
 
-## Enemy Types
+## On the beat
 
-### Static Shooter
+Enemies act on the music, Crypt of the NecroDancer style. Every timed component reads
+the song beat from the level's `Conductor` each frame (a 120 BPM clock when there is no
+Conductor, for standalone tests) and acts on its **cadence**: beats
+`offset_beats + k * every_beats`. Before each action it winds up for `windup_beats`:
+the body coils, an amber ring closes in on it and flashes white at the end, and its
+attack reports pending `danger_shapes()` (`activates_in > 0`). On the action beat the
+body pops.
 
-Stationary enemy that fires aimed projectiles at the nearest player.
+The cadence is computed from the song beat, never by counting signals
+(`core::beat_motion::CadenceTracker`):
 
-| Stat | Value |
-|------|-------|
-| HP | 3.0 |
-| Shield | Yes (random player color) |
-| Collision radius | 24 px |
-| Sprite scale | 0.2x |
-| Color | White |
-| Spawn type | Inside viewport |
-| Spawn interval multiplier | 1.0x |
-| Shoot interval | 2.0s |
-| Shoot pattern | Single aimed projectile |
+- a new enemy waits 1 beat plus its wind-up before its first action;
+- a backward jump (checkpoint rewind, seek) restarts the tracker at the new beat;
+- a forward jump skips actions more than half a beat old instead of firing a burst.
 
-### Shotgun Enemy
+Components that act emit `acted(action_beat, song_beat)` and expose `get_cadence()`
+(`every`, `offset`, `windup`) and `get_windup()`.
 
-Chases players and fires a fan of projectiles in the direction it faces.
+## Movement
 
-| Stat | Value |
-|------|-------|
-| HP | 3.0 |
-| Shield | Yes (light blue) |
-| Collision radius | 32 px |
-| Sprite scale | 0.3x |
-| Color | Red (0.8, 0.2, 0.2) |
-| Spawn type | Outside viewport |
-| Spawn interval multiplier | 1.5x |
-| Chase speed | 30 px/s |
-| Turn speed | 1.0 |
-| Shoot interval | 3.0s |
-| Shot count | 3 |
-| Spread angle | 45 degrees |
+- **Beat surges** (chasers): speed peaks right on each beat (about 3x) and glides below
+  average until the next (`surge`, averages 1).
+- **Inertia**: velocity steers toward the desired heading with limited acceleration, so
+  turns become arcs. Chasers approach on an arc (`arc` radians at range, straight up
+  close), sway a little on the beat and keep apart from other enemies (separation).
+- **Hops** land on the beat: a crouch (flatten, lean back), airtime with a stretched
+  body and a ground shadow, then a squash and a small overshoot on landing.
+- **Turning lags**: `EnemyVisual` turns the body toward its aim or travel direction at a
+  limited rate.
 
-### Turret Enemy
+## Enemy types
 
-Stationary enemy that fires in alternating cross patterns.
+Cadences in beats (`every` / `offset`, wind-up). Silhouettes are Kenney simple-space
+sprites through the metal body shader, with the amber core ring.
 
-| Stat | Value |
-|------|-------|
-| HP | 2.0 |
-| Shield | Yes (orange, fixed) |
-| Collision radius | 24 px |
-| Sprite scale | 0.2x |
-| Color | Purple (0.6, 0.2, 0.8) |
-| Spawn type | Inside viewport |
-| Spawn interval multiplier | 2.0x |
-| Shoot interval | 2.0s |
-| Pattern | Alternates cardinal (N/S/E/W) and diagonal |
+| Enemy | Rule | Cadence | Silhouette | Introduced |
+|---|---|---|---|---|
+| Static shooter | One aimed shot at the nearest player each bar | 4 / 0, 1 | `enemy_C` | level 1 pool |
+| Turret | Four shots, alternating cardinal and diagonal | 2 / 0, 0.75 | `enemy_E` | level 1 pool |
+| **Pulser** | A ring of 14 shots with a 3-shot gap every bar; the gap turns a quarter each bar | 4 / 0, 1 | `enemy_D` | level 1 |
+| **Hopper** | Hops toward the nearest player, landing just short of them with a shockwave (52 px) | 2 / 0, 1 | `enemy_B` | level 1 |
+| Runner | Surges every beat toward the nearest player whose color does not match its shield | 1 / 0 | `ship_E` | level 2 pool |
+| **Bouncer** | Steps one diagonal cell (56 px) per beat, bouncing off the arena edges | 1 / 0, 0.3 | `meteor_squareDetailedLarge` | level 2 |
+| **Splitter** | Slow chaser; on death splits into two pieces, each with one shield in a different player's color | surges 1 / 0 | `enemy_A` (pieces `star_large`, hop every beat) | level 2 |
+| Shotgun | Chases; fires a 3-shot fan where it faces on the off-bar | 4 / 2, 1 | `ship_sidesB` | level 3 pool |
+| **Dasher** | Locks a lane toward a player, shows it for a beat, then dashes along it | 4 / 0, 1 | `ship_G` | level 3 |
+| **Chameleon** | Slow chaser whose shield colors rotate through the players' colors every 2 bars | 8 / 0, 1 | `ship_J` | level 3 |
+| Mine layer | Chases slowly, drops a mine each bar | 4 / 0, 0.5 | `ship_sidesA` | level 4 pool |
+| **Lancer** | Aims a thin beam at a player for 2 beats (aim locked), then fires it for half a beat | 8 / 4, 2 | `ship_L` | level 4 |
+| **Warden** | Each bar, every enemy inside its ring (220 px) gains a ward in its color; wards drop when it dies | 4 / 0, 1 | `ship_sidesD` | level 4 (always with a companion) |
 
-### Runner Enemy
+The pressure rules (Pulser, Hopper, Bouncer, Dasher, Lancer) ask for dodging; the
+shield rules (Splitter, Chameleon, Warden) ask the team to coordinate who attacks what.
 
-Fast enemy that chases players whose color doesn't match its shield, forcing the "wrong" player to dodge while the matching player must close in to deal damage.
+### Telegraphs
 
-| Stat | Value |
-|------|-------|
-| HP | 2.0 |
-| Shield | No |
-| Collision radius | 20 px |
-| Sprite scale | 0.18x |
-| Color | Green (0.2, 0.8, 0.2) |
-| Spawn type | Outside viewport |
-| Spawn interval multiplier | 1.2x |
-| Chase speed | 60 px/s |
-| Turn speed | 2.0 |
-| Targeting | Nearest player with mismatched color |
+| Enemy | Wind-up |
+|---|---|
+| Shooter, Shotgun, Turret | Body coils and turns to the shot; pending shots reported |
+| Pulser | A spoke per coming shot grows outward; the gap stays dark between two brackets |
+| Hopper | Crouch; a dashed amber ring marks the landing spot |
+| Bouncer | A small dashed ring marks the next cell |
+| Dasher | A lane fills toward the dash beat with chevrons and a target ring |
+| Lancer | A thin line brightens and flickers; firing is a white-hot beam in amber |
+| Chameleon | A ring in the next color flickers in the beat before the change |
+| Warden | Its dashed ring brightens; tethers link it to warded enemies |
 
-### Mine Layer Enemy
+## Components
 
-Slow enemy that leaves a trail of mines as it chases players.
+| Component | Responsibility |
+|---|---|
+| `HealthComponent` | Life, shield layers, wards, damage flash, shield rings |
+| `ContactDamageComponent` | 1 damage to players on body contact |
+| `ChaserComponent` | Surge toward the nearest player (inertia, arc, sway, separation) |
+| `ColorChaserComponent` | Same, toward the nearest player whose color mismatches the active shield |
+| `TurnComponent` | Turns the sprite pivot toward the nearest player with lag |
+| `HopComponent` | Beat hops with optional landing shockwave |
+| `BounceComponent` | Diagonal cell steps with edge bounces (closed form in the beat) |
+| `DashComponent` | Telegraphed lane dash; drifts between dashes |
+| `ShooterComponent` | One aimed shot |
+| `ShotgunShooterComponent` | Fan along the facing |
+| `TurretShooterComponent` | Four-way, alternating cardinal and diagonal by volley index |
+| `MineDropperComponent` | Drops a mine |
+| `RingEmitterComponent` | Gapped ring whose gap turns each volley |
+| `LanceComponent` | Telegraphed beam |
+| `SplitComponent` | Spawns single-shield pieces on death (they inherit death listeners) |
+| `ChameleonComponent` | Cycles shield colors by song beat |
+| `WardComponent` | Grants and revokes wards |
 
-| Stat | Value |
-|------|-------|
-| HP | 4.0 |
-| Shield | No |
-| Collision radius | 26 px |
-| Sprite scale | 0.22x |
-| Color | Orange-yellow (1.0, 0.6, 0.1) |
-| Spawn type | Outside viewport |
-| Spawn interval multiplier | 2.5x |
-| Chase speed | 20 px/s |
-| Mine drop interval | 2.5s |
+`BaseEnemy.danger_shapes()` reports the contact circle plus every component's
+`component_danger_shapes()` (landing circles, dash lanes, beams, pending shots).
 
-## Projectiles
+## Projectiles and mines
 
-- Speed: 100 px/s
-- Lifetime: 30s (also despawns on screen exit)
-- Collision radius: 12 px
-- Damage: 1 per hit
-- Visual: yellow circle with orange arc outline
+- Projectile speed 100 px/s by default (the Pulser fires at 130), radius 12, 1 damage,
+  freed off screen or after 30 s. Amber orb with a white-hot core and trail.
+- Mines arm after 0.5 s, last 15 s, radius 10, 1 damage once armed.
 
-## Mines
+## Feel (`EnemyVisual`)
 
-- Arm time: 0.5s (gray and inert until armed)
-- Lifetime: 15s
-- Collision radius: 10 px
-- Damage: 1 per hit (only when armed)
-- Visual: pulsing red-orange glow when armed (6 Hz)
+Spawn pop (elastic scale-in), damage flash, recoil and muzzle flash per shot, wind-up
+ring and coil, action pop, hop lift with ground shadow, squash/stretch from the
+components' poses, beat-synced core pulse, shield-plate break animation, death
+explosion.
