@@ -7,14 +7,20 @@
 //!
 //! UI (HUD, countdown display, pause, results) lives in the `LevelUi` child, which
 //! listens to the signals below.
+//!
+//! With `GameConfig.gym` set the level runs as the enemy gym: the song loops, the chart
+//! never plays, downed teams respawn in place, and enemies come from the gym panel
+//! (`ui/gym.rs`) through `gym_spawn`.
 
 use crate::bot_brain::BotBrain;
 use crate::conductor::Conductor;
 use crate::core::mode::DifficultyMode;
 use crate::core::scoring::{self, RunStats};
 use crate::director::{LevelDirector, current_mode};
+use crate::enemy_spawn;
 use crate::game_config::{GameConfig, PlayerConfig};
 use crate::groups;
+use crate::level_catalog::ENEMY_KINDS;
 use crate::player::Player;
 use crate::util::dict_set;
 use godot::classes::{CharacterBody2D, INode2D, Label, Node2D, Os, PackedScene, ResourceLoader};
@@ -59,6 +65,7 @@ pub struct GameManager {
     stats: RunStats,
     mode: DifficultyMode,
     viewport_rect: Rect2,
+    gym: bool,
 
     base: Base<Node2D>,
 }
@@ -80,11 +87,53 @@ impl GameManager {
     /// All players were down; the song rewound to `beat`. `count` is rewinds so far.
     #[signal]
     fn rewound(count: i64, beat: f64);
+    /// Gym only: a different song was loaded.
+    #[signal]
+    fn gym_song_changed();
 
     /// `loading`, `countdown`, `playing`, `cleared` or `game_over`.
     #[func]
     pub fn get_state(&self) -> GString {
         GString::from(self.state.as_str())
+    }
+
+    #[func]
+    pub fn is_gym(&self) -> bool {
+        self.gym
+    }
+
+    /// Gym: places enemy type `kind` (an index into `LevelCatalog.enemy_kinds()`) at
+    /// `position` behind a one-beat spawn effect. False for an unknown kind.
+    #[func]
+    pub fn gym_spawn(&mut self, kind: i64, position: Vector2) -> bool {
+        let Some(kind) = usize::try_from(kind).ok().and_then(|i| ENEMY_KINDS.get(i)) else {
+            return false;
+        };
+        let Ok(scene) = try_load::<PackedScene>(kind.scene) else {
+            godot_warn!("GameManager: enemy scene '{}' failed to load", kind.scene);
+            return false;
+        };
+        let mut director = self.director();
+        enemy_spawn::spawn_at(&mut director.bind_mut(), scene, position, 1.0);
+        true
+    }
+
+    /// Gym: frees every enemy, enemy shot, mine and pending spawn.
+    #[func]
+    pub fn gym_clear(&mut self) {
+        self.director().bind_mut().clear_arena();
+    }
+
+    /// Gym: switches to the catalog level `level_id`'s song and starts it from the top.
+    #[func]
+    pub fn gym_set_song(&mut self, level_id: GString) -> bool {
+        if !self.gym || !self.director().bind_mut().load_level(level_id) {
+            return false;
+        }
+        self.director().bind_mut().active = false;
+        self.conductor().bind_mut().play(0.0);
+        self.signals().gym_song_changed().emit();
+        true
     }
 
     #[func]
@@ -172,7 +221,11 @@ impl GameManager {
         if self.state != LevelState::Playing || self.any_player_alive() {
             return;
         }
-        if self.mode.allows_rewind() {
+        if self.gym {
+            for mut player in self.players() {
+                player.bind_mut().respawn();
+            }
+        } else if self.mode.allows_rewind() {
             self.rewind();
         } else {
             self.end_level(false);
@@ -181,7 +234,9 @@ impl GameManager {
 
     #[func]
     fn _on_song_finished(&mut self) {
-        if self.state == LevelState::Playing {
+        if self.gym {
+            self.conductor().bind_mut().play(0.0);
+        } else if self.state == LevelState::Playing {
             self.end_level(true);
         }
     }
@@ -411,6 +466,15 @@ impl GameManager {
 
 #[godot_api]
 impl INode2D for GameManager {
+    // Before the children's `ready`, so the HUD and LevelUi can ask `is_gym`.
+    fn enter_tree(&mut self) {
+        self.gym = self
+            .base()
+            .get_node_or_null("/root/GameConfig")
+            .and_then(|c| c.try_cast::<GameConfig>().ok())
+            .is_some_and(|c| c.bind().gym);
+    }
+
     fn ready(&mut self) {
         if let Some(viewport) = self.base().get_viewport() {
             self.viewport_rect = viewport.get_visible_rect();
@@ -438,6 +502,11 @@ impl INode2D for GameManager {
             return;
         }
         self.stats.difficulty = director.bind().level().map_or(1, |level| level.difficulty);
+        if self.gym {
+            director.bind_mut().active = false;
+            self.start_song();
+            return;
+        }
         self.state = LevelState::Countdown;
         self.countdown_left = self.countdown_seconds;
         let shown = self.countdown_left.ceil() as i64;

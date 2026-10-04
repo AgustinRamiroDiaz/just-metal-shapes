@@ -9,6 +9,7 @@ need the matching player color to break, so teams coordinate positions.
 
 ```
 Title -> Level Select -> Lobby -> Level (countdown, song plays) -> Results
+Title -> Gym -> Lobby -> Gym arena (endless, see menus.md)
 ```
 
 1. Pick a level and difficulty mode, then join devices and add bots in the lobby.

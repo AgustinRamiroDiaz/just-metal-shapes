@@ -6,13 +6,14 @@ every screen.
 
 ```
 Title -> Level Select -> Lobby -> Level (3-2-1 countdown) -> Results
+Title -> Gym -> Lobby -> Gym arena
 Title -> Settings | Credits
 Pause (in level) -> Resume | Restart | Settings | Quit to level select
 ```
 
 ## Title
 
-Play, Settings, Credits, Quit (desktop only). The menu track loops and the title pulses
+Play, Gym, Settings, Credits, Quit (desktop only). The menu track loops and the title pulses
 on its beat.
 
 ## Level Select
@@ -36,6 +37,8 @@ Seats for up to 8 players, any mix of humans and bots.
 | Leave (or back when not joined) | Esc | B |
 | Start | Hold Space or Enter | Hold Start or A |
 
+Entered from Gym, the lobby says so and Back returns to the title.
+
 A bots-only run can be started from an unjoined device. Seats are named `P1`, `P2`, ...
 and `BOT 1`, `BOT 2`, ..., each with a unique color.
 
@@ -44,6 +47,23 @@ and `BOT 1`, `BOT 2`, ..., each with a unique color.
 HUD: song progress bar with section and checkpoint ticks, per-player life pips, team
 score, checkpoint and rewind toasts, tutorial hints on the first level. Esc / Start
 pauses; resuming runs a short countdown.
+
+## Gym
+
+A sandbox for trying enemies (`ui/gym.rs`), with the lobby's players and bots:
+
+- The song of the last selected level (first level by default) plays and loops. No
+  chart: no hazards, checkpoints, hints or countdown, and no score or results.
+- A sidebar on the right lists every enemy type (`level_catalog::ENEMY_KINDS`) with
+  its sprite and one-line rule, in a scrolling column. Drag a card into the arena with
+  the mouse; the enemy spawns at the drop point after a one-beat spawn effect, with
+  health scaled to the player count as in levels.
+- Tools: **Clear** (removes enemies, shots and mines), **God** (players take no
+  damage; off by default), **Hide** or H (collapses the sidebar; a "Gym (H)" tab brings
+  it back), **Song** (switches to the next level's song, so cadences can be tried at
+  other tempos).
+- When every player is down they all respawn in place.
+- Pause works as in levels; Quit goes to the title.
 
 ## Results
 

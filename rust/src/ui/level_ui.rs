@@ -1,7 +1,9 @@
 //! `LevelUi`: child of the level's `GameManager` that owns the in-level UI. It creates
-//! the `Hud` and `PauseMenu`, applies the audio latency setting to the Conductor, stops
-//! the menu music, and adds the `ResultsScreen` (named `EndScreen`) when the level ends.
+//! the `Hud`, the `GymPanel` (gym only) and `PauseMenu`, applies the audio latency
+//! setting to the Conductor, stops the menu music, and adds the `ResultsScreen` (named
+//! `EndScreen`) when the level ends.
 
+use super::gym::GymPanel;
 use super::hud::Hud;
 use super::pause::PauseMenu;
 use super::results::ResultsScreen;
@@ -99,6 +101,11 @@ impl INode for LevelUi {
         let mut hud = Hud::new_alloc();
         hud.set_name("Hud");
         self.base_mut().add_child(&hud);
+        if super::gym_mode() {
+            let mut gym = GymPanel::new_alloc();
+            gym.set_name("GymPanel");
+            self.base_mut().add_child(&gym);
+        }
         let mut pause = PauseMenu::new_alloc();
         pause.set_name("PauseMenu");
         self.base_mut().add_child(&pause);

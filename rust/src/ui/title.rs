@@ -1,4 +1,5 @@
-//! `TitleScreen`: beat-pulsing logo and the main menu (Play, Settings, Credits, Quit).
+//! `TitleScreen`: beat-pulsing logo and the main menu (Play, Gym, Settings, Credits,
+//! Quit).
 
 use super::backdrop::add_backdrop;
 use super::widgets::{link_vertical, nav_hints};
@@ -21,7 +22,14 @@ pub struct TitleScreen {
 impl TitleScreen {
     #[func]
     fn _on_play(&mut self) {
+        super::set_gym_mode(false);
         go_to(super::LEVEL_SELECT_SCENE);
+    }
+
+    #[func]
+    fn _on_gym(&mut self) {
+        super::set_gym_mode(true);
+        go_to(super::LOBBY_SCENE);
     }
 
     #[func]
@@ -93,6 +101,7 @@ impl IControl for TitleScreen {
         let this = self.to_gd();
         let mut entries = vec![
             ("Play", "_on_play"),
+            ("Gym", "_on_gym"),
             ("Settings", "_on_settings"),
             ("Credits", "_on_credits"),
         ];

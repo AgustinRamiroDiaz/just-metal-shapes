@@ -67,6 +67,8 @@ screenshots: build
 		-s res://tests/tools/screenshots.gd -- --out=$(SHOTS_DIR)/ui
 	xvfb-run -a -s "-screen 0 1280x720x24" "$(GODOT_BIN)" --audio-driver Dummy --path "$(GODOT_PROJECT)" \
 		-s res://tests/capture_screens.gd -- --out=$(SHOTS_DIR)/gameplay $(if $(LEVEL),--level=$(LEVEL))
+	xvfb-run -a -s "-screen 0 1280x720x24" "$(GODOT_BIN)" --audio-driver Dummy --path "$(GODOT_PROJECT)" \
+		-s res://tests/tools/gym_shots.gd -- --out=$(SHOTS_DIR)/gym
 
 analyze-music:
 	uv run --project devtools devtools/analyze_all.py

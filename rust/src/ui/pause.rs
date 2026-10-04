@@ -1,6 +1,6 @@
 //! `PauseMenu`: the `pause` action (Esc / Start, any device) pauses the tree and the
-//! Conductor and opens Resume / Restart / Settings / Quit to level select. Resuming
-//! counts three beats on the HUD before the song continues.
+//! Conductor and opens Resume / Restart / Settings / Quit to level select (to title in
+//! the gym). Resuming counts three beats on the HUD before the song continues.
 
 use super::hud::Hud;
 use super::settings::SettingsPanel;
@@ -148,7 +148,11 @@ impl PauseMenu {
 
     #[func]
     fn _on_quit(&mut self) {
-        go_to(super::LEVEL_SELECT_SCENE);
+        if super::gym_mode() {
+            go_to(super::TITLE_SCENE);
+        } else {
+            go_to(super::LEVEL_SELECT_SCENE);
+        }
     }
 }
 
@@ -212,7 +216,11 @@ impl PauseMenu {
             ("Settings", "_on_settings"),
             ("Quit to level select", "_on_quit"),
         ] {
-            let mut b = super::button(text);
+            let mut b = super::button(if method == "_on_quit" && super::gym_mode() {
+                "Quit to title"
+            } else {
+                text
+            });
             b.set_name(&text.replace(' ', ""));
             b.set_custom_minimum_size(Vector2::new(380.0, 56.0));
             b.set_h_size_flags(godot::classes::control::SizeFlags::SHRINK_BEGIN);

@@ -28,6 +28,120 @@ const WARDEN: &str = "res://scenes/warden_enemy.tscn";
 
 use SectionType::{Breakdown, Build, Intro, Main, Outro};
 
+/// One enemy type as the gym lists it. `rule` is the one-line behavior summary from
+/// `docs/spec/enemies.md`.
+pub struct EnemyKind {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub scene: &'static str,
+    pub sprite: &'static str,
+    pub rule: &'static str,
+}
+
+const SPRITES: &str = "res://assets/kenney_simple-space/";
+
+/// Every spawnable enemy type, in the order the levels introduce them. Splitter pieces
+/// are left out: they only come from a Splitter.
+pub const ENEMY_KINDS: [EnemyKind; 13] = [
+    EnemyKind {
+        id: "static_shooter",
+        name: "Static shooter",
+        scene: STATIC_SHOOTER,
+        sprite: "enemy_C.png",
+        rule: "One aimed shot each bar",
+    },
+    EnemyKind {
+        id: "turret",
+        name: "Turret",
+        scene: TURRET,
+        sprite: "enemy_E.png",
+        rule: "Four shots, cardinal then diagonal",
+    },
+    EnemyKind {
+        id: "pulser",
+        name: "Pulser",
+        scene: PULSER,
+        sprite: "enemy_D.png",
+        rule: "Ring of shots with a turning gap",
+    },
+    EnemyKind {
+        id: "hopper",
+        name: "Hopper",
+        scene: HOPPER,
+        sprite: "enemy_B.png",
+        rule: "Hops at you every 2 beats",
+    },
+    EnemyKind {
+        id: "runner",
+        name: "Runner",
+        scene: RUNNER,
+        sprite: "ship_E.png",
+        rule: "Surges at a mismatched player each beat",
+    },
+    EnemyKind {
+        id: "bouncer",
+        name: "Bouncer",
+        scene: BOUNCER,
+        sprite: "meteor_squareDetailedLarge.png",
+        rule: "One diagonal step per beat",
+    },
+    EnemyKind {
+        id: "splitter",
+        name: "Splitter",
+        scene: SPLITTER,
+        sprite: "enemy_A.png",
+        rule: "Splits into two differently shielded pieces",
+    },
+    EnemyKind {
+        id: "shotgun",
+        name: "Shotgun",
+        scene: SHOTGUN,
+        sprite: "ship_sidesB.png",
+        rule: "Chases; 3-shot fan on the off-bar",
+    },
+    EnemyKind {
+        id: "dasher",
+        name: "Dasher",
+        scene: DASHER,
+        sprite: "ship_G.png",
+        rule: "Shows a lane, then dashes along it",
+    },
+    EnemyKind {
+        id: "chameleon",
+        name: "Chameleon",
+        scene: CHAMELEON,
+        sprite: "ship_J.png",
+        rule: "Shield colors rotate every 2 bars",
+    },
+    EnemyKind {
+        id: "mine_layer",
+        name: "Mine layer",
+        scene: MINE_LAYER,
+        sprite: "ship_sidesA.png",
+        rule: "Chases slowly, drops a mine each bar",
+    },
+    EnemyKind {
+        id: "lancer",
+        name: "Lancer",
+        scene: LANCER,
+        sprite: "ship_L.png",
+        rule: "Aims a beam for 2 beats, then fires",
+    },
+    EnemyKind {
+        id: "warden",
+        name: "Warden",
+        scene: WARDEN,
+        sprite: "ship_sidesD.png",
+        rule: "Wards nearby enemies in its color",
+    },
+];
+
+impl EnemyKind {
+    pub fn sprite_path(&self) -> String {
+        format!("{SPRITES}{}", self.sprite)
+    }
+}
+
 fn level(
     id: &str,
     title: &str,
@@ -415,6 +529,23 @@ impl LevelCatalog {
             .collect()
     }
 
+    /// Spawnable enemy types for the gym. Keys: `id`, `name`, `scene`, `sprite`, `rule`.
+    #[func]
+    pub fn enemy_kinds() -> Array<VarDictionary> {
+        ENEMY_KINDS
+            .iter()
+            .map(|kind| {
+                let mut dict = VarDictionary::new();
+                dict_set(&mut dict, "id", GString::from(kind.id));
+                dict_set(&mut dict, "name", GString::from(kind.name));
+                dict_set(&mut dict, "scene", GString::from(kind.scene));
+                dict_set(&mut dict, "sprite", GString::from(&kind.sprite_path()));
+                dict_set(&mut dict, "rule", GString::from(kind.rule));
+                dict
+            })
+            .collect()
+    }
+
     #[func(rename = first_level_id)]
     pub fn first_level_id_gd() -> GString {
         GString::from(&first_level_id())
@@ -628,5 +759,29 @@ mod tests {
         assert_eq!(find_level("celtic").unwrap().difficulty, 3);
         assert_eq!(find_level("ouroboros").unwrap().difficulty, 4);
         assert!(find_level("nope").is_none());
+    }
+
+    #[test]
+    fn enemy_kinds_cover_every_pool_and_exist_on_disk() {
+        let godot_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../godot");
+        let on_disk = |res: &str| godot_dir.join(res.trim_start_matches("res://")).is_file();
+        for kind in &ENEMY_KINDS {
+            assert!(on_disk(kind.scene), "missing scene {}", kind.scene);
+            assert!(
+                on_disk(&kind.sprite_path()),
+                "missing sprite {}",
+                kind.sprite
+            );
+            assert!(kind.scene.ends_with(&format!("/{}_enemy.tscn", kind.id)));
+        }
+        for spec in all_levels() {
+            for entry in &spec.enemy_pool {
+                assert!(
+                    ENEMY_KINDS.iter().any(|kind| kind.scene == entry.scene),
+                    "{} not in ENEMY_KINDS",
+                    entry.scene
+                );
+            }
+        }
     }
 }

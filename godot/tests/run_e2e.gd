@@ -154,6 +154,7 @@ func _reset() -> void:
 		config.players.clear()
 		config.selected_level_id = ""
 		config.difficulty_mode = GameConfig.NORMAL
+		config.gym = false
 	var save := root.get_node_or_null("SaveData")
 	if save != null:
 		_reset_save(save)
