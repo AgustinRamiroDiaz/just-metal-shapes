@@ -8,10 +8,13 @@
 //! never changes gameplay state.
 
 use crate::conductor::Conductor;
-use crate::core::feel::{beat_envelope, decay, squash_stretch, stretch_basis};
+use crate::core::feel::{
+    beat_envelope, decay, life_pip_alpha, name_tag_alpha, squash_stretch, stretch_basis,
+};
 use crate::fx::{BurstStyle, with_fx};
 use crate::player::Player;
-use godot::classes::{INode2D, Node2D, ShaderMaterial, Sprite2D};
+use crate::ui::{FontKind, font};
+use godot::classes::{Font, INode2D, Node2D, ShaderMaterial, Sprite2D};
 use godot::prelude::*;
 
 const TAU: f32 = std::f32::consts::TAU;
@@ -22,6 +25,12 @@ const TRAIL_LIFETIME: f32 = 0.22;
 /// Fraction of top speed above which the afterimage trail appears.
 const TRAIL_SPEED_FRACTION: f32 = 0.6;
 const RANGE_TIERS: i32 = 3;
+/// Life pips sit in a row this far below the body's center.
+const PIP_Y: f32 = 25.0;
+const PIP_SPACING: f32 = 11.0;
+const PIP_RADIUS: f32 = 4.0;
+const NAME_Y: f32 = -30.0;
+const NAME_SIZE: i32 = 15;
 
 struct Ghost {
     position: Vector2,
@@ -59,6 +68,16 @@ pub struct PlayerVisual {
     ghosts: Vec<Ghost>,
     ghost_timer: f32,
 
+    /// Lives the pips last showed (-1 before the first frame).
+    #[init(val = -1)]
+    shown_lives: i32,
+    since_lives_changed: f32,
+    since_start: f32,
+    /// Per-pip flash after losing that life, 1 -> 0.
+    pip_flash: [f32; 3],
+    display_name: String,
+    name_font: Option<Gd<Font>>,
+
     base: Base<Node2D>,
 }
 
@@ -79,10 +98,31 @@ impl PlayerVisual {
     pub fn get_hit_flash(&self) -> f32 {
         self.hit_flash
     }
+
+    /// Current opacity of the life pips (tests).
+    #[func]
+    pub fn get_life_pip_alpha(&self) -> f32 {
+        self.snapshot().map_or(0.0, |s| {
+            life_pip_alpha(s.lives, Player::MAX_LIVES, self.since_lives_changed)
+        })
+    }
+
+    /// Current opacity of the name tag (tests).
+    #[func]
+    pub fn get_name_alpha(&self) -> f32 {
+        self.snapshot()
+            .map_or(0.0, |s| name_tag_alpha(self.since_start, s.is_dead))
+    }
+
+    #[func]
+    pub fn get_display_name(&self) -> GString {
+        GString::from(&self.display_name)
+    }
 }
 
 struct Snapshot {
     is_dead: bool,
+    lives: i32,
     revival_progress: f32,
     color: Color,
     range_radius: f32,
@@ -97,6 +137,7 @@ impl PlayerVisual {
         let p = player.bind();
         Some(Snapshot {
             is_dead: p.is_dead,
+            lives: p.lives,
             revival_progress: p.revival_progress,
             color: p.team_color,
             range_radius: p.range_radius,
@@ -281,6 +322,99 @@ impl PlayerVisual {
         }
     }
 
+    fn track_lives(&mut self, s: &Snapshot, dt: f32) {
+        self.since_start += dt;
+        self.since_lives_changed += dt;
+        for flash in &mut self.pip_flash {
+            *flash = decay(*flash, dt, 0.15);
+        }
+        if s.lives == self.shown_lives {
+            return;
+        }
+        if self.shown_lives >= 0 {
+            self.since_lives_changed = 0.0;
+            for i in s.lives.max(0)..self.shown_lives.min(Player::MAX_LIVES) {
+                self.pip_flash[i as usize] = 1.0;
+            }
+        }
+        self.shown_lives = s.lives;
+    }
+
+    /// One pip per life under the body; spent lives are hollow.
+    fn draw_life_pips(&mut self, s: &Snapshot) {
+        let alpha = life_pip_alpha(s.lives, Player::MAX_LIVES, self.since_lives_changed);
+        let flashing = self.pip_flash.iter().any(|f| *f > 0.01);
+        if alpha <= 0.01 && !flashing {
+            return;
+        }
+        let count = Player::MAX_LIVES;
+        for i in 0..count {
+            let x = (i as f32 - (count - 1) as f32 * 0.5) * PIP_SPACING;
+            let at = Vector2::new(x, PIP_Y);
+            let flash = self.pip_flash[i as usize];
+            if i < s.lives {
+                self.base_mut().draw_circle(
+                    at,
+                    PIP_RADIUS + 1.2,
+                    Color::from_rgba(0.02, 0.02, 0.06, 0.7 * alpha),
+                );
+                self.base_mut()
+                    .draw_circle(at, PIP_RADIUS, s.color.with_alpha(alpha));
+            } else {
+                let mut ring = s.color;
+                ring.a = 0.6 * alpha;
+                self.base_mut()
+                    .draw_arc_ex(at, PIP_RADIUS, 0.0, TAU, 12, ring)
+                    .width(1.2)
+                    .antialiased(true)
+                    .done();
+            }
+            if flash > 0.01 {
+                // The life just lost bursts outward.
+                self.base_mut()
+                    .draw_arc_ex(
+                        at,
+                        PIP_RADIUS + 8.0 * (1.0 - flash),
+                        0.0,
+                        TAU,
+                        16,
+                        Color::from_rgba(1.0, 1.0, 1.0, flash),
+                    )
+                    .width(2.0)
+                    .antialiased(true)
+                    .done();
+            }
+        }
+    }
+
+    fn draw_name(&mut self, s: &Snapshot) {
+        let alpha = name_tag_alpha(self.since_start, s.is_dead);
+        if alpha <= 0.01 || self.display_name.is_empty() {
+            return;
+        }
+        let Some(name_font) = self.name_font.clone() else {
+            return;
+        };
+        let text = self.display_name.clone();
+        let width = name_font
+            .get_string_size_ex(&text)
+            .font_size(NAME_SIZE)
+            .done()
+            .x;
+        let at = Vector2::new(-width * 0.5, NAME_Y);
+        self.base_mut()
+            .draw_string_outline_ex(&name_font, at, &text)
+            .font_size(NAME_SIZE)
+            .size(5)
+            .modulate(Color::from_rgba(0.02, 0.02, 0.06, 0.85 * alpha))
+            .done();
+        self.base_mut()
+            .draw_string_ex(&name_font, at, &text)
+            .font_size(NAME_SIZE)
+            .modulate(s.color.lightened(0.25).with_alpha(alpha))
+            .done();
+    }
+
     fn draw_downed(&mut self, s: &Snapshot) {
         let pulse = 0.5 + 0.5 * (self.time * 4.0).sin();
         let mut zone = s.color;
@@ -354,6 +488,12 @@ impl INode2D for PlayerVisual {
         let mut player_node = player.clone();
         player_node.connect("damaged", &this.callable("_on_damaged"));
         player_node.connect("revived", &this.callable("_on_revived"));
+        self.display_name = player
+            .get_meta_ex("display_name")
+            .default(&GString::new().to_variant())
+            .done()
+            .to_string();
+        self.name_font = font(FontKind::Narrow);
         self.player = Some(player);
     }
 
@@ -368,6 +508,7 @@ impl INode2D for PlayerVisual {
         self.hit_flash = decay(self.hit_flash, dt, 0.06);
         self.pop = decay(self.pop, dt, 0.12);
         self.play_events(&s);
+        self.track_lives(&s, dt);
         self.animate_sprites(&s, dt);
         self.update_trail(&s, dt);
         self.base_mut().queue_redraw();
@@ -382,6 +523,8 @@ impl INode2D for PlayerVisual {
         } else {
             self.draw_range(&s);
             self.draw_trail(&s);
+            self.draw_life_pips(&s);
         }
+        self.draw_name(&s);
     }
 }

@@ -44,8 +44,9 @@ and `BOT 1`, `BOT 2`, ..., each with a unique color.
 
 ## In Level
 
-HUD: song progress bar with section and checkpoint ticks, per-player life pips, team
-score, checkpoint and rewind toasts, tutorial hints on the first level. Esc / Start
+HUD: song progress bar with section and checkpoint ticks, team score, checkpoint and
+rewind toasts, tutorial hints on the first level. Lives and names are drawn on the
+players (see `player.md`), leaving the bottom of the arena free. Esc / Start
 pauses; resuming runs a short countdown.
 
 ## Gym
