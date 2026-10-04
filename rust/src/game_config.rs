@@ -85,6 +85,9 @@ pub struct GameConfig {
     #[var]
     #[init(val = GameConfig::NORMAL)]
     pub difficulty_mode: i32,
+    /// The next level runs as the enemy gym: endless, no chart, enemies placed by hand.
+    #[var]
+    pub gym: bool,
 
     base: Base<Node>,
 }

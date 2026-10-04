@@ -355,7 +355,11 @@ impl Lobby {
 
     fn back(&mut self) {
         play_sfx("ui_back");
-        go_to(super::LEVEL_SELECT_SCENE);
+        if super::gym_mode() {
+            go_to(super::TITLE_SCENE);
+        } else {
+            go_to(super::LEVEL_SELECT_SCENE);
+        }
     }
 
     fn start_game(&mut self) {
@@ -640,6 +644,10 @@ impl Lobby {
             .as_ref()
             .and_then(|(id, mode)| find_level(id).map(|spec| (spec, *mode)))
         {
+            _ if super::gym_mode() => (
+                "Enemy gym: endless, no hazards, drop in any enemy".into(),
+                palette::GOOD,
+            ),
             Some((spec, mode)) => (
                 format!("{}, {} mode", spec.title, super::mode_name(mode)),
                 rgb_to_color(spec.palette.accent),

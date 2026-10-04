@@ -7,9 +7,13 @@ const TIMEOUT_SECONDS := 20.0
 
 
 func run(t: E2EContext) -> void:
-	await t.change_scene("res://scenes/ui/title.tscn")
+	var title := await t.change_scene("res://scenes/ui/title.tscn")
 	await t.frames(3)
-	for key in [KEY_DOWN, KEY_DOWN, KEY_ENTER]:
+	var keys := []
+	for i in title.get_button_names().find("Credits"):
+		keys.append(KEY_DOWN)
+	keys.append(KEY_ENTER)
+	for key in keys:
 		t.press_key(key, true)
 		t.press_key(key, false)
 		await t.frames(1)

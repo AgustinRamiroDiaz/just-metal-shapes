@@ -20,6 +20,10 @@ their shield.
    2 seconds. If everyone goes down, the song rewinds to the last checkpoint (Hardcore:
    game over).
 
+**Gym** (on the title screen) is a sandbox for trying enemies: same lobby, then an
+endless arena where a song loops with no hazards and you drag enemies from a sidebar
+into the arena with the mouse.
+
 ### Controls
 
 | | Keyboard | Gamepad |
@@ -52,7 +56,7 @@ See `CONTRIBUTING.md` for toolchain setup and Web export.
 | `make test` | Rust unit tests (`rust/src/core/`: chart generation, timing, danger geometry, bots, scoring, saves) |
 | `make e2e` | Headless Godot end-to-end scenarios (`godot/tests/e2e/`), silent; fails on panics or leaks |
 | `make test-all` | Both |
-| `make screenshots` | Capture every UI screen and staged gameplay moments off-screen (`xvfb-run`, no audio) to `/tmp/jms_shots` |
+| `make screenshots` | Capture every UI screen, staged gameplay moments and the gym off-screen (`xvfb-run`, no audio) to `/tmp/jms_shots` |
 | `make analyze-music` | Re-run beat analysis for every track in `godot/music/` |
 
 Bots play whole levels in e2e: `godot --headless --path godot -s res://tests/run_e2e.gd -- --only=bot_full_level --bot-level=surf-rock`.

@@ -36,6 +36,8 @@ pub struct Hud {
     time_label: Option<Gd<Label>>,
     length_label: Option<Gd<Label>>,
     score_label: Option<Gd<Label>>,
+    score_caption: Option<Gd<Label>>,
+    top_row: Option<Gd<HBoxContainer>>,
     shown_score: f64,
     title_label: Option<Gd<Label>>,
     panels: Vec<Gd<PlayerPanel>>,
@@ -150,6 +152,11 @@ impl Hud {
     }
 
     #[func]
+    fn _on_gym_song_changed(&mut self) {
+        self.setup_level_info();
+    }
+
+    #[func]
     fn _on_level_ended(&mut self, _score: i64) {
         self.hide_count();
         if let Some(mut hint) = self.hint_label.clone() {
@@ -240,7 +247,11 @@ impl Hud {
         }
         let mode = super::mode_name(director.bind().get_mode());
         if let Some(mut title_label) = self.title_label.clone() {
-            title_label.set_text(&format!("{title}  /  {mode}"));
+            if super::gym_mode() {
+                title_label.set_text(&format!("Gym  /  {title}"));
+            } else {
+                title_label.set_text(&format!("{title}  /  {mode}"));
+            }
         }
         let Some(conductor) = self.conductor.clone() else {
             return;
@@ -380,6 +391,8 @@ impl Hud {
         self.length_label = Some(length_label);
         self.progress = Some(progress);
         self.score_label = Some(score);
+        self.score_caption = Some(score_caption);
+        self.top_row = Some(top);
         self.fps_label = Some(fps);
         self.toast = Some(toast);
         self.count_label = Some(count);
@@ -394,6 +407,21 @@ impl ICanvasLayer for Hud {
         self.base_mut().set_layer(10);
         self.accent = palette::ACCENT;
         self.build();
+        if super::gym_mode() {
+            // The gym has no score, and its sidebar covers the right edge.
+            for mut label in [self.score_label.clone(), self.score_caption.clone()]
+                .into_iter()
+                .flatten()
+            {
+                label.set_visible(false);
+            }
+            if let Some(mut top) = self.top_row.clone() {
+                top.set_offset(
+                    godot::builtin::Side::RIGHT,
+                    -28.0 - super::gym::SIDEBAR_WIDTH,
+                );
+            }
+        }
         let this = self.to_gd();
         let level_ui = self.base().get_parent();
         let manager = level_ui.and_then(|p| p.get_parent());
@@ -402,6 +430,7 @@ impl ICanvasLayer for Hud {
             manager.connect("rewound", &this.callable("_on_rewound"));
             manager.connect("level_cleared", &this.callable("_on_level_ended"));
             manager.connect("game_over", &this.callable("_on_level_ended"));
+            manager.connect("gym_song_changed", &this.callable("_on_gym_song_changed"));
             self.conductor = manager.try_get_node_as::<Conductor>("Conductor");
             self.director = manager.try_get_node_as::<LevelDirector>("LevelDirector");
         }

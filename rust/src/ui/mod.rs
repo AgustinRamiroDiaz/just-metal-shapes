@@ -8,6 +8,7 @@
 
 pub mod backdrop;
 pub mod credits;
+pub mod gym;
 pub mod hud;
 pub mod level_select;
 pub mod level_ui;
@@ -305,6 +306,26 @@ pub fn go_to(scene_path: &str) {
         tree.set_pause(false);
         tree.change_scene_to_file(scene_path);
     }
+}
+
+/// Sets `GameConfig.gym`: whether the next level started from the lobby is the gym.
+pub fn set_gym_mode(gym: bool) {
+    if let Some(mut config) = scene_tree()
+        .and_then(|tree| tree.get_root())
+        .and_then(|root| root.get_node_or_null("GameConfig"))
+        .and_then(|node| node.try_cast::<crate::game_config::GameConfig>().ok())
+    {
+        config.bind_mut().gym = gym;
+    }
+}
+
+/// `GameConfig.gym`.
+pub fn gym_mode() -> bool {
+    scene_tree()
+        .and_then(|tree| tree.get_root())
+        .and_then(|root| root.get_node_or_null("GameConfig"))
+        .and_then(|node| node.try_cast::<crate::game_config::GameConfig>().ok())
+        .is_some_and(|config| config.bind().gym)
 }
 
 /// True while a screen transition runs (screens ignore input then).

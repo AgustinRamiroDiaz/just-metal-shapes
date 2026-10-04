@@ -104,6 +104,9 @@ Main Level (Node2D + GameManager)      main_level.tscn
 is cleared on `Conductor.song_finished`. When all players are down it calls
 `LevelDirector.rewind_to_checkpoint()` and respawns players (or ends the run in hardcore).
 It tracks run stats and exposes `get_run_stats()` (score/rank from `core::scoring`).
+With `GameConfig.gym` set, the same scene runs as the enemy gym: the director stays
+inactive, the song loops, downed teams respawn, and `ui/gym.rs` (`GymPanel`) spawns
+enemies through `GameManager.gym_spawn` -> `enemy_spawn::spawn_at`.
 
 ### Music-driven pipeline
 
@@ -183,6 +186,8 @@ Static utility classes avoid duplicating logic across components:
 2. Set the root to `BaseEnemy`
 3. Add a `HealthComponent` and whichever behavior components you need
 4. Add an `EnemyEntry` for it to the levels' `enemy_pool` in `level_catalog.rs`
+5. Add it to `ENEMY_KINDS` in `level_catalog.rs` so the gym lists it (a unit test fails
+   when a pool uses a scene that is not listed there)
 
 ### New hazard
 Follow the steps at the top of `rust/src/hazards/mod.rs`, using `hazards/pulse.rs` as

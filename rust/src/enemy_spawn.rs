@@ -30,18 +30,28 @@ pub fn spawn_enemy(director: &mut LevelDirector, event: &ChartEvent) {
         );
         return;
     };
-    let parent = director.level_root();
-    let director_gd = director.to_gd();
-
     if entry.spawn_outside {
         let arena = director.arena_rect();
         let direction = Vector2::new(event.params.angle.cos(), event.params.angle.sin());
         let position = arena.center() + direction * (arena.size.length() / 2.0 + OUTSIDE_MARGIN);
-        place_enemy(&scene, position, parent, director_gd);
+        place_enemy(&scene, position, director.level_root(), director.to_gd());
         return;
     }
 
     let position = director.arena_point(event.params.x, event.params.y);
+    spawn_at(director, scene, position, event.telegraph_beats);
+}
+
+/// Plays the spawn effect at `position` for `telegraph_beats`, then places an enemy
+/// from `scene` there (immediately when the effect scene is missing).
+pub fn spawn_at(
+    director: &mut LevelDirector,
+    scene: Gd<PackedScene>,
+    position: Vector2,
+    telegraph_beats: f64,
+) {
+    let parent = director.level_root();
+    let director_gd = director.to_gd();
     let Some(effect_scene) = director.spawn_effect_scene() else {
         place_enemy(&scene, position, parent, director_gd);
         return;
@@ -49,7 +59,7 @@ pub fn spawn_enemy(director: &mut LevelDirector, event: &ChartEvent) {
     let mut effect = effect_scene.instantiate_as::<GpuParticles2D>();
     let telegraph_seconds = director
         .timing()
-        .beats_to_duration(event.telegraph_beats)
+        .beats_to_duration(telegraph_beats)
         .max(0.1);
     effect.set("duration", &telegraph_seconds.to_variant());
     effect.set_global_position(position);
