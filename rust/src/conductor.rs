@@ -4,11 +4,14 @@
 //! (`core::timing::audio_song_time`), smoothed against an internal clock so it is
 //! monotonic between audio mixes. The internal clock advances by the frame `delta`,
 //! which Godot already scales by `Engine.time_scale`. The clock alone is used when
-//! `use_clock` is set, when there is no stream, or when the audio driver is the dummy
-//! driver / playback does not advance (headless runs).
+//! `use_clock` is set, when there is no stream, or with the dummy audio driver
+//! (headless runs). If the playback position stops advancing while the music plays (a
+//! browser that has not resumed its AudioContext yet), the clock takes over and the
+//! music keeps playing; sync resumes once the position moves again.
 
 use crate::core::analysis::SongAnalysis;
 use crate::core::timing::{Timing, audio_song_time};
+use godot::classes::audio_server::PlaybackType;
 use godot::classes::{AudioServer, AudioStream, AudioStreamPlayer, INode, Node};
 use godot::prelude::*;
 
@@ -48,7 +51,8 @@ pub struct Conductor {
     seek_count: i64,
     /// Song time the last play/seek jumped to.
     last_seek_time: f64,
-    audio_failed: bool,
+    /// The playback position stopped advancing; song time follows the clock meanwhile.
+    audio_stalled: bool,
     /// The dummy driver (headless) never mixes, so playback would neither advance nor
     /// be released.
     dummy_driver: bool,
@@ -88,7 +92,7 @@ impl Conductor {
         self.duration_seconds = duration_seconds.max(0.0);
         let mut player = self.ensure_player();
         player.set_stream(stream.as_ref());
-        self.audio_failed = false;
+        self.audio_stalled = false;
     }
 
     /// Section start beats and types (`intro|build|main|breakdown|outro`).
@@ -246,7 +250,7 @@ impl Conductor {
     /// Whether song time is currently derived from audio playback.
     #[func]
     pub fn is_using_audio_clock(&self) -> bool {
-        self.audio_enabled()
+        self.audio_enabled() && !self.audio_stalled
     }
 
     /// Incremented on every play/seek/stop; compare to detect time jumps.
@@ -319,6 +323,9 @@ impl Conductor {
         if AudioServer::singleton().get_bus_index("Music") >= 0 {
             player.set_bus("Music");
         }
+        // The Web default plays streams as Web Audio samples, which never report a
+        // playback position.
+        player.set_playback_type(PlaybackType::STREAM);
         if player.get_parent().is_none() {
             self.base_mut().add_child(&player);
         }
@@ -328,7 +335,6 @@ impl Conductor {
 
     fn audio_enabled(&self) -> bool {
         !self.use_clock
-            && !self.audio_failed
             && !self.dummy_driver
             && self
                 .player
@@ -344,16 +350,6 @@ impl Conductor {
         self.last_beat = (self.timing.seconds_to_beat(seconds) - 1e-6).floor() as i64;
     }
 
-    fn mark_audio_failed(&mut self, reason: &str) {
-        if !self.audio_failed {
-            godot_print!("Conductor: {reason}; using the internal clock");
-        }
-        self.audio_failed = true;
-        if let Some(player) = self.player.as_mut() {
-            player.stop();
-        }
-    }
-
     fn sync_to_audio(&mut self, delta: f64) {
         if !self.audio_enabled() {
             return;
@@ -365,15 +361,26 @@ impl Conductor {
             return;
         }
         let position = player.get_playback_position() as f64;
-        if (position - self.last_audio_position).abs() < 1e-9 {
+        // The first reading after play/seek is only a baseline: it can still be stale.
+        let baseline = self.last_audio_position < 0.0;
+        let moved = (position - self.last_audio_position).abs() >= 1e-9;
+        self.last_audio_position = position;
+        if baseline {
+            return;
+        }
+        if !moved {
             self.stalled_for += delta;
-            if self.stalled_for > STALL_LIMIT {
-                self.mark_audio_failed("audio playback is not advancing");
+            if self.stalled_for > STALL_LIMIT && !self.audio_stalled {
+                self.audio_stalled = true;
+                godot_print!("Conductor: audio playback is not advancing; following the clock");
             }
             return;
         }
+        if self.audio_stalled {
+            self.audio_stalled = false;
+            godot_print!("Conductor: audio playback is advancing again; following the audio");
+        }
         self.stalled_for = 0.0;
-        self.last_audio_position = position;
         let server = AudioServer::singleton();
         let audio_time = audio_song_time(
             position,
