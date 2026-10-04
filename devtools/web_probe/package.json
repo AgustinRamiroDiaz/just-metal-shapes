@@ -1,0 +1,11 @@
+{
+  "name": "jms-web-probe",
+  "private": true,
+  "description": "Headless, muted check of the Web build: menu and level audio, console output",
+  "scripts": {
+    "probe": "node probe.js"
+  },
+  "dependencies": {
+    "playwright-core": "1.63.0"
+  }
+}

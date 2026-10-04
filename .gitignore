@@ -1,2 +1,4 @@
 /build/
 .claude/worktrees/
+devtools/web_probe/node_modules/
+devtools/web_probe/package-lock.json

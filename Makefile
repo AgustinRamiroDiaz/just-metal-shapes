@@ -10,12 +10,13 @@ RUST_NIGHTLY ?= nightly-2026-06-02
 EMSDK ?= /tmp/emsdk
 WEB_OUT ?= build/web
 WEB_PORT ?= 8060
+WEB_PROBE_PORT ?= 8061
 SHOTS_DIR ?= /tmp/jms_shots
 E2E_LOG ?= /tmp/just-metal-shapes-e2e.log
 # Run a single e2e scenario: make e2e ONLY=rewind
 ONLY ?=
 
-.PHONY: help check build test e2e test-all screenshots analyze-music check-web-exporter rust-web web-export web-build web-serve web-run clean-web
+.PHONY: help check build test e2e test-all screenshots analyze-music check-web-exporter rust-web web-export web-build web-serve web-run web-probe clean-web
 
 help:
 	@printf '%s\n' \
@@ -31,6 +32,7 @@ help:
 		'  make web-build   - Run rust-web and web-export' \
 		'  make web-serve   - Serve build/web locally' \
 		'  make web-run     - Build, export, and serve locally' \
+		'  make web-probe   - Headless, muted browser check of build/web (audio, console)' \
 		'  make clean-web   - Remove generated web export files' \
 		'' \
 		'Useful overrides:' \
@@ -101,6 +103,15 @@ web-serve:
 	cd "$(WEB_OUT)" && python3 -m http.server "$(WEB_PORT)"
 
 web-run: web-build web-serve
+
+# Headless, muted browser check of an existing Web build (see devtools/web_probe).
+web-probe:
+	cd devtools/web_probe && npm install --silent
+	cd "$(WEB_OUT)" && { python3 -m http.server $(WEB_PROBE_PORT) >/dev/null 2>&1 & echo $$! > /tmp/jms_web_probe_server.pid; }
+	sleep 1
+	mkdir -p $(SHOTS_DIR)/web
+	cd devtools/web_probe && node probe.js http://127.0.0.1:$(WEB_PROBE_PORT)/index.html $(SHOTS_DIR)/web; \
+		status=$$?; kill $$(cat /tmp/jms_web_probe_server.pid); exit $$status
 
 clean-web:
 	rm -rf "$(WEB_OUT)"

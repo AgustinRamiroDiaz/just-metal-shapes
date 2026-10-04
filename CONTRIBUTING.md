@@ -72,6 +72,17 @@ Then open:
 http://127.0.0.1:8060
 ```
 
+Check an exported build without opening a window or playing sound (needs Node; set
+`CHROME_BIN` to a Chromium, or run `npx playwright install chromium` once):
+
+```sh
+make web-probe
+```
+
+It walks title -> level select -> lobby -> level in headless, muted Chromium, prints
+the browser console and the audio level heard in the menu and in the level, and saves
+screenshots to `/tmp/jms_shots/web`. Level music must show a non-zero `rms`.
+
 ## Web Export Notes
 
 The Web preset is configured for GDExtension support with thread support disabled. The Rust WASM build uses:
