@@ -23,6 +23,27 @@ const KINDS := [
 	"splitter_mini",
 	"chameleon",
 	"warden",
+	"foco",
+	"papa",
+	"sable",
+	"birra",
+	"caja",
+	"corazon",
+	"fiera",
+	"pastilla",
+	"maestro",
+	"globo",
+	"pelota",
+	"mano_de_dios",
+	"huevo",
+	"jeringa",
+	"oveja",
+	"abeja",
+	"hermanos",
+	"cohete",
+	"microfono",
+	"gota",
+	"limon",
 ]
 const CENTER := Vector2(640, 360)
 const CROP := Vector2i(440, 360)
@@ -106,7 +127,8 @@ func _strip(kind: String) -> void:
 	var path := out_dir.path_join("%s.png" % kind)
 	strip.save_png(path)
 	print("shot: ", path)
-	enemy.queue_free()
+	if is_instance_valid(enemy):
+		enemy.queue_free()
 	if neighbor:
 		neighbor.queue_free()
 	for group in ["enemies", "enemy_projectiles", "mines"]:
@@ -115,7 +137,8 @@ func _strip(kind: String) -> void:
 	await _seconds(0.3)
 
 
-func _crop(enemy: Node2D) -> Image:
+## `enemy` may be freed by the time of the shot (fuses pop); the crop then stays centered.
+func _crop(enemy: Variant) -> Image:
 	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()
 	var at := (

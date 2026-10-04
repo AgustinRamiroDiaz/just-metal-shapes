@@ -21,6 +21,9 @@ use godot::prelude::*;
 const BAR_WIDTH: f32 = 560.0;
 const TOAST_SECONDS: f64 = 1.8;
 const GO_SECONDS: f64 = 0.7;
+/// Captions sit this far (px) above their cue position.
+const CAPTION_RISE: f32 = 58.0;
+const CAPTION_COLOR: Color = Color::from_rgb(1.0, 0.82, 0.55);
 
 #[derive(GodotClass)]
 #[class(init, base = CanvasLayer)]
@@ -138,6 +141,43 @@ impl Hud {
         hint.set_visible(true);
         super::fade_in(&hint.clone().upcast(), 0.0, 0.25);
         self.hint_left = duration.max(1.5);
+    }
+
+    /// A lyric word over its cue: pops in, holds, then fades and drifts up.
+    #[func]
+    fn _on_caption(&mut self, text: GString, position: Vector2, duration: f64) {
+        let mut caption = label(&text.to_string(), FontKind::Display, 30, CAPTION_COLOR);
+        caption.add_theme_constant_override("outline_size", 10);
+        caption.add_theme_color_override("font_outline_color", palette::VOID);
+        caption.set_horizontal_alignment(HorizontalAlignment::CENTER);
+        self.base_mut().add_child(&caption);
+        let size = caption.get_combined_minimum_size();
+        let screen = self
+            .base()
+            .get_viewport()
+            .map_or(Vector2::new(1280.0, 720.0), |v| v.get_visible_rect().size);
+        let at = position - Vector2::new(size.x / 2.0, CAPTION_RISE + size.y / 2.0);
+        let at = Vector2::new(
+            at.x.clamp(8.0, (screen.x - size.x - 8.0).max(8.0)),
+            at.y.clamp(8.0, (screen.y - size.y - 8.0).max(8.0)),
+        );
+        caption.set_position(at);
+        caption.set_size(size);
+        caption.set_pivot_offset(size / 2.0);
+        caption.set_scale(Vector2::splat(0.4));
+        let Some(mut tween) = super::make_tween(&caption.clone().upcast()) else {
+            return;
+        };
+        tween
+            .tween_property(&caption, "scale", &Vector2::ONE.to_variant(), 0.22)
+            .set_trans(TransitionType::BACK)
+            .set_ease(EaseType::OUT);
+        tween.tween_interval((duration - 0.6).max(0.3));
+        tween.tween_property(&caption, "modulate:a", &0.0.to_variant(), 0.4);
+        tween
+            .parallel()
+            .tween_property(&caption, "position:y", &(at.y - 18.0).to_variant(), 0.4);
+        tween.tween_callback(&caption.callable("queue_free"));
     }
 
     #[func]
@@ -390,6 +430,7 @@ impl ICanvasLayer for Hud {
         if let Some(mut director) = self.director.clone() {
             director.connect("checkpoint_reached", &this.callable("_on_checkpoint"));
             director.connect("show_hint", &this.callable("_on_hint"));
+            director.connect("caption", &this.callable("_on_caption"));
         }
         if let Some(mut save) = save_data(&this.clone().upcast()) {
             save.connect("settings_changed", &this.callable("_on_settings_changed"));

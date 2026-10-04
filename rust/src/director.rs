@@ -45,6 +45,8 @@ pub struct LevelDirector {
     level: Option<LevelSpec>,
     mode: DifficultyMode,
     chart: Option<Chart>,
+    #[init(val = Timing::new(120.0, 0.0))]
+    timing: Timing,
     /// Event indices in spawn order.
     order: Vec<usize>,
     cursor: usize,
@@ -86,6 +88,9 @@ impl LevelDirector {
     pub fn checkpoint_reached(index: i64, beat: f64);
     #[signal]
     pub fn show_hint(text: GString, duration_seconds: f64);
+    /// A lyric cue's word at `position` (arena px).
+    #[signal]
+    pub fn caption(text: GString, position: Vector2, duration_seconds: f64);
     #[signal]
     pub fn enemy_spawned(enemy: Gd<Node2D>);
     #[signal]
@@ -180,6 +185,7 @@ impl LevelDirector {
         self.cursor = 0;
         self.rewind_floor = 0.0;
         self.announced_checkpoint = -1;
+        self.timing = chart.timing();
         self.chart = Some(chart);
         self.level = Some(spec);
         self.mode = mode;
@@ -383,9 +389,7 @@ impl LevelDirector {
     }
 
     pub fn timing(&self) -> Timing {
-        self.chart
-            .as_ref()
-            .map_or(Timing::new(120.0, 0.0), Chart::timing)
+        self.timing.clone()
     }
 
     pub fn conductor(&self) -> Option<Gd<Conductor>> {
@@ -519,6 +523,18 @@ impl LevelDirector {
             }
             d.announced_checkpoint = index;
             d.signals().checkpoint_reached().emit(index, e.beat);
+        });
+        self.registry.insert(EventKind::Caption, |d, e| {
+            let Some(text) = d
+                .level()
+                .and_then(|level| level.captions.get(e.params.variant as usize))
+                .map(GString::from)
+            else {
+                return;
+            };
+            let position = d.arena_point(e.params.x, e.params.y);
+            let seconds = d.timing().beats_to_duration(e.params.duration_beats);
+            d.signals().caption().emit(&text, position, seconds);
         });
         self.registry.insert(EventKind::ShowHint, |d, e| {
             let text = HINTS.get(e.params.variant as usize).copied().unwrap_or("");
