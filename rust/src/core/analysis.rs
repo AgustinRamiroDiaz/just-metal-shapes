@@ -1,6 +1,6 @@
 //! Serde model of `godot/music/<song-id>.analysis.json`, written by
 //! `devtools/analyze_beats.py`. Field names follow the JSON (camelCase); fields the
-//! game does not use (raw dB values, `beatTimesSeconds`) are ignored on load.
+//! game does not use (raw dB values) are ignored on load.
 
 use serde::{Deserialize, Serialize};
 
@@ -104,6 +104,12 @@ pub struct SongAnalysis {
     pub beat_offset_seconds: f64,
     #[serde(default)]
     pub confidence: f64,
+    /// The tempo drifts (live recordings): `beat_times_seconds` is a tracked tempo map
+    /// rather than a fixed grid at `bpm`.
+    #[serde(default)]
+    pub variable_tempo: bool,
+    #[serde(default)]
+    pub beat_times_seconds: Vec<f64>,
     pub beats: Vec<BeatInfo>,
     #[serde(default)]
     pub onsets: Vec<Onset>,
@@ -139,11 +145,30 @@ impl SongAnalysis {
         if self.beats.windows(2).any(|w| w[1].beat <= w[0].beat) {
             return Err("beats are not strictly increasing".into());
         }
+        if self.variable_tempo
+            && (self.beat_times_seconds.len() < 2
+                || self.beat_times_seconds.windows(2).any(|w| w[1] <= w[0]))
+        {
+            return Err("variableTempo needs strictly increasing beatTimesSeconds".into());
+        }
         Ok(())
     }
 
     pub fn timing(&self) -> Timing {
-        Timing::new(self.bpm, self.beat_offset_seconds)
+        if self.variable_tempo {
+            Timing::with_beat_times(self.bpm, &self.beat_times_seconds)
+        } else {
+            Timing::new(self.bpm, self.beat_offset_seconds)
+        }
+    }
+
+    /// The tempo map charts carry: empty for fixed-tempo songs.
+    pub fn tempo_map(&self) -> Vec<f64> {
+        if self.variable_tempo {
+            self.beat_times_seconds.clone()
+        } else {
+            Vec::new()
+        }
     }
 
     /// Bar containing `beat`, if the analysis has one.

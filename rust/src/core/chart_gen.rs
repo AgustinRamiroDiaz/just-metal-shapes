@@ -23,6 +23,10 @@
 //! - Enemies arrive on phrase boundaries: in pairs during breakdowns (the co-op combat
 //!   phase), occasionally in main sections whose phrase is light on hazards, never in
 //!   the finale.
+//! - Scripted levels (`LevelSpec::cues`, lyric cues) place their enemies, hazards and
+//!   captions at the cue times, rounded to the nearest half beat. Their hazards are
+//!   committed before the phrases' and follow the same caps; the generated enemies
+//!   only arrive in phrases away from cues.
 //! - Safe path: proposals are committed in time order; the summed `coverage` of
 //!   simultaneously active hazards never exceeds `coverage_cap(difficulty)` (< 1, so no
 //!   pair can cover the whole arena), and at most `max_active_hazards(difficulty)`
@@ -287,6 +291,45 @@ impl PhraseEntry {
     }
 }
 
+/// What a scripted cue does.
+#[derive(Clone, Debug, PartialEq)]
+pub enum CueAction {
+    /// Spawns `count` of `enemy_pool[variant]` around the cue position (outside
+    /// spawners come in from that direction); each leaves after `life_beats` (0 =
+    /// stays until killed).
+    Enemy {
+        variant: u32,
+        count: u32,
+        life_beats: f64,
+    },
+    /// A pattern-pool hazard with the pool's defaults, at the cue position, with
+    /// `variant` and `angle` overriding the defaults.
+    Hazard {
+        kind: EventKind,
+        variant: u32,
+        angle: f32,
+    },
+    /// Only the caption.
+    Caption,
+}
+
+/// A moment synced to the song (a lyric), placed at `time` song seconds.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Cue {
+    pub time: f64,
+    pub action: CueAction,
+    /// Index into `LevelSpec::captions`, shown at the cue position.
+    pub caption: Option<u32>,
+    /// Normalized arena position, `0..=1`.
+    pub x: f32,
+    pub y: f32,
+}
+
+/// How long a cue's caption stays up.
+pub const CAPTION_BEATS: f64 = 3.0;
+/// Generated enemies keep this far (beats) from scripted ones.
+pub const CUE_CLEARANCE_BEATS: i64 = 8;
+
 /// An enemy scene the chart may spawn.
 #[derive(Clone, Debug, PartialEq)]
 pub struct EnemyEntry {
@@ -348,6 +391,10 @@ pub struct LevelSpec {
     pub tutorial: bool,
     /// End the last main/build stretch with the layered `Finale` set piece.
     pub finale: bool,
+    /// Scripted moments (lyric cues), in any order.
+    pub cues: Vec<Cue>,
+    /// Caption texts the cues refer to.
+    pub captions: Vec<String>,
 }
 
 impl LevelSpec {
@@ -446,11 +493,6 @@ struct Proposal {
     group: u32,
 }
 
-struct ActiveHazard {
-    end: f64,
-    coverage: f32,
-}
-
 /// A planned phrase, kept for enemy placement after hazards are committed.
 struct PlannedPhrase {
     ctx: PhraseCtx,
@@ -471,6 +513,8 @@ struct Generator<'a> {
     next_group: u32,
     /// Thin hazards under enemy waves (off only to measure the effect in tests).
     thin_waves: bool,
+    /// Hit beats of committed cue hazards: thinning leaves them alone.
+    cue_hazard_beats: Vec<f64>,
 }
 
 /// Builds the chart for a level. Same inputs and seed always give the same chart.
@@ -483,6 +527,7 @@ pub fn generate_chart(analysis: &SongAnalysis, spec: &LevelSpec, seed: u64) -> C
         bpm: analysis.bpm,
         offset_seconds: analysis.beat_offset_seconds,
         duration_seconds: analysis.duration_seconds,
+        beat_times: analysis.tempo_map(),
         events,
     }
 }
@@ -519,6 +564,7 @@ impl<'a> Generator<'a> {
             proposals: Vec::new(),
             next_group: 0,
             thin_waves: true,
+            cue_hazard_beats: Vec::new(),
         }
     }
 
@@ -540,9 +586,113 @@ impl<'a> Generator<'a> {
             self.propose_phrase(planned.phrase, &planned.ctx, &mut hazard_rng);
         }
         self.place_finale_presentation(&plan);
+        self.place_cues();
         self.commit_proposals();
         let mut enemy_rng = self.rng.fork(2);
         self.place_enemies(&plan, &mut enemy_rng);
+    }
+
+    /// Cue beat: the cue time on the grid, rounded to the nearest half beat.
+    fn cue_beat(&self, cue: &Cue) -> f64 {
+        (self.timing.seconds_to_beat(cue.time) * 2.0).round() / 2.0
+    }
+
+    /// Enemies and captions go straight into the chart; hazards are committed first
+    /// (before the phrases' proposals), under the usual caps.
+    fn place_cues(&mut self) {
+        let mut cues = self.spec.cues.clone();
+        cues.sort_by(|a, b| a.time.total_cmp(&b.time));
+        let mut hazards: Vec<Proposal> = Vec::new();
+        for cue in &cues {
+            let beat = self.cue_beat(cue);
+            if beat < ENEMY_TELEGRAPH_BEATS {
+                continue;
+            }
+            let intensity = self.bar_intensity(beat.floor() as i64);
+            match cue.action {
+                CueAction::Enemy {
+                    variant,
+                    count,
+                    life_beats,
+                } => {
+                    if self.spec.enemy_pool.get(variant as usize).is_none() {
+                        continue;
+                    }
+                    let angle = (cue.y - 0.5).atan2(cue.x - 0.5).rem_euclid(TAU);
+                    self.push(
+                        beat,
+                        ENEMY_TELEGRAPH_BEATS,
+                        EventKind::SpawnEnemy,
+                        PatternParams {
+                            x: cue.x,
+                            y: cue.y,
+                            angle,
+                            count: count.max(1),
+                            duration_beats: life_beats,
+                            variant,
+                            intensity,
+                            ..PatternParams::default()
+                        },
+                    );
+                }
+                CueAction::Hazard {
+                    kind,
+                    variant,
+                    angle,
+                } => {
+                    let Some(entry) = self.spec.pattern(kind) else {
+                        continue;
+                    };
+                    let mut params = self.params(entry, beat.floor() as i64, 0.5);
+                    (params.x, params.y, params.angle, params.variant) =
+                        (cue.x, cue.y, angle, variant);
+                    let group = self.next_group;
+                    self.next_group += 1;
+                    hazards.push(Proposal {
+                        beat,
+                        telegraph: entry.telegraph_beats,
+                        kind,
+                        params,
+                        group,
+                    });
+                }
+                CueAction::Caption => {}
+            }
+            if let Some(caption) = cue.caption {
+                self.push(
+                    beat,
+                    0.0,
+                    EventKind::Caption,
+                    PatternParams {
+                        x: cue.x,
+                        y: cue.y,
+                        variant: caption,
+                        duration_beats: CAPTION_BEATS,
+                        intensity,
+                        ..PatternParams::default()
+                    },
+                );
+            }
+        }
+        let mut introduced = Vec::new();
+        for proposal in &hazards {
+            let before = self.events.len();
+            self.commit_group(std::slice::from_ref(proposal), &mut introduced);
+            if self.events.len() > before {
+                self.cue_hazard_beats.push(proposal.beat);
+            }
+        }
+    }
+
+    /// Whether a scripted enemy arrives within `CUE_CLEARANCE_BEATS` of `[start, end)`.
+    fn near_cue_enemy(&self, start: i64, end: i64) -> bool {
+        self.spec.cues.iter().any(|cue| {
+            matches!(cue.action, CueAction::Enemy { .. }) && {
+                let beat = self.cue_beat(cue);
+                beat >= (start - CUE_CLEARANCE_BEATS) as f64
+                    && beat < (end + CUE_CLEARANCE_BEATS) as f64
+            }
+        })
     }
 
     fn push(&mut self, beat: f64, telegraph_beats: f64, kind: EventKind, params: PatternParams) {
@@ -1456,8 +1606,12 @@ impl<'a> Generator<'a> {
     fn commit_proposals(&mut self) {
         let mut proposals = std::mem::take(&mut self.proposals);
         proposals.sort_by(|a, b| a.beat.total_cmp(&b.beat).then(a.group.cmp(&b.group)));
-        let mut active: Vec<ActiveHazard> = Vec::new();
-        let mut introduced: Vec<EventKind> = Vec::new();
+        let mut introduced: Vec<EventKind> = self
+            .events
+            .iter()
+            .filter(|e| e.kind.is_hazard())
+            .map(|e| e.kind)
+            .collect();
         let mut i = 0;
         while i < proposals.len() {
             let group = proposals[i].group;
@@ -1465,7 +1619,7 @@ impl<'a> Generator<'a> {
             while j < proposals.len() && proposals[j].group == group {
                 j += 1;
             }
-            self.commit_group(&proposals[i..j], &mut active, &mut introduced);
+            self.commit_group(&proposals[i..j], &mut introduced);
             i = j;
         }
     }
@@ -1481,17 +1635,13 @@ impl<'a> Generator<'a> {
                 <= self.analysis.duration_seconds - END_MARGIN_SECONDS
     }
 
-    fn commit_group(
-        &mut self,
-        group: &[Proposal],
-        active: &mut Vec<ActiveHazard>,
-        introduced: &mut Vec<EventKind>,
-    ) {
+    fn commit_group(&mut self, group: &[Proposal], introduced: &mut Vec<EventKind>) {
         let Some(first) = group.first() else {
             return;
         };
         let beat = first.beat;
         let mut coverage = 0.0;
+        let mut end = beat;
         for proposal in group {
             let Some(entry) = self.spec.pattern(proposal.kind) else {
                 return;
@@ -1500,19 +1650,12 @@ impl<'a> Generator<'a> {
                 return;
             }
             coverage += entry.coverage;
+            end = end.max(beat + proposal.params.duration_beats);
         }
-        active.retain(|hazard| hazard.end > beat);
-        if active.len() + group.len() > self.max_active {
-            return;
-        }
-        // Telegraphs are harmless, so only active spans count. Every hazard in `active`
-        // already overlaps `beat`, hence the group's whole span.
-        let used: f32 = active.iter().map(|hazard| hazard.coverage).sum();
-        if used + coverage > self.cap + 1e-6 {
+        if !self.fits_caps(beat, end, group.len(), coverage) {
             return;
         }
         for proposal in group {
-            let entry_coverage = self.spec.pattern(proposal.kind).map_or(0.0, |e| e.coverage);
             let mut telegraph = proposal.telegraph;
             if !introduced.contains(&proposal.kind) {
                 introduced.push(proposal.kind);
@@ -1520,12 +1663,40 @@ impl<'a> Generator<'a> {
                     telegraph += INTRODUCTION_BEATS;
                 }
             }
-            active.push(ActiveHazard {
-                end: beat + proposal.params.duration_beats,
-                coverage: entry_coverage,
-            });
             self.push(beat, telegraph, proposal.kind, proposal.params.clone());
         }
+    }
+
+    /// Whether `count` more hazards of summed `coverage`, active over `[start, end)`,
+    /// keep every moment of that span within `max_active` and the coverage cap.
+    /// Telegraphs are harmless, so only active spans count. The busiest moment is the
+    /// span start or a committed hazard's hit beat inside it.
+    fn fits_caps(&self, start: f64, end: f64, count: usize, coverage: f32) -> bool {
+        let committed: Vec<(f64, f64, f32)> = self
+            .events
+            .iter()
+            .filter(|e| e.kind.is_hazard() && e.beat < end && e.end_beat() > start)
+            .map(|e| {
+                let coverage = self.spec.pattern(e.kind).map_or(0.0, |p| p.coverage);
+                (e.beat, e.end_beat(), coverage)
+            })
+            .collect();
+        let probes = std::iter::once(start).chain(
+            committed
+                .iter()
+                .map(|(hit, _, _)| *hit)
+                .filter(|hit| *hit > start),
+        );
+        for probe in probes {
+            let active = committed
+                .iter()
+                .filter(|(hit, end, _)| *hit <= probe && *end > probe);
+            let (n, used) = active.fold((0, 0.0), |(n, used), (_, _, c)| (n + 1, used + c));
+            if n + count > self.max_active || used + coverage > self.cap + 1e-6 {
+                return false;
+            }
+        }
+        true
     }
 
     fn hazards_between(&self, start: i64, end: i64) -> usize {
@@ -1558,7 +1729,7 @@ impl<'a> Generator<'a> {
         let mut per_section: Vec<usize> = vec![0; self.analysis.sections.len()];
         for (index, planned) in plan.iter().enumerate() {
             let ctx = &planned.ctx;
-            if ctx.finale {
+            if ctx.finale || self.near_cue_enemy(ctx.start, ctx.end) {
                 continue;
             }
             let section_index = self.analysis.section_index_for_beat(ctx.start);
@@ -1722,7 +1893,12 @@ impl<'a> Generator<'a> {
                 .collect();
             beats.sort_by(f64::total_cmp);
             beats.dedup();
-            let dropped: Vec<f64> = beats.into_iter().skip(1).step_by(2).collect();
+            let dropped: Vec<f64> = beats
+                .into_iter()
+                .filter(|beat| !self.cue_hazard_beats.contains(beat))
+                .skip(1)
+                .step_by(2)
+                .collect();
             self.events
                 .retain(|e| !(e.kind.is_hazard() && dropped.contains(&e.beat)));
         }

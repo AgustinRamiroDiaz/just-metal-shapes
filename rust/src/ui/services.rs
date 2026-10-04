@@ -477,7 +477,7 @@ fn track_info(path: &str, bpm: f64, offset: f64, analysis_path: Option<&str>) ->
                 .sections
                 .iter()
                 .find(|s| s.section_type == SectionType::Main)
-                .map(|s| analysis.beat_offset_seconds + s.start_beat as f64 * 60.0 / analysis.bpm)
+                .map(|s| analysis.timing().beat_to_seconds(s.start_beat as f64))
                 .unwrap_or(analysis.duration_seconds * 0.3);
             MusicTrack {
                 path: path.to_string(),

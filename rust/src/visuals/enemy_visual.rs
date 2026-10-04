@@ -10,7 +10,7 @@
 //! gameplay state.
 
 use crate::core::feel::decay;
-use crate::enemies::EnemyClock;
+use crate::enemies::{EnemyClock, LEAVE_WARNING_BEATS};
 use crate::fx::{BurstStyle, with_fx};
 use godot::classes::tween::{EaseType, TransitionType};
 use godot::classes::{INode2D, Node, Node2D, ShaderMaterial, Sprite2D};
@@ -172,6 +172,30 @@ impl EnemyVisual {
 }
 
 impl EnemyVisual {
+    /// Blinks the whole enemy (body and shields) in the beats before it leaves.
+    fn blink_before_leaving(&mut self) {
+        let Some(mut enemy) = self.enemy.clone() else {
+            return;
+        };
+        if !enemy.has_method("get_beats_left") {
+            return;
+        }
+        let left = enemy
+            .call("get_beats_left", &[])
+            .try_to::<f64>()
+            .unwrap_or(-1.0);
+        let alpha = if (0.0..LEAVE_WARNING_BEATS).contains(&left) {
+            0.35 + 0.65 * (left * std::f64::consts::PI * 2.0).cos().abs() as f32
+        } else {
+            1.0
+        };
+        let mut modulate = enemy.get_modulate();
+        if modulate.a != alpha {
+            modulate.a = alpha;
+            enemy.set_modulate(modulate);
+        }
+    }
+
     fn connect_signals(&mut self, enemy: &Gd<Node2D>) {
         let this = self.to_gd();
         let mut enemy = enemy.clone();
@@ -424,6 +448,7 @@ impl INode2D for EnemyVisual {
         self.beat = self.clock.beat(&node, delta);
         self.watch_shields();
         self.animate(dt);
+        self.blink_before_leaving();
         self.base_mut().queue_redraw();
     }
 

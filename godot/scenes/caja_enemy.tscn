@@ -1,0 +1,46 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/game-icons/drum.png" id="2_body"]
+[ext_resource type="Shader" path="res://shaders/enemy_body.gdshader" id="3_body_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_body"]
+resource_local_to_scene = true
+shader = ExtResource("3_body_shader")
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_body"]
+radius = 26.0
+
+[node name="CajaEnemy" type="BaseEnemy"]
+collision_layer = 2
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="Body" type="Sprite2D" parent="Sprite2D"]
+material = SubResource("ShaderMaterial_body")
+scale = Vector2(0.467, 0.467)
+texture = ExtResource("2_body")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_body")
+
+[node name="HealthComponent" type="HealthComponent" parent="."]
+max_life = 4.0
+auto_shield_layers = 1
+
+[node name="ShockwaveComponent" type="ShockwaveComponent" parent="."]
+every_beats = 2.0
+offset_beats = 1.0
+windup_beats = 0.5
+max_radius = 150.0
+travel_beats = 0.75
+gaps = 3
+gap_width = 0.8
+gap_step = 1.0471976
+
+[node name="ContactDamageComponent" type="ContactDamageComponent" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactDamageComponent"]
+shape = SubResource("CircleShape2D_body")
+
+[node name="EnemyVisual" type="EnemyVisual" parent="."]
+body_radius = 26.0

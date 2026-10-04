@@ -13,6 +13,16 @@ Third-party assets shipped with Just Metal Shapes. Each Kenney pack keeps its or
 | UI Pack (Grey + Extra subset, default resolution) | Kenney | https://kenney.nl/assets/ui-pack | CC0 1.0 | `godot/assets/kenney_ui-pack/` |
 | Input Prompts 1.5 (Keyboard & Xbox Series subset, filled style) | Kenney | https://kenney.nl/assets/input-prompts | CC0 1.0 | `godot/assets/kenney_input-prompts/` |
 | Simple Space (subset) | Kenney | https://kenney.nl/assets/simple-space | CC0 1.0 | `godot/assets/kenney_simple-space/` |
+| Game-icons.net (22 icons) | Lorc, Delapouite, Skoll and Sbed | https://game-icons.net | CC BY 3.0 | `godot/assets/game-icons/` |
+
+The game-icons are the Las Huevas enemies and their shots. `devtools/fetch_icons.py`
+lists each one with its author folder in the game-icons repository; it drops their
+black background, adds a dark rim, and rasterizes them to 128 px PNGs (changes made for
+the game's enemy shader). Required attribution (shown in the in-game credits screen):
+
+> Icons from Game-icons.net by Lorc, Delapouite, Skoll and Sbed
+> Licensed under Creative Commons: By Attribution 3.0 License
+> http://creativecommons.org/licenses/by/3.0/
 
 ## Sound effects
 

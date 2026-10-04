@@ -72,6 +72,38 @@ sprites through the metal body shader, with the amber core ring.
 The pressure rules (Pulser, Hopper, Bouncer, Dasher, Lancer) ask for dodging; the
 shield rules (Splitter, Chameleon, Warden) ask the team to coordinate who attacks what.
 
+### Las Huevas enemies
+
+One per lyric reference, all in the `las-huevas` bonus level and the gym. Silhouettes
+are game-icons.net glyphs (`godot/assets/game-icons/`, white body with a dark rim)
+through the same metal shader; themed shots use the firing scene's `projectile_skin`
+metadata (potatoes, pills, juice drops). Most are fragile (1-4 life, 0-1 shields) since
+the level gives them lifetimes and sends many.
+
+| Enemy | Lyric | Rule | Built from |
+|---|---|---|---|
+| Foco | "prendo el foco" | A light ring with two gaps each bar (to 230 px); gaps turn 45° | `ShockwaveComponent` 4 / 0, 1 |
+| Papa | "patatas en tu cara" | Three potatoes every 2 beats | `ShotgunShooterComponent`, `TurnComponent` |
+| Sable | "la fuerza de un Jedi" | Slow chaser; two blades (92 px) snap 45° round on every beat | `ChaserComponent`, `SpinBladeComponent` |
+| Birra | "una birra" | Bounces diagonally; foam four ways every 2 beats | `BounceComponent`, `TurretShooterComponent` |
+| Caja | "a la caja le pego" | Snare rings on beats 2 and 4 (150 px, three gaps) | `ShockwaveComponent` 2 / 1, 0.5 |
+| Corazón | "mi corazón" | Chaser with a heartbeat ring (82 px) every 2 beats | `ChaserComponent`, `ShockwaveComponent` |
+| Fiera | "dientes de una fiera" | Long lunging bite (64 px) every 2 beats | `HopComponent` |
+| Pastilla | "pasta de Morfeo" | Shield swaps color every bar; aimed pill each bar | `ChaserComponent`, `ChameleonComponent`, `ShooterComponent` |
+| Maestro | "me siento Yoda... enano y verde" | Tiny, green; hops every beat with a small bite | `HopComponent` (green metal) |
+| Globo | "como Julio Verne" | Orbits the arena (a turn per 32 beats), sandbag mine each bar | `OrbitComponent`, `MineDropperComponent` |
+| Pelota | "el Diego", "vine a jugar" | Long diagonal dribble step every beat | `BounceComponent` |
+| Mano de Dios | "por el cielo" | Rises and falls onto you every bar (92 px slam) | `HopComponent` |
+| Huevo | "los huevos" | Hatches three chicks (hop every beat) 8 beats in unless cracked | `FuseComponent` |
+| Jeringa | "tráiganme suero, me inyectan" | Aims a lane, then injects along it | `DashComponent` |
+| Oveja | "ser oveja" | Slow flock chaser | `ChaserComponent` |
+| Abeja | "el enjambre" | Fast swarm chaser, one hit pops it | `ChaserComponent` |
+| Hermanos | "dándole la mano" | Wards nearby enemies in its color | `ChaserComponent`, `WardComponent` |
+| Cohete | "espacio sideral" | Blasts in from outside at a mismatched player | `ColorChaserComponent` |
+| Micrófono | "algo de melodía" | Ring of 16 words with a turning gap each bar | `RingEmitterComponent` |
+| Gota | "cual líquido" | Splits into three droplets | `ChaserComponent`, `SplitComponent` |
+| Limón | "todos los cítricos" | Bursts into 12 juice shots 6 beats in unless squeezed | `ChaserComponent`, `FuseComponent` |
+
 ### Telegraphs
 
 | Enemy | Wind-up |
@@ -106,14 +138,25 @@ shield rules (Splitter, Chameleon, Warden) ask the team to coordinate who attack
 | `SplitComponent` | Spawns single-shield pieces on death (they inherit death listeners) |
 | `ChameleonComponent` | Cycles shield colors by song beat |
 | `WardComponent` | Grants and revokes wards |
+| `ShockwaveComponent` | Expanding gapped ring on its cadence (drawn by itself) |
+| `SpinBladeComponent` | Blades that turn a step on every beat (drawn by itself) |
+| `FuseComponent` | Pops `fuse_beats` after spawning: a ring of shots and/or released enemies, then leaves |
+| `OrbitComponent` | Circles the arena center |
 
 `BaseEnemy.danger_shapes()` reports the contact circle plus every component's
 `component_danger_shapes()` (landing circles, dash lanes, beams, pending shots).
 
+## Leaving
+
+An enemy with a `lifetime_beats` (set from the chart) blinks through its last 2 beats
+and then leaves: a metal puff and the `left` signal, never `died`, so it is not a kill.
+Fuses leave the same way after they pop.
+
 ## Projectiles and mines
 
 - Projectile speed 100 px/s by default (the Pulser fires at 130), radius 12, 1 damage,
-  freed off screen or after 30 s. Amber orb with a white-hot core and trail.
+  freed off screen or after 30 s. Amber orb with a white-hot core and trail, or the
+  firing enemy's `projectile_skin` texture spinning over an amber disc.
 - Mines arm after 0.5 s, last 15 s, radius 10, 1 damage once armed.
 
 ## Feel (`EnemyVisual`)

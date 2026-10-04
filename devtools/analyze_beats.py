@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract a fixed-tempo musical feature map from an audio file.
+"""Extract a musical feature map (beat grid, loudness, onsets, sections) from an audio file.
 
 Depends only on Python, NumPy, and FFmpeg. The JSON output contains beat timing,
 loudness, onsets, frequency-band energy, novelty, bars, and sections, and is the
@@ -10,6 +10,10 @@ Usage (from the repository root):
         --output godot/music/celtic.analysis.json
 
 Set FFMPEG=/path/to/ffmpeg to pick a specific FFmpeg binary.
+
+The beat grid is fixed-tempo by default. `--track-tempo` follows a drifting tempo (live
+recordings) with dynamic-programming beat tracking; the output then sets
+`variableTempo` and `beatTimesSeconds` holds the tracked beats, beat 0 on a downbeat.
 """
 
 from __future__ import annotations
@@ -112,6 +116,8 @@ def aggregate_at_beats(
     rows: list[dict[str, float]] = []
 
     for beat, beat_time in enumerate(beat_times):
+        if beat + 1 < len(beat_times):
+            seconds_per_beat = float(beat_times[beat + 1] - beat_time)
         end_time = min(len(audio) / SAMPLE_RATE, beat_time + seconds_per_beat)
         interval = (frame_times >= beat_time) & (frame_times < end_time)
         onset_window = np.abs(np.arange(len(envelope)) / frame_rate - beat_time) <= seconds_per_beat * 0.4
@@ -159,21 +165,21 @@ def aggregate_at_beats(
 
 def extract_quantized_onsets(
     envelope: np.ndarray,
-    bpm: float,
-    beat_offset: float,
+    beat_times: np.ndarray,
     duration: float,
 ) -> list[dict[str, object]]:
     frame_rate = SAMPLE_RATE / HOP_LENGTH
     threshold = float(np.percentile(envelope, 88))
+    beat_indices = np.arange(len(beat_times), dtype=float)
     events: dict[float, tuple[float, float]] = {}
     for index in range(1, len(envelope) - 1):
         strength = float(envelope[index])
         if strength < threshold or strength < envelope[index - 1] or strength < envelope[index + 1]:
             continue
         time_seconds = index / frame_rate
-        beat = (time_seconds - beat_offset) * bpm / 60
+        beat = time_to_beat(time_seconds, beat_times, beat_indices)
         quantized_beat = round(beat * 2) / 2
-        quantized_time = beat_offset + quantized_beat * 60 / bpm
+        quantized_time = beat_to_time(quantized_beat, beat_times, beat_indices)
         if quantized_beat < 0 or quantized_time >= duration:
             continue
         current = events.get(quantized_beat)
@@ -190,6 +196,23 @@ def extract_quantized_onsets(
         }
         for index, beat in enumerate(sorted(events))
     ]
+
+
+def time_to_beat(seconds: float, beat_times: np.ndarray, beat_indices: np.ndarray) -> float:
+    """Fractional beat at a time; extrapolates past either end with the edge tempo."""
+    if seconds <= beat_times[0]:
+        return (seconds - beat_times[0]) / (beat_times[1] - beat_times[0])
+    if seconds >= beat_times[-1]:
+        return beat_indices[-1] + (seconds - beat_times[-1]) / (beat_times[-1] - beat_times[-2])
+    return float(np.interp(seconds, beat_times, beat_indices))
+
+
+def beat_to_time(beat: float, beat_times: np.ndarray, beat_indices: np.ndarray) -> float:
+    if beat <= 0:
+        return float(beat_times[0] + beat * (beat_times[1] - beat_times[0]))
+    if beat >= beat_indices[-1]:
+        return float(beat_times[-1] + (beat - beat_indices[-1]) * (beat_times[-1] - beat_times[-2]))
+    return float(np.interp(beat, beat_indices, beat_times))
 
 
 def aggregate_bars(
@@ -314,6 +337,65 @@ def estimate_phase(envelope: np.ndarray, bpm: float) -> float:
     return phase_frames / frame_rate
 
 
+def track_beats(envelope: np.ndarray, bpm: float, tightness: float) -> np.ndarray:
+    """Beat times (seconds) following tempo drift around `bpm` (Ellis 2007).
+
+    Each frame's score is its onset strength plus the best predecessor score one beat
+    earlier, penalized by how far that gap strays from the period in log-time.
+    """
+    frame_rate = SAMPLE_RATE / HOP_LENGTH
+    period = frame_rate * 60 / bpm
+    # Smooth with a Gaussian about a sixteenth note wide so near-beat onsets still count.
+    sigma = period / 16
+    kernel_x = np.arange(-int(3 * sigma), int(3 * sigma) + 1)
+    kernel = np.exp(-0.5 * (kernel_x / sigma) ** 2)
+    local = np.convolve(envelope, kernel / kernel.sum(), mode="same")
+    local = local / max(float(local.std()), 1e-9)
+
+    lags = np.arange(round(period * 0.8), round(period * 1.25) + 1)
+    penalty = -tightness * np.log(lags / period) ** 2
+    score = local.copy()
+    backlink = np.full(len(local), -1)
+    for frame in range(int(lags[0]), len(local)):
+        candidates = frame - lags
+        valid = candidates >= 0
+        options = score[candidates[valid]] + penalty[valid]
+        best = int(np.argmax(options))
+        if options[best] > 0:
+            score[frame] = local[frame] + options[best]
+            backlink[frame] = candidates[valid][best]
+
+    # Backtrack from the best-scoring frame within the last beat.
+    tail = len(score) - int(period)
+    frame = tail + int(np.argmax(score[tail:]))
+    path = [frame]
+    while backlink[path[-1]] >= 0:
+        path.append(int(backlink[path[-1]]))
+    return smooth_beats(np.array(path[::-1], dtype=float) / frame_rate)
+
+
+def smooth_beats(beat_times: np.ndarray, radius: int = 8) -> np.ndarray:
+    """Local linear fit over +-`radius` beats: removes frame-quantization jitter, keeps drift."""
+    smoothed = beat_times.copy()
+    indices = np.arange(len(beat_times))
+    for i in indices:
+        low, high = max(0, i - radius), min(len(beat_times), i + radius + 1)
+        slope, intercept = np.polyfit(indices[low:high], beat_times[low:high], 1)
+        smoothed[i] = slope * i + intercept
+    return smoothed
+
+
+def align_downbeat(audio: np.ndarray, beat_times: np.ndarray) -> np.ndarray:
+    """Drop leading beats so beat 0 is the bar phase with the most kick (low) energy."""
+    rms_db, low, mid, high = frame_features(audio)
+    frame_times = (np.arange(len(low)) * HOP_LENGTH + FRAME_LENGTH / 2) / SAMPLE_RATE
+    frames = np.searchsorted(frame_times, beat_times).clip(0, len(low) - 1)
+    window = 3
+    strength = np.array([low[max(0, f - window) : f + window + 1].max() for f in frames])
+    phase = int(np.argmax([strength[p::BEATS_PER_BAR].mean() for p in range(BEATS_PER_BAR)]))
+    return beat_times[phase:]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("audio", type=Path)
@@ -321,6 +403,8 @@ def main() -> None:
     parser.add_argument("--max-bpm", type=float, default=180)
     parser.add_argument("--bpm", type=float, help="Use a known fixed BPM after estimating the beat phase")
     parser.add_argument("--offset", type=float, help="Override the detected first-beat offset in seconds")
+    parser.add_argument("--track-tempo", action="store_true", help="Follow tempo drift (live recordings)")
+    parser.add_argument("--tightness", type=float, default=400, help="Tempo tracking stiffness")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
@@ -331,10 +415,15 @@ def main() -> None:
     estimated_beat_offset = estimate_phase(envelope, bpm)
     beat_offset = args.offset if args.offset is not None else estimated_beat_offset
     duration = len(audio) / SAMPLE_RATE
+    if args.track_tempo:
+        beat_times = align_downbeat(audio, track_beats(envelope, bpm, args.tightness))
+        beat_offset = float(beat_times[0])
+        bpm = 60 * (len(beat_times) - 1) / float(beat_times[-1] - beat_times[0])
+    else:
+        beat_times = np.arange(beat_offset, duration, 60 / bpm)
     seconds_per_beat = 60 / bpm
-    beat_times = np.arange(beat_offset, duration, seconds_per_beat)
     beats = aggregate_at_beats(audio, envelope, beat_times, seconds_per_beat)
-    onsets = extract_quantized_onsets(envelope, bpm, beat_offset, duration)
+    onsets = extract_quantized_onsets(envelope, beat_times, duration)
     bars = aggregate_bars(beats, onsets)
     sections = infer_sections(bars)
 
@@ -346,6 +435,7 @@ def main() -> None:
         "beatOffsetSeconds": round(beat_offset, 6),
         "estimatedBeatOffsetSeconds": round(estimated_beat_offset, 6),
         "confidence": round(confidence, 6),
+        "variableTempo": bool(args.track_tempo),
         "beatTimesSeconds": [round(float(value), 6) for value in beat_times],
         "beats": beats,
         "onsets": onsets,

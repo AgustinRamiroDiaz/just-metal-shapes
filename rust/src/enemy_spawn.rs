@@ -3,6 +3,9 @@
 //! Inside spawns play the spawn effect for the event's telegraph time and place the
 //! enemy when it finishes; outside spawns (chasers) appear just beyond the arena edge
 //! at `params.angle`. Enemy health scales with the player count.
+//!
+//! `params.count` > 1 spawns a group (a swarm) spread around the spawn point, and
+//! `params.duration_beats` > 0 is each enemy's lifetime (it leaves after that long).
 
 use crate::core::chart::ChartEvent;
 use crate::director::LevelDirector;
@@ -13,6 +16,10 @@ use godot::prelude::*;
 
 /// Extra distance beyond the arena's circumscribed circle for outside spawns.
 const OUTSIDE_MARGIN: f32 = 50.0;
+/// Spacing (px) between members of a group spawned inside the arena.
+const GROUP_SPREAD: f32 = 46.0;
+/// Angle (radians) between members of a group spawned outside the arena.
+const GROUP_ANGLE: f32 = 0.22;
 
 pub fn spawn_enemy(director: &mut LevelDirector, event: &ChartEvent) {
     let index = event.params.variant as usize;
@@ -30,30 +37,63 @@ pub fn spawn_enemy(director: &mut LevelDirector, event: &ChartEvent) {
         );
         return;
     };
+    let count = event.params.count.max(1);
+    let lifetime = event.params.duration_beats;
     if entry.spawn_outside {
         let arena = director.arena_rect();
-        let direction = Vector2::new(event.params.angle.cos(), event.params.angle.sin());
-        let position = arena.center() + direction * (arena.size.length() / 2.0 + OUTSIDE_MARGIN);
-        place_enemy(&scene, position, director.level_root(), director.to_gd());
+        for k in 0..count {
+            let angle = event.params.angle + GROUP_ANGLE * (k as f32 - (count - 1) as f32 / 2.0);
+            let direction = Vector2::new(angle.cos(), angle.sin());
+            let position =
+                arena.center() + direction * (arena.size.length() / 2.0 + OUTSIDE_MARGIN);
+            place_enemy(
+                &scene,
+                position,
+                director.level_root(),
+                director.to_gd(),
+                lifetime,
+            );
+        }
         return;
     }
 
-    let position = director.arena_point(event.params.x, event.params.y);
-    spawn_at(director, scene, position, event.telegraph_beats);
+    let center = director.arena_point(event.params.x, event.params.y);
+    for k in 0..count {
+        let position = center + group_offset(k, count);
+        spawn_at(
+            director,
+            scene.clone(),
+            position,
+            event.telegraph_beats,
+            lifetime,
+        );
+    }
+}
+
+/// Offset of member `k` of a group of `count`: the first at the center, the rest on a
+/// ring around it.
+fn group_offset(k: u32, count: u32) -> Vector2 {
+    if k == 0 || count <= 1 {
+        return Vector2::ZERO;
+    }
+    let angle = std::f32::consts::TAU * (k - 1) as f32 / (count - 1) as f32;
+    Vector2::new(angle.cos(), angle.sin()) * GROUP_SPREAD
 }
 
 /// Plays the spawn effect at `position` for `telegraph_beats`, then places an enemy
-/// from `scene` there (immediately when the effect scene is missing).
+/// from `scene` there (immediately when the effect scene is missing). The enemy
+/// leaves after `lifetime_beats` (0 = stays until killed).
 pub fn spawn_at(
     director: &mut LevelDirector,
     scene: Gd<PackedScene>,
     position: Vector2,
     telegraph_beats: f64,
+    lifetime_beats: f64,
 ) {
     let parent = director.level_root();
     let director_gd = director.to_gd();
     let Some(effect_scene) = director.spawn_effect_scene() else {
-        place_enemy(&scene, position, parent, director_gd);
+        place_enemy(&scene, position, parent, director_gd, lifetime_beats);
         return;
     };
     let mut effect = effect_scene.instantiate_as::<GpuParticles2D>();
@@ -69,7 +109,13 @@ pub fn spawn_at(
     effect.connect(
         "spawn_ready",
         &Callable::from_fn("place_enemy", move |_args| {
-            place_enemy(&scene, position, parent.clone(), director_gd.clone());
+            place_enemy(
+                &scene,
+                position,
+                parent.clone(),
+                director_gd.clone(),
+                lifetime_beats,
+            );
             Variant::nil()
         }),
     );
@@ -80,12 +126,16 @@ fn place_enemy(
     position: Vector2,
     mut parent: Gd<Node>,
     director: Gd<LevelDirector>,
+    lifetime_beats: f64,
 ) {
     if !parent.is_instance_valid() || !director.is_instance_valid() {
         return;
     }
     let mut enemy = scene.instantiate_as::<Node2D>();
     enemy.set_global_position(position);
+    if lifetime_beats > 0.0 {
+        enemy.set("lifetime_beats", &lifetime_beats.to_variant());
+    }
     parent.add_child(&enemy);
 
     scale_health(&enemy.clone().upcast(), &parent);

@@ -7,6 +7,7 @@
 | 3 | `celtic` | Celtic | Alex Morgan | Pixabay Content License |
 | 4 | `ouroboros` | Ouroboros | Kevin MacLeod | CC BY 4.0 |
 | 5 | `surf-rock` | Surf Rock | Alex Morgan | Pixabay Content License |
+| Bonus | `las-huevas` | Las Huevas (en vivo) | Banzai FC ft. Wos | Rights not cleared |
 
 ## Kevin MacLeod (incompetech.com), CC BY 4.0
 
@@ -44,10 +45,22 @@ The `...` in each URL is Pixabay's genre prefix, which the original download fil
 (`<artist>-<slug>-<id>.mp3`) do not record; searching Pixabay Music for the title and
 artist finds the page with the matching id.
 
+## Las Huevas (bonus level)
+
+`las-huevas` is "Las Huevas" by Banzai FC featuring Wos, recorded live at Centro Cultural
+Konex (2017), re-encoded from the supplied MP3 to Ogg Vorbis (`-q:a 4`). It is a
+commercial recording with no license on file: **redistribution rights are not cleared**,
+so it must not ship in a public build until they are.
+
+The band's tempo drifts (live), so its analysis uses a tracked tempo map
+(`trackTempo` in `devtools/music_overrides.json`). Lyric cues for the level live in
+`las-huevas.cues.json`.
+
 ## Adding a track
 
 1. Drop `godot/music/<song-id>.ogg` here (Ogg Vorbis, loop disabled on import).
 2. Run `uv run --project devtools devtools/analyze_all.py` from the repository root to
    write `<song-id>.analysis.json`. If the BPM is a harmonic of the real tempo, pin it in
-   `devtools/music_overrides.json` and rerun.
+   `devtools/music_overrides.json` and rerun; if the tempo drifts (live recordings), set
+   `"trackTempo": true` there.
 3. Add a row to the table above and a `LevelSpec` in `rust/src/level_catalog.rs`.

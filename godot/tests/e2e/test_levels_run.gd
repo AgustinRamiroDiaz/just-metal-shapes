@@ -5,10 +5,11 @@
 extends RefCounted
 
 const E2EContext = preload("res://tests/e2e_context.gd")
-const TIMEOUT_SECONDS := 400.0
+const TIMEOUT_SECONDS := 600.0
 const TIME_SCALE := 12.0
-## Real seconds allowed per level (the longest song is ~162 s, ~14 s at 12x).
-const LEVEL_TIMEOUT := 70.0
+## Real seconds allowed per level (the longest song, Las Huevas, is ~546 s: ~46 s at 12x).
+## Headless frames can lag behind the scaled clock, so this leaves plenty of slack.
+const LEVEL_TIMEOUT := 150.0
 
 
 func run(t: E2EContext) -> void:

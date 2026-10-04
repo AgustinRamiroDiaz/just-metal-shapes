@@ -6,7 +6,7 @@ use super::chart_gen::{EnemyEntry, LevelSpec, Palette, PatternEntry, Rgb};
 use super::timing::BEATS_PER_BAR;
 
 /// The analyses shipped in `godot/music/`.
-pub const REAL_ANALYSES: [(&str, &str); 5] = [
+pub const REAL_ANALYSES: [(&str, &str); 6] = [
     (
         "wonders-of-the-earth",
         include_str!("../../../godot/music/wonders-of-the-earth.analysis.json"),
@@ -26,6 +26,10 @@ pub const REAL_ANALYSES: [(&str, &str); 5] = [
     (
         "surf-rock",
         include_str!("../../../godot/music/surf-rock.analysis.json"),
+    ),
+    (
+        "las-huevas",
+        include_str!("../../../godot/music/las-huevas.analysis.json"),
     ),
 ];
 
@@ -110,6 +114,8 @@ pub fn synthetic_analysis(bpm: f64, bar_count: usize) -> SongAnalysis {
         bpm,
         beat_offset_seconds: offset,
         confidence: 1.0,
+        variable_tempo: false,
+        beat_times_seconds: Vec::new(),
         beats,
         onsets: Vec::new(),
         bars,
@@ -144,5 +150,7 @@ pub fn test_spec(difficulty: u8) -> LevelSpec {
         density: 1.0,
         tutorial: false,
         finale: false,
+        cues: Vec::new(),
+        captions: Vec::new(),
     }
 }

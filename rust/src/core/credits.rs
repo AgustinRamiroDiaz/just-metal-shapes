@@ -93,6 +93,13 @@ pub const CREDITS: &[Credit] = &[
         "pixabay.com/music",
     ),
     credit(
+        Music,
+        "Las Huevas (en vivo)",
+        "Banzai FC ft. Wos",
+        "Rights not cleared",
+        "live at Centro Cultural Konex, 2017",
+    ),
+    credit(
         Art,
         "Shape Characters",
         "Kenney",
@@ -134,6 +141,16 @@ pub const CREDITS: &[Credit] = &[
         "CC0 1.0",
         "kenney.nl/assets/simple-space",
     ),
+    Credit {
+        attribution: "Icons from Game-icons.net by Lorc, Delapouite, Skoll and Sbed\nLicensed under Creative Commons: By Attribution 3.0 License\nhttp://creativecommons.org/licenses/by/3.0/",
+        ..credit(
+            Art,
+            "Game-icons.net",
+            "Lorc, Delapouite, Skoll and Sbed",
+            "CC BY 3.0",
+            "game-icons.net",
+        )
+    },
     credit(
         Sound,
         "Interface Sounds",
@@ -207,7 +224,7 @@ mod tests {
             }
             assert!(credit.attribution.contains(credit.title));
         }
-        assert_eq!(cc_by, 2);
+        assert_eq!(cc_by, 3);
     }
 
     #[test]

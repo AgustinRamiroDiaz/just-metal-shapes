@@ -7,10 +7,18 @@
 use crate::core::analysis::SectionType;
 use crate::core::chart::EventKind;
 use crate::core::chart_gen::{
-    EnemyEntry, LevelSpec, Palette, PatternEntry, Phrase, PhraseEntry, Rgb,
+    Cue, CueAction, EnemyEntry, LevelSpec, Palette, PatternEntry, Phrase, PhraseEntry, Rgb,
 };
 use crate::util::dict_set;
 use godot::prelude::*;
+use serde::Deserialize;
+
+/// Lyric cues of Las Huevas (see the file's `note`).
+const LAS_HUEVAS_CUES: &str = include_str!("../../godot/music/las-huevas.cues.json");
+/// Enemy kinds that come in from outside the arena (chasers).
+const OUTSIDE_KINDS: [&str; 1] = ["cohete"];
+/// Enemy kinds that only make sense next to others (they never arrive alone).
+const SUPPORT_KINDS: [&str; 1] = ["hermanos"];
 
 const STATIC_SHOOTER: &str = "res://scenes/static_shooter_enemy.tscn";
 const SHOTGUN: &str = "res://scenes/shotgun_enemy.tscn";
@@ -25,6 +33,28 @@ const DASHER: &str = "res://scenes/dasher_enemy.tscn";
 const CHAMELEON: &str = "res://scenes/chameleon_enemy.tscn";
 const LANCER: &str = "res://scenes/lancer_enemy.tscn";
 const WARDEN: &str = "res://scenes/warden_enemy.tscn";
+// Las Huevas: one enemy per lyric reference.
+const FOCO: &str = "res://scenes/foco_enemy.tscn";
+const PAPA: &str = "res://scenes/papa_enemy.tscn";
+const SABLE: &str = "res://scenes/sable_enemy.tscn";
+const BIRRA: &str = "res://scenes/birra_enemy.tscn";
+const CAJA: &str = "res://scenes/caja_enemy.tscn";
+const CORAZON: &str = "res://scenes/corazon_enemy.tscn";
+const FIERA: &str = "res://scenes/fiera_enemy.tscn";
+const PASTILLA: &str = "res://scenes/pastilla_enemy.tscn";
+const MAESTRO: &str = "res://scenes/maestro_enemy.tscn";
+const GLOBO: &str = "res://scenes/globo_enemy.tscn";
+const PELOTA: &str = "res://scenes/pelota_enemy.tscn";
+const MANO_DE_DIOS: &str = "res://scenes/mano_de_dios_enemy.tscn";
+const HUEVO: &str = "res://scenes/huevo_enemy.tscn";
+const JERINGA: &str = "res://scenes/jeringa_enemy.tscn";
+const OVEJA: &str = "res://scenes/oveja_enemy.tscn";
+const ABEJA: &str = "res://scenes/abeja_enemy.tscn";
+const HERMANOS: &str = "res://scenes/hermanos_enemy.tscn";
+const COHETE: &str = "res://scenes/cohete_enemy.tscn";
+const MICROFONO: &str = "res://scenes/microfono_enemy.tscn";
+const GOTA: &str = "res://scenes/gota_enemy.tscn";
+const LIMON: &str = "res://scenes/limon_enemy.tscn";
 
 use SectionType::{Breakdown, Build, Intro, Main, Outro};
 
@@ -39,10 +69,12 @@ pub struct EnemyKind {
 }
 
 const SPRITES: &str = "res://assets/kenney_simple-space/";
+const ICONS: &str = "res://assets/game-icons/";
 
-/// Every spawnable enemy type, in the order the levels introduce them. Splitter pieces
-/// are left out: they only come from a Splitter.
-pub const ENEMY_KINDS: [EnemyKind; 13] = [
+/// Every spawnable enemy type, in the order the levels introduce them. Pieces (the
+/// Splitter's, the Gota's droplets, the Huevo's chicks) are left out: they only come
+/// from their parent.
+pub const ENEMY_KINDS: [EnemyKind; 34] = [
     EnemyKind {
         id: "static_shooter",
         name: "Static shooter",
@@ -134,12 +166,259 @@ pub const ENEMY_KINDS: [EnemyKind; 13] = [
         sprite: "ship_sidesD.png",
         rule: "Wards nearby enemies in its color",
     },
+    EnemyKind {
+        id: "foco",
+        name: "Foco",
+        scene: FOCO,
+        sprite: "game-icons/light_bulb.png",
+        rule: "Flashes a light ring with two gaps each bar",
+    },
+    EnemyKind {
+        id: "papa",
+        name: "Papa",
+        scene: PAPA,
+        sprite: "game-icons/potato.png",
+        rule: "Throws three potatoes every 2 beats",
+    },
+    EnemyKind {
+        id: "sable",
+        name: "Sable",
+        scene: SABLE,
+        sprite: "game-icons/light_sabers.png",
+        rule: "Twin blades snap round on every beat",
+    },
+    EnemyKind {
+        id: "birra",
+        name: "Birra",
+        scene: BIRRA,
+        sprite: "game-icons/beer_bottle.png",
+        rule: "Bounces and sprays foam four ways",
+    },
+    EnemyKind {
+        id: "caja",
+        name: "Caja",
+        scene: CAJA,
+        sprite: "game-icons/drum.png",
+        rule: "Snare rings on beats 2 and 4",
+    },
+    EnemyKind {
+        id: "corazon",
+        name: "Corazón",
+        scene: CORAZON,
+        sprite: "game-icons/heart_beats.png",
+        rule: "Chases; a heartbeat ring every 2 beats",
+    },
+    EnemyKind {
+        id: "fiera",
+        name: "Fiera",
+        scene: FIERA,
+        sprite: "game-icons/fangs.png",
+        rule: "Lunges and bites every 2 beats",
+    },
+    EnemyKind {
+        id: "pastilla",
+        name: "Pastilla",
+        scene: PASTILLA,
+        sprite: "game-icons/pill.png",
+        rule: "Shield swaps color every bar; aimed pills",
+    },
+    EnemyKind {
+        id: "maestro",
+        name: "Maestro",
+        scene: MAESTRO,
+        sprite: "game-icons/hood.png",
+        rule: "Tiny and green: hops at you every beat",
+    },
+    EnemyKind {
+        id: "globo",
+        name: "Globo",
+        scene: GLOBO,
+        sprite: "game-icons/air_balloon.png",
+        rule: "Circles the arena, dropping sandbags",
+    },
+    EnemyKind {
+        id: "pelota",
+        name: "Pelota",
+        scene: PELOTA,
+        sprite: "game-icons/soccer_ball.png",
+        rule: "Dribbles a long diagonal step every beat",
+    },
+    EnemyKind {
+        id: "mano_de_dios",
+        name: "Mano de Dios",
+        scene: MANO_DE_DIOS,
+        sprite: "game-icons/hand_of_god.png",
+        rule: "Falls from the sky every bar",
+    },
+    EnemyKind {
+        id: "huevo",
+        name: "Huevo",
+        scene: HUEVO,
+        sprite: "game-icons/egg.png",
+        rule: "Hatches three chicks unless cracked first",
+    },
+    EnemyKind {
+        id: "jeringa",
+        name: "Jeringa",
+        scene: JERINGA,
+        sprite: "game-icons/syringe.png",
+        rule: "Aims a lane, then injects along it",
+    },
+    EnemyKind {
+        id: "oveja",
+        name: "Oveja",
+        scene: OVEJA,
+        sprite: "game-icons/sheep.png",
+        rule: "Slow, follows the flock to you",
+    },
+    EnemyKind {
+        id: "abeja",
+        name: "Abeja",
+        scene: ABEJA,
+        sprite: "game-icons/bee.png",
+        rule: "Swarms fast; one hit pops it",
+    },
+    EnemyKind {
+        id: "hermanos",
+        name: "Hermanos",
+        scene: HERMANOS,
+        sprite: "game-icons/shaking_hands.png",
+        rule: "Wards nearby enemies in its color",
+    },
+    EnemyKind {
+        id: "cohete",
+        name: "Cohete",
+        scene: COHETE,
+        sprite: "game-icons/rocket.png",
+        rule: "Blasts in at a mismatched player",
+    },
+    EnemyKind {
+        id: "microfono",
+        name: "Micrófono",
+        scene: MICROFONO,
+        sprite: "game-icons/microphone.png",
+        rule: "Ring of words with a turning gap",
+    },
+    EnemyKind {
+        id: "gota",
+        name: "Gota",
+        scene: GOTA,
+        sprite: "game-icons/drop.png",
+        rule: "Splits into three droplets",
+    },
+    EnemyKind {
+        id: "limon",
+        name: "Limón",
+        scene: LIMON,
+        sprite: "game-icons/lemon.png",
+        rule: "Bursts into juice unless squeezed first",
+    },
 ];
 
 impl EnemyKind {
+    /// `sprite` is a Kenney simple-space file name, or `game-icons/<name>.png`.
     pub fn sprite_path(&self) -> String {
-        format!("{SPRITES}{}", self.sprite)
+        match self.sprite.strip_prefix("game-icons/") {
+            Some(icon) => format!("{ICONS}{icon}"),
+            None => format!("{SPRITES}{}", self.sprite),
+        }
     }
+}
+
+#[derive(Deserialize)]
+struct CueSheet {
+    cues: Vec<CueRecord>,
+}
+
+/// One cue as written in a `<song>.cues.json`: an `enemy` (kind id), a `hazard`
+/// (event kind name) or neither (caption only).
+#[derive(Deserialize)]
+struct CueRecord {
+    t: f64,
+    #[serde(default)]
+    caption: Option<String>,
+    #[serde(default)]
+    enemy: Option<String>,
+    #[serde(default)]
+    hazard: Option<String>,
+    #[serde(default)]
+    count: Option<u32>,
+    #[serde(default)]
+    life: f64,
+    x: f32,
+    y: f32,
+    #[serde(default)]
+    variant: u32,
+    #[serde(default)]
+    angle: f32,
+}
+
+/// Adds a cue sheet to `spec`: its cues, their captions, and an enemy pool entry per
+/// enemy kind used (in order of first use). Hazards must be in the pattern pool.
+pub fn apply_cue_sheet(spec: &mut LevelSpec, json: &str) -> Result<(), String> {
+    let sheet: CueSheet =
+        serde_json::from_str(json).map_err(|err| format!("invalid cue sheet: {err}"))?;
+    for record in sheet.cues {
+        let action = match (&record.enemy, &record.hazard) {
+            (Some(id), None) => {
+                let kind = ENEMY_KINDS
+                    .iter()
+                    .find(|kind| kind.id == id)
+                    .ok_or_else(|| format!("unknown enemy '{id}' at {}s", record.t))?;
+                let variant = match spec.enemy_pool.iter().position(|e| e.scene == kind.scene) {
+                    Some(index) => index,
+                    None => {
+                        let mut entry =
+                            EnemyEntry::new(kind.scene, OUTSIDE_KINDS.contains(&kind.id), 1.0);
+                        if SUPPORT_KINDS.contains(&kind.id) {
+                            entry = entry.supporting();
+                        }
+                        spec.enemy_pool.push(entry);
+                        spec.enemy_pool.len() - 1
+                    }
+                };
+                CueAction::Enemy {
+                    variant: variant as u32,
+                    count: record.count.unwrap_or(1),
+                    life_beats: record.life,
+                }
+            }
+            (None, Some(name)) => {
+                let kind = EventKind::from_name(name)
+                    .filter(|kind| spec.pattern(*kind).is_some())
+                    .ok_or_else(|| {
+                        format!("hazard '{name}' at {}s is not in the pool", record.t)
+                    })?;
+                CueAction::Hazard {
+                    kind,
+                    variant: record.variant,
+                    angle: record.angle,
+                }
+            }
+            (None, None) => CueAction::Caption,
+            (Some(_), Some(_)) => {
+                return Err(format!(
+                    "cue at {}s has both an enemy and a hazard",
+                    record.t
+                ));
+            }
+        };
+        let caption = record.caption.map(|text| {
+            let index = spec.captions.iter().position(|c| *c == text);
+            index.unwrap_or_else(|| {
+                spec.captions.push(text);
+                spec.captions.len() - 1
+            }) as u32
+        });
+        spec.cues.push(Cue {
+            time: record.t,
+            action,
+            caption,
+            x: record.x.clamp(0.0, 1.0),
+            y: record.y.clamp(0.0, 1.0),
+        });
+    }
+    Ok(())
 }
 
 fn level(
@@ -165,6 +444,8 @@ fn level(
         density: 1.0,
         tutorial: false,
         finale: false,
+        cues: Vec::new(),
+        captions: Vec::new(),
     }
 }
 
@@ -399,7 +680,47 @@ pub fn all_levels() -> Vec<LevelSpec> {
         EnemyEntry::new(WARDEN, false, 0.6).supporting(),
     ];
 
-    let mut levels = vec![wonders, voxel, celtic, ouroboros, surf];
+    // 6. Las Huevas (bonus): a live, improvised freestyle. Every enemy is a lyric
+    // reference arriving on its word (`las-huevas.cues.json`); the band's jams between
+    // the verses carry the hazards, and "se vienen los climas" opens the finale.
+    let mut huevas = level(
+        "las-huevas",
+        "Las Huevas (en vivo)",
+        "Banzai FC ft. Wos",
+        5,
+        0x5EED_0006,
+        Palette {
+            bg: Rgb::new(0.04, 0.06, 0.13),
+            accent: Rgb::new(0.48, 0.76, 1.0),
+            danger: Rgb::new(1.0, 0.25, 0.5),
+        },
+    );
+    huevas.finale = true;
+    huevas.density = 1.1;
+    huevas.pattern_pool = vec![
+        PatternEntry::new(EventKind::Pulse, 2.0),
+        PatternEntry::new(EventKind::Laser, 1.5),
+        PatternEntry::new(EventKind::Barrage, 1.5).in_sections(&[Main, Build]),
+        PatternEntry::new(EventKind::BulletRing, 1.2),
+        PatternEntry::new(EventKind::Spikes, 1.0),
+        PatternEntry::new(EventKind::Wall, 0.8).in_sections(&[Main, Build, Outro]),
+        PatternEntry::new(EventKind::LaserSweep, 0.8).in_sections(&[Main, Build]),
+        PatternEntry::new(EventKind::Bomb, 0.6).in_sections(&[Main]),
+    ];
+    huevas.phrases = vec![
+        PhraseEntry::new(Phrase::BarrageSnares, 2.5),
+        PhraseEntry::new(Phrase::RingsOnKicks, 1.5),
+        PhraseEntry::new(Phrase::PulseGrid, 1.2),
+        PhraseEntry::new(Phrase::SpikeSides, 1.0),
+        PhraseEntry::new(Phrase::LaserCallResponse, 1.0),
+        PhraseEntry::new(Phrase::SweepingWall, 0.8),
+        PhraseEntry::new(Phrase::BombPairs, 0.6),
+        PhraseEntry::new(Phrase::Breather, 1.0),
+    ];
+    // Compiled in and checked by `las_huevas_cues_load`.
+    apply_cue_sheet(&mut huevas, LAS_HUEVAS_CUES).expect("las-huevas cue sheet");
+
+    let mut levels = vec![wonders, voxel, celtic, ouroboros, surf, huevas];
     // Intro sections stay pulse-only on every level so the first hits are readable.
     for spec in &mut levels {
         for entry in &mut spec.pattern_pool {
@@ -576,7 +897,7 @@ mod tests {
     #[test]
     fn levels_are_distinct_and_ordered() {
         let levels = all_levels();
-        assert_eq!(levels.len(), 5);
+        assert_eq!(levels.len(), 6);
         let ids: Vec<&str> = levels.iter().map(|l| l.id.as_str()).collect();
         assert_eq!(
             ids,
@@ -585,13 +906,27 @@ mod tests {
                 "voxel-revolution",
                 "celtic",
                 "ouroboros",
-                "surf-rock"
+                "surf-rock",
+                "las-huevas"
             ]
         );
-        assert!(levels.windows(2).all(|w| w[0].difficulty < w[1].difficulty));
+        // The campaign ramps 1 to 5 and ends on the finale; the scripted bonus level
+        // after it plays at the top difficulty with its own finale.
+        let (campaign, bonus) = levels.split_at(5);
+        assert!(
+            campaign
+                .windows(2)
+                .all(|w| w[0].difficulty < w[1].difficulty)
+        );
         assert!(levels[0].tutorial);
-        assert!(levels.last().unwrap().finale);
-        assert_eq!(levels.iter().filter(|l| l.finale).count(), 1);
+        assert!(campaign.last().unwrap().finale);
+        assert_eq!(campaign.iter().filter(|l| l.finale).count(), 1);
+        assert!(
+            bonus
+                .iter()
+                .all(|l| l.difficulty == 5 && !l.cues.is_empty())
+        );
+        assert!(campaign.iter().all(|l| l.cues.is_empty()));
         let unique: HashSet<&str> = ids.iter().copied().collect();
         assert_eq!(unique.len(), levels.len());
         let accents: HashSet<String> = levels
@@ -663,8 +998,11 @@ mod tests {
             for event in chart.events.iter().filter(|e| e.kind.is_hazard()) {
                 assert!(spec.pattern(event.kind).is_some(), "{}: {event:?}", spec.id);
             }
-            pressures.push(peak_pressure(&spec, &chart));
+            if spec.cues.is_empty() {
+                pressures.push(peak_pressure(&spec, &chart));
+            }
         }
+        // Hazard pressure ramps through the campaign (scripted levels lean on enemies).
         assert!(pressures.windows(2).all(|w| w[0] < w[1]), "{pressures:?}");
     }
 
@@ -783,5 +1121,126 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn las_huevas_cues_load() {
+        let spec = find_level("las-huevas").unwrap();
+        let enemies = spec
+            .cues
+            .iter()
+            .filter(|c| matches!(c.action, CueAction::Enemy { .. }))
+            .count();
+        assert!(enemies >= 35, "{enemies} enemy cues");
+        // Every lyric enemy kind is used, each once in the pool.
+        let lyric_kinds = ENEMY_KINDS
+            .iter()
+            .filter(|k| k.sprite.starts_with("game-icons/"));
+        for kind in lyric_kinds {
+            assert!(
+                spec.enemy_pool.iter().any(|e| e.scene == kind.scene),
+                "{} has no cue",
+                kind.id
+            );
+        }
+        let scenes: HashSet<&str> = spec.enemy_pool.iter().map(|e| e.scene.as_str()).collect();
+        assert_eq!(scenes.len(), spec.enemy_pool.len());
+        assert!(
+            spec.cues
+                .iter()
+                .all(|c| c.caption.is_none_or(|i| (i as usize) < spec.captions.len()))
+        );
+    }
+
+    #[test]
+    fn cue_sheet_errors_name_the_cue() {
+        let mut spec = find_level("celtic").unwrap();
+        let bad_enemy = r#"{"cues": [{"t": 3.5, "enemy": "nope", "x": 0.5, "y": 0.5}]}"#;
+        assert!(
+            apply_cue_sheet(&mut spec, bad_enemy)
+                .unwrap_err()
+                .contains("3.5")
+        );
+        let bad_hazard = r#"{"cues": [{"t": 4.0, "hazard": "Barrage", "x": 0.5, "y": 0.5}]}"#;
+        assert!(
+            apply_cue_sheet(&mut spec, bad_hazard)
+                .unwrap_err()
+                .contains("Barrage")
+        );
+        assert!(apply_cue_sheet(&mut spec, "{").is_err());
+    }
+
+    /// Scripted enemies spawn on their words (tempo map included), with their caption,
+    /// group size and lifetime; generated enemies keep clear of them.
+    #[test]
+    fn las_huevas_enemies_arrive_on_their_words() {
+        let spec = find_level("las-huevas").unwrap();
+        let chart = chart(&spec);
+        let timing = chart.timing();
+        assert!(timing.beat_times.is_some());
+        let spawns: Vec<&ChartEvent> = chart
+            .events
+            .iter()
+            .filter(|e| e.kind == EventKind::SpawnEnemy)
+            .collect();
+        for cue in &spec.cues {
+            let CueAction::Enemy {
+                variant,
+                count,
+                life_beats,
+            } = cue.action
+            else {
+                continue;
+            };
+            let spawn = spawns
+                .iter()
+                .find(|e| {
+                    e.params.variant == variant
+                        && (timing.beat_to_seconds(e.beat) - cue.time).abs() < 0.4
+                })
+                .unwrap_or_else(|| panic!("no spawn for cue at {}s", cue.time));
+            assert_eq!(spawn.params.count, count);
+            assert_eq!(spawn.params.duration_beats, life_beats);
+            if let Some(caption) = cue.caption {
+                assert!(chart.events.iter().any(|e| e.kind == EventKind::Caption
+                    && e.params.variant == caption
+                    && (e.beat - spawn.beat).abs() < 1e-9));
+            }
+        }
+        // Generated arrivals (no lifetime) stay out of the verses.
+        let cue_beats: Vec<f64> = spawns
+            .iter()
+            .filter(|e| e.params.duration_beats > 0.0)
+            .map(|e| e.beat)
+            .collect();
+        let generated: Vec<&&ChartEvent> = spawns
+            .iter()
+            .filter(|e| e.params.duration_beats == 0.0)
+            .collect();
+        assert!(!generated.is_empty(), "the jams bring enemies too");
+        for event in generated {
+            let nearest = cue_beats
+                .iter()
+                .map(|b| (b - event.beat).abs())
+                .fold(f64::INFINITY, f64::min);
+            assert!(nearest >= 4.0, "generated enemy {nearest} beats from a cue");
+        }
+        // Lyric hazards are committed first and never thinned.
+        let hazard_cues = spec
+            .cues
+            .iter()
+            .filter(|c| matches!(c.action, CueAction::Hazard { .. }))
+            .count();
+        let placed = spec
+            .cues
+            .iter()
+            .filter(|c| match c.action {
+                CueAction::Hazard { kind, .. } => chart.events.iter().any(|e| {
+                    e.kind == kind && (timing.beat_to_seconds(e.beat) - c.time).abs() < 0.4
+                }),
+                _ => false,
+            })
+            .count();
+        assert_eq!(placed, hazard_cues);
     }
 }

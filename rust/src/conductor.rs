@@ -282,7 +282,7 @@ impl Conductor {
 
 impl Conductor {
     pub fn timing(&self) -> Timing {
-        self.timing
+        self.timing.clone()
     }
 
     pub fn configure_from_analysis(
@@ -296,6 +296,7 @@ impl Conductor {
             analysis.beat_offset_seconds,
             analysis.duration_seconds,
         );
+        self.timing = analysis.timing();
         self.sections = analysis
             .sections
             .iter()
