@@ -42,7 +42,7 @@ Components that act emit `acted(action_beat, song_beat)` and expose `get_cadence
   average until the next (`surge`, averages 1).
 - **Inertia**: velocity steers toward the desired heading with limited acceleration, so
   turns become arcs. Chasers approach on an arc (`arc` radians at range, straight up
-  close), sway a little on the beat and keep apart from other enemies (separation).
+  close), sway slightly with the beat and keep apart from other enemies (separation).
 - **Hops** land on the beat: a crouch (flatten, lean back), airtime with a stretched
   body and a ground shadow, then a squash and a small overshoot on landing.
 - **Turning lags**: `EnemyVisual` turns the body toward its aim or travel direction at a
@@ -120,5 +120,6 @@ shield rules (Splitter, Chameleon, Warden) ask the team to coordinate who attack
 
 Spawn pop (elastic scale-in), damage flash, recoil and muzzle flash per shot, wind-up
 ring and coil, action pop, hop lift with ground shadow, squash/stretch from the
-components' poses, beat-synced core pulse, shield-plate break animation, death
-explosion.
+components' poses, shield-plate break animation, death explosion. The core ring is
+steady: with many enemies alive, per-beat pulses on every body were noise, so the beat
+shows through actions and wind-ups instead.
