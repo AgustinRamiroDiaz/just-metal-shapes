@@ -47,7 +47,7 @@ Tab / RB bot skill, hold Space / Start to begin. Full details in `docs/spec/menu
 
 ## Development
 
-Godot 4.6+ with all gameplay, UI and tooling in a Rust GDExtension (`rust/`, gdext).
+Godot 4.7+ with all gameplay, UI and tooling in a Rust GDExtension (`rust/`, gdext).
 See `CONTRIBUTING.md` for toolchain setup and Web export.
 
 | Command | What it does |

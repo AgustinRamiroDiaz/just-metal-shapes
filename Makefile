@@ -1,13 +1,13 @@
 SHELL := /bin/bash
 
 GODOT_BIN ?= godot
-STANDARD_GODOT_BIN ?= /tmp/godot-4.6.2-standard/Godot_v4.6.2-stable_linux.x86_64
+STANDARD_GODOT_BIN ?= /tmp/godot-4.7.2-standard/Godot_v4.7.2-stable_linux.x86_64
 GODOT_EXPORT_BIN ?= $(if $(wildcard $(STANDARD_GODOT_BIN)),$(STANDARD_GODOT_BIN),$(GODOT_BIN))
 GODOT_PROJECT ?= godot
 RUST_CRATE ?= rust
 # Later nightlies dropped `-Z emscripten-wasm-eh` (see rust/.cargo/config.toml).
 RUST_NIGHTLY ?= nightly-2026-06-02
-EMSDK ?= /tmp/emsdk
+EMSDK ?= $(HOME)/opt/emsdk
 WEB_OUT ?= build/web
 WEB_PORT ?= 8060
 WEB_PROBE_PORT ?= 8061
@@ -81,7 +81,7 @@ check-web-exporter:
 		*mono*) \
 			printf '%s\n' 'Web export needs a non-Mono/non-.NET Godot binary.'; \
 			printf '%s\n' "Current GODOT_EXPORT_BIN=$(GODOT_EXPORT_BIN) reports: $$version"; \
-			printf '%s\n' 'Run with GODOT_EXPORT_BIN=/path/to/Godot_v4.6.2-stable_linux.x86_64'; \
+			printf '%s\n' 'Run with GODOT_EXPORT_BIN=/path/to/Godot_v4.7.2-stable_linux.x86_64'; \
 			exit 1; \
 			;; \
 	esac

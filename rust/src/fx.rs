@@ -862,7 +862,7 @@ pub fn instance() -> Option<Gd<Fx>> {
         .get_main_loop()?
         .try_cast::<SceneTree>()
         .ok()?;
-    tree.get_root()?
+    tree.get_root()
         .get_node_or_null("Fx")?
         .try_cast::<Fx>()
         .ok()
