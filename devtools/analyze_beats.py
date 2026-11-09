@@ -14,6 +14,9 @@ Set FFMPEG=/path/to/ffmpeg to pick a specific FFmpeg binary.
 The beat grid is fixed-tempo by default. `--track-tempo` follows a drifting tempo (live
 recordings) with dynamic-programming beat tracking; the output then sets
 `variableTempo` and `beatTimesSeconds` holds the tracked beats, beat 0 on a downbeat.
+
+When `<id>.notes.json` (devtools/transcribe.py) sits next to the audio, its kick and snare
+hits are added as `kicks` and `snares` (beats, rounded to sixteenths).
 """
 
 from __future__ import annotations
@@ -295,6 +298,18 @@ def infer_sections(bars: list[dict[str, object]], outro_bars: int | None = None)
     return sections
 
 
+def drum_hits(notes_path: Path, beat_times: np.ndarray) -> dict[str, list[float]]:
+    """Kick and snare beats (rounded to sixteenths) from a MuScriptor transcription."""
+    rows = json.loads(notes_path.read_text(encoding="utf-8"))["instruments"].get("drums", [])
+    beat_indices = np.arange(len(beat_times), dtype=float)
+    hits: dict[str, set[float]] = {"kick": set(), "snare": set()}
+    for row in rows:
+        if row.get("drum") in hits:
+            beat = time_to_beat(row["timeSeconds"], beat_times, beat_indices)
+            hits[row["drum"]].add(round(beat * 4) / 4)
+    return {"kicks": sorted(hits["kick"]), "snares": sorted(hits["snare"])}
+
+
 def estimate_tempo(envelope: np.ndarray, min_bpm: float, max_bpm: float) -> tuple[float, float]:
     frame_rate = SAMPLE_RATE / HOP_LENGTH
     centered = envelope - envelope.mean()
@@ -446,6 +461,10 @@ def main() -> None:
         "bars": bars,
         "sections": sections,
     }
+    # Real drum hits from devtools/transcribe.py; the game falls back to band-energy guesses without them.
+    notes_path = args.audio.with_name(f"{args.audio.stem}.notes.json")
+    if notes_path.exists():
+        result |= drum_hits(notes_path, beat_times)
     rendered = json.dumps(result, indent=2) + "\n"
     if args.output:
         args.output.write_text(rendered, encoding="utf-8")

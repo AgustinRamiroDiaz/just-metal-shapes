@@ -33,7 +33,7 @@
 //!   pair can cover the whole arena), and at most `max_active_hazards(difficulty)`
 //!   hazards are active at once. Mirrored groups are committed all-or-nothing.
 
-use super::analysis::{BeatInfo, SectionType, SongAnalysis};
+use super::analysis::{BeatInfo, SectionType, SongAnalysis, has_hit_near};
 use super::chart::{Chart, ChartEvent, EventKind, HINTS, PatternParams};
 use super::rng::Rng;
 use super::timing::Timing;
@@ -440,6 +440,9 @@ pub const HINT_SPACING_BEATS: f64 = 8.0;
 pub const INTRODUCTION_BEATS: f64 = 1.0;
 
 const STRONG_ACCENT: f32 = 0.75;
+/// A transcribed drum hit counts for a beat within a sixteenth of it: several grids sit
+/// about a sixteenth off the drums.
+const HIT_TOLERANCE_BEATS: f64 = 0.25;
 const KICK_ACCENT: f32 = 0.85;
 const KICK_ONSET: f32 = 0.6;
 /// Camera kicks are at least this many beats apart, so the screen stays readable.
@@ -727,12 +730,24 @@ impl<'a> Generator<'a> {
         self.beat_info(beat).map_or(0.0, |info| info.accent)
     }
 
+    /// A transcribed kick near `beat`, or, for songs without a drum transcription, a
+    /// beat with strong low-band energy and a clear onset.
     fn is_kick(&self, beat: i64) -> bool {
+        let kicks = &self.analysis.kicks;
+        if !kicks.is_empty() {
+            return !self.beat_is_silent(beat) && has_hit_near(kicks, beat, HIT_TOLERANCE_BEATS);
+        }
         self.beat_info(beat)
             .is_some_and(|b| !b.silent && b.low_energy >= 0.55 && b.onset_strength >= 0.45)
     }
 
+    /// A transcribed snare near `beat`, or a guessed backbeat (odd beat with strong
+    /// mid/high energy) for songs without a drum transcription.
     fn is_snare(&self, beat: i64) -> bool {
+        let snares = &self.analysis.snares;
+        if !snares.is_empty() {
+            return !self.beat_is_silent(beat) && has_hit_near(snares, beat, HIT_TOLERANCE_BEATS);
+        }
         beat.rem_euclid(2) == 1
             && self.beat_info(beat).is_some_and(|b| {
                 !b.silent && b.mid_energy.max(b.high_energy) >= 0.55 && b.onset_strength >= 0.45
@@ -2423,6 +2438,26 @@ mod tests {
         assert_eq!(spirals[0].group, spirals[1].group);
         assert_ne!(spirals[0].params.variant, spirals[1].params.variant);
         assert!((spirals[0].params.x + spirals[1].params.x - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn rings_follow_transcribed_kicks() {
+        let analysis = real("surf-rock");
+        let spec = test_spec(4);
+        let generator = Generator::new(&analysis, &spec, 0);
+        let c = ctx(64, 4, SectionType::Main, 0.8, 1.2);
+        for p in phrase_proposals(&analysis, &spec, Phrase::RingsOnKicks, &c, 1) {
+            let beat = p.beat as i64;
+            assert!(
+                has_hit_near(&analysis.kicks, beat, HIT_TOLERANCE_BEATS) || beat % 4 == 0,
+                "ring at beat {beat} has no kick"
+            );
+        }
+        // The guess is ignored once real hits exist: a beat with no kick near it is not one.
+        let quiet = (c.start..c.end)
+            .find(|&b| !has_hit_near(&analysis.kicks, b, HIT_TOLERANCE_BEATS))
+            .expect("a beat without a kick");
+        assert!(!generator.is_kick(quiet));
     }
 
     #[test]

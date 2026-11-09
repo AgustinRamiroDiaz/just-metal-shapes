@@ -60,7 +60,8 @@ def override_args(song_overrides: dict[str, object]) -> list[str]:
 def is_stale(audio_path: Path, output_path: Path) -> bool:
     if not output_path.exists():
         return True
-    inputs = [audio_path, ANALYZER] + ([OVERRIDES] if OVERRIDES.exists() else [])
+    notes = audio_path.with_name(f"{audio_path.stem}.notes.json")
+    inputs = [audio_path, ANALYZER] + [path for path in (OVERRIDES, notes) if path.exists()]
     return output_path.stat().st_mtime < max(path.stat().st_mtime for path in inputs)
 
 

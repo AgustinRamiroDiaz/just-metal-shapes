@@ -124,6 +124,8 @@ pub fn synthetic_analysis(bpm: f64, bar_count: usize) -> SongAnalysis {
         onsets: Vec::new(),
         bars,
         sections,
+        kicks: Vec::new(),
+        snares: Vec::new(),
     }
 }
 

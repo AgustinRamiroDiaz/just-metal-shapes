@@ -115,6 +115,21 @@ pub struct SongAnalysis {
     pub onsets: Vec<Onset>,
     pub bars: Vec<BarInfo>,
     pub sections: Vec<Section>,
+    /// Kick drum hits in beats (rounded to sixteenths, ascending) from a drum
+    /// transcription. Empty when the song has none: the chart then guesses kicks from
+    /// band energy.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub kicks: Vec<f64>,
+    /// Snare hits, like `kicks`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub snares: Vec<f64>,
+}
+
+/// Whether `hits` (ascending beats) has one within `tolerance` beats of `beat`.
+pub fn has_hit_near(hits: &[f64], beat: i64, tolerance: f64) -> bool {
+    let beat = beat as f64;
+    let first = hits.partition_point(|&hit| hit < beat - tolerance);
+    hits.get(first).is_some_and(|&hit| hit <= beat + tolerance)
 }
 
 impl SongAnalysis {
@@ -150,6 +165,11 @@ impl SongAnalysis {
                 || self.beat_times_seconds.windows(2).any(|w| w[1] <= w[0]))
         {
             return Err("variableTempo needs strictly increasing beatTimesSeconds".into());
+        }
+        for (name, hits) in [("kicks", &self.kicks), ("snares", &self.snares)] {
+            if hits.windows(2).any(|w| w[1] < w[0]) {
+                return Err(format!("{name} are not in ascending order"));
+            }
         }
         Ok(())
     }
@@ -225,6 +245,27 @@ mod tests {
         let analysis = synthetic_analysis(128.0, 16);
         let json = serde_json::to_string(&analysis).unwrap();
         assert_eq!(SongAnalysis::from_json(&json).unwrap(), analysis);
+    }
+
+    #[test]
+    fn finds_hits_within_tolerance() {
+        let hits = [3.75, 8.0, 12.5];
+        assert!(has_hit_near(&hits, 4, 0.25));
+        assert!(has_hit_near(&hits, 8, 0.25));
+        assert!(!has_hit_near(&hits, 12, 0.25));
+        assert!(!has_hit_near(&hits, 0, 0.25));
+        assert!(!has_hit_near(&[], 8, 0.25));
+    }
+
+    #[test]
+    fn transcribed_songs_carry_drum_hits() {
+        for (name, json) in REAL_ANALYSES {
+            let analysis = SongAnalysis::from_json(json).unwrap();
+            assert!(
+                !analysis.kicks.is_empty() && !analysis.snares.is_empty(),
+                "{name} drums"
+            );
+        }
     }
 
     #[test]
