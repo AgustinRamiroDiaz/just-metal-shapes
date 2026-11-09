@@ -8,5 +8,14 @@
   },
   "voxel-revolution": {
     "note": "No override: 122.2 matches the ~122 BPM tempo (61 is the half-time peak)."
+  },
+  "las-huevas": {
+    "trackTempo": true,
+    "note": "Live recording (CC Konex, 2017), cut at 3:27 (intro, first verse, start of the jam). The band drifts between ~93 and ~99 BPM, so a fixed grid falls off the beat within a minute. On the full recording, tracked beats line up with onsets at 2.07 vs 1.24 off-beat (fixed grid: 0.76 vs 0.73). outroBars: the cut ends mid-jam with a 2.5 s fade, so only the last 2 bars are outro and the jam stays main music for the finale.",
+    "outroBars": 2
+  },
+  "las-huevas-full": {
+    "trackTempo": true,
+    "note": "The full 9-minute recording of las-huevas (hidden level), tracked the same way."
   }
 }

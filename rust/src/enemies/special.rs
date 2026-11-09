@@ -6,17 +6,43 @@
 //!   colors every `every_beats`, so the team has to hand it off.
 //! - `WardComponent`: every volley, enemies inside its ring gain a ward (an outer
 //!   shield layer in the Warden's color) that lasts until the Warden dies.
+//! - `FuseComponent`: `fuse_beats` after spawning the enemy pops on its own: a ring
+//!   of shots and/or smaller enemies, then it leaves (no kill). Kill it first.
 
-use super::{BeatDriver, HealthComponent, load_packed_scene, parent_as_node2d, player_colors};
-use crate::core::beat_motion::cycle_index;
+use super::{
+    BeatDriver, HealthComponent, load_packed_scene, parent_as_node2d, player_colors,
+    spawn_projectile,
+};
+use crate::core::beat_motion::{cycle_index, ring_angles};
+use crate::core::danger::{DangerShape, V2};
 use crate::enemy_spawn;
 use crate::fx::{BurstStyle, with_fx};
 use crate::groups;
+use crate::hazards::{encode_shapes, to_v2};
 use godot::classes::{INode, INode2D, Node, Node2D, PackedScene};
 use godot::global::randi_range;
 use godot::prelude::*;
 
 const TAU: f32 = std::f32::consts::TAU;
+const PROJECTILE_SCENE: &str = "res://scenes/projectile.tscn";
+/// `projectile.tscn` radius, for pending-shot danger shapes.
+const PROJECTILE_RADIUS: f32 = 12.0;
+
+/// Callables connected to `parent`'s `died`, minus the parent's own children: whoever
+/// counts the parent's kill (director, manager) also hears enemies it releases.
+fn death_listeners(parent: &Gd<Node2D>) -> Vec<Callable> {
+    parent
+        .get_signal_connection_list("died")
+        .iter_shared()
+        .filter_map(|c| c.get("callable")?.try_to::<Callable>().ok())
+        .filter(|callable| {
+            callable
+                .object()
+                .and_then(|o| o.try_cast::<Node>().ok())
+                .is_none_or(|n| n != parent.clone().upcast() && !parent.is_ancestor_of(&n))
+        })
+        .collect()
+}
 
 #[derive(GodotClass)]
 #[class(init, base = Node)]
@@ -55,19 +81,7 @@ impl SplitComponent {
         let colors = self.colors.clone();
         let seed = randi_range(0, 7) as usize;
         let origin = parent.get_global_position();
-        // Who listens to the parent's death (director, manager) hears the pieces too;
-        // the parent's own children are skipped.
-        let listeners: Vec<Callable> = parent
-            .get_signal_connection_list("died")
-            .iter_shared()
-            .filter_map(|c| c.get("callable")?.try_to::<Callable>().ok())
-            .filter(|callable| {
-                callable
-                    .object()
-                    .and_then(|o| o.try_cast::<Node>().ok())
-                    .is_none_or(|n| n != parent.clone().upcast() && !parent.is_ancestor_of(&n))
-            })
-            .collect();
+        let listeners = death_listeners(&parent);
         let count = self.pieces.max(1);
         let facing = (seed as f32) * TAU / 8.0;
         for k in 0..count {
@@ -470,5 +484,186 @@ impl INode2D for WardComponent {
                 .antialiased(true)
                 .done();
         }
+    }
+}
+
+/// Pops `fuse_beats` after spawning (counted from the next whole beat): fires a ring
+/// of `burst_count` shots and releases `spawn_count` enemies from `spawn_scene`, then
+/// the enemy leaves without counting as a kill. The last `windup_beats` wind up.
+#[derive(GodotClass)]
+#[class(init, base = Node)]
+pub struct FuseComponent {
+    #[var]
+    #[init(val = 8.0)]
+    fuse_beats: f64,
+    #[var]
+    #[init(val = 2.0)]
+    windup_beats: f64,
+    /// Shots in the ring (0 = none).
+    #[var]
+    burst_count: i32,
+    /// Shot speed (px/s).
+    #[var]
+    #[init(val = 120.0)]
+    burst_speed: f32,
+    /// Enemy scene released on popping (empty = none).
+    #[var]
+    spawn_scene: GString,
+    #[var]
+    #[init(val = 3)]
+    spawn_count: i32,
+    /// Distance (px) the released enemies appear from the center.
+    #[var]
+    #[init(val = 30.0)]
+    spawn_spread: f32,
+    /// Lifetime (beats) of released enemies (0 = until killed).
+    #[var]
+    spawn_lifetime_beats: f64,
+
+    driver: BeatDriver,
+    armed: bool,
+    released: Option<Gd<PackedScene>>,
+    projectile_scene: Option<Gd<PackedScene>>,
+    base: Base<Node>,
+}
+
+#[godot_api]
+impl FuseComponent {
+    #[signal]
+    fn acted(action_beat: f64, song_beat: f64);
+
+    #[func]
+    fn get_cadence(&self) -> Vector3 {
+        self.driver.cadence_vector()
+    }
+
+    #[func]
+    fn get_windup(&self) -> f32 {
+        if self.armed {
+            self.driver.windup()
+        } else {
+            0.0
+        }
+    }
+
+    /// Beats until the pop (negative before the fuse is lit).
+    #[func]
+    fn get_beats_to_pop(&self) -> f64 {
+        if self.armed {
+            self.driver.tracker.beats_until_next(self.driver.beat)
+        } else {
+            -1.0
+        }
+    }
+
+    /// The ring of shots about to leave, during the wind-up.
+    #[func]
+    fn component_danger_shapes(&self) -> PackedFloat32Array {
+        if !self.armed || !self.driver.in_windup() || self.burst_count <= 0 {
+            return PackedFloat32Array::new();
+        }
+        let Some(parent) = parent_as_node2d(self.base().get_parent()) else {
+            return PackedFloat32Array::new();
+        };
+        let origin = to_v2(parent.get_global_position());
+        let activates_in = self.driver.seconds_until_next();
+        let shapes: Vec<DangerShape> = ring_angles(self.burst_count as u32, 0, 0.0)
+            .into_iter()
+            .map(|a| {
+                let velocity = V2::new(a.cos(), a.sin()) * self.burst_speed;
+                DangerShape::Circle {
+                    center: origin - velocity * activates_in,
+                    radius: PROJECTILE_RADIUS,
+                    velocity,
+                    activates_in,
+                }
+            })
+            .collect();
+        encode_shapes(&shapes)
+    }
+}
+
+impl FuseComponent {
+    fn pop(&mut self, mut parent: Gd<Node2D>) {
+        let origin = parent.get_global_position();
+        if self.burst_count > 0
+            && let Some(scene) = self.projectile_scene.clone()
+        {
+            for a in ring_angles(self.burst_count as u32, 0, 0.0) {
+                spawn_projectile(
+                    &scene,
+                    &parent,
+                    origin,
+                    Vector2::from_angle(a),
+                    self.burst_speed,
+                );
+            }
+        }
+        if let (Some(scene), Some(container)) = (self.released.clone(), parent.get_parent()) {
+            let listeners = death_listeners(&parent);
+            let count = self.spawn_count.max(1);
+            for k in 0..count {
+                let Some(mut piece) = scene.try_instantiate_as::<Node2D>() else {
+                    continue;
+                };
+                let angle = k as f32 * TAU / count as f32;
+                piece.set_position(origin + Vector2::from_angle(angle) * self.spawn_spread);
+                if self.spawn_lifetime_beats > 0.0 {
+                    piece.set("lifetime_beats", &self.spawn_lifetime_beats.to_variant());
+                }
+                crate::enemy_spawn::scale_health(&piece.clone().upcast(), &container);
+                for callable in &listeners {
+                    piece.connect("died", callable);
+                }
+                container
+                    .clone()
+                    .call_deferred("add_child", &[piece.to_variant()]);
+            }
+        }
+        with_fx(|fx| {
+            fx.burst_style(
+                origin,
+                crate::visuals::enemy_visual::ENEMY_GLOW,
+                14,
+                BurstStyle::Shards as i32,
+                1.0,
+            );
+            fx.shake(0.1);
+        });
+        if parent.has_method("leave") {
+            parent.call_deferred("leave", &[]);
+        }
+    }
+}
+
+#[godot_api]
+impl INode for FuseComponent {
+    fn ready(&mut self) {
+        self.projectile_scene = load_packed_scene(PROJECTILE_SCENE);
+        let path = self.spawn_scene.to_string();
+        if !path.is_empty() {
+            self.released = load_packed_scene(&path);
+        }
+    }
+
+    fn process(&mut self, delta: f64) {
+        let node = self.to_gd().upcast::<Node>();
+        if !self.armed {
+            // Light the fuse on the first frame: it pops `fuse_beats` after the next
+            // whole beat, however the spawn lined up with the grid.
+            let beat = self.driver.clock.beat(&node, delta);
+            let pop = beat.ceil() + self.fuse_beats.max(self.windup_beats + 1.0);
+            self.driver.configure(1.0e5, pop, self.windup_beats);
+            self.armed = true;
+        }
+        let Some(index) = self.driver.tick(&node, delta) else {
+            return;
+        };
+        let Some(parent) = parent_as_node2d(self.base().get_parent()) else {
+            return;
+        };
+        let (action, beat) = (self.driver.action_beat(index), self.driver.beat);
+        self.signals().acted().emit(action, beat);
+        self.pop(parent);
     }
 }

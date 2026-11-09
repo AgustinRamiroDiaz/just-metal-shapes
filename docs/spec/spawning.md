@@ -14,7 +14,12 @@ enemy pool):
 | build | half as often as main |
 
 Each event picks a scene from the level's `enemy_pool` (`params.variant`) and its warning
-time is how long the spawn effect plays.
+time is how long the spawn effect plays. `params.count` above 1 spawns a group: the
+first at the position and the rest on a ring 46 px around it (outside spawners fan out
+by 0.22 rad). `params.duration_beats` above 0 is each enemy's lifetime
+(`BaseEnemy.lifetime_beats`): it blinks for its last 2 beats, then leaves without
+counting as a kill. Scripted levels place their enemies from lyric cues instead (see
+`levels.md`).
 
 - **Introductions**: pool entries marked `intro` (new in that level) arrive first, one
   at a time and in pool order, before the pool mixes.

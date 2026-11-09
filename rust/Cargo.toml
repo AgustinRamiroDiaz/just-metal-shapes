@@ -4,12 +4,16 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-godot = "0.5.3"
+godot = "0.5.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+# The web build generates its API from GDRUST_GODOT_BIN, so both API features can't share one dependency.
+[target.'cfg(not(target_os = "emscripten"))'.dependencies]
+godot = { version = "0.5.5", features = ["api-4-7"] }
+
 [target.'cfg(target_os = "emscripten")'.dependencies]
-godot = { version = "0.5.3", features = ["api-custom", "experimental-wasm", "lazy-function-tables"] }
+godot = { version = "0.5.5", features = ["api-custom", "experimental-wasm", "lazy-function-tables"] }
 
 [features]
 nothreads = ["godot/experimental-wasm-nothreads"]

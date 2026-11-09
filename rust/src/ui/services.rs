@@ -12,7 +12,7 @@ use godot::classes::node::ProcessMode;
 use godot::classes::tween::{EaseType, TransitionType};
 use godot::classes::{
     AudioServer, AudioStream, AudioStreamPlayer, BaseButton, CanvasLayer, Control, FileAccess,
-    INode, InputEventKey, InputMap, Node, Polygon2D, Time,
+    INode, InputEventKey, InputMap, Node, Os, Polygon2D, Time,
 };
 use godot::global::Key;
 use godot::prelude::*;
@@ -38,6 +38,7 @@ const SCREEN: Vector2 = Vector2::new(1280.0, 720.0);
 /// Horizontal lean of the wipe edge (matches the button skew).
 const WIPE_LEAN: f32 = 160.0;
 
+#[derive(Clone)]
 struct MusicTrack {
     path: String,
     bpm: f64,
@@ -52,6 +53,9 @@ pub struct UiServices {
     sfx_players: Vec<Gd<AudioStreamPlayer>>,
     next_voice: usize,
     sfx_cache: HashMap<String, Gd<AudioStream>>,
+    music_cache: HashMap<String, Gd<AudioStream>>,
+    /// Parsed analysis per music path.
+    track_cache: HashMap<String, MusicTrack>,
     /// Two players crossfade; `active` indexes the audible one.
     music: Vec<Gd<AudioStreamPlayer>>,
     active: usize,
@@ -73,6 +77,8 @@ impl INode for UiServices {
             sfx_players: Vec::new(),
             next_voice: 0,
             sfx_cache: HashMap::new(),
+            music_cache: HashMap::new(),
+            track_cache: HashMap::new(),
             music: Vec::new(),
             active: 0,
             track: None,
@@ -100,6 +106,16 @@ impl INode for UiServices {
         }
         self.build_wipe();
         add_wasd_to_ui_actions();
+        // Web plays music as Web Audio samples, and a song's first play decodes all of it
+        // on the main thread (~0.5 s). Doing every song here keeps that on the loading
+        // screen instead of freezing level select.
+        if Os::singleton().has_feature("web") {
+            for spec in level_catalog::all_levels() {
+                if let Some(stream) = self.music_stream(&spec.music_path) {
+                    AudioServer::singleton().register_stream_as_sample(&stream);
+                }
+            }
+        }
 
         if let Some(mut viewport) = self.base().get_viewport() {
             let this = self.to_gd();
@@ -119,6 +135,7 @@ impl INode for UiServices {
             player.set_stream(Option::<&Gd<AudioStream>>::None);
         }
         self.sfx_cache.clear();
+        self.music_cache.clear();
         self.track = None;
     }
 }
@@ -149,7 +166,7 @@ impl UiServices {
     /// Loops the title track (no-op if it is already playing).
     #[func]
     pub fn play_menu_music(&mut self) {
-        let track = track_info(MENU_TRACK, MENU_BPM, MENU_OFFSET, None);
+        let track = self.cached_track_info(MENU_TRACK, MENU_BPM, MENU_OFFSET, None);
         self.play_track(track, 0.0, MENU_VOLUME_DB);
     }
 
@@ -159,7 +176,7 @@ impl UiServices {
         let Some(spec) = level_catalog::find_level(&level_id.to_string()) else {
             return;
         };
-        let track = track_info(&spec.music_path, 120.0, 0.0, Some(&spec.analysis_path));
+        let track = self.cached_track_info(&spec.music_path, 120.0, 0.0, Some(&spec.analysis_path));
         let from = track.loop_from;
         self.play_track(track, from, PREVIEW_VOLUME_DB);
     }
@@ -336,6 +353,29 @@ impl UiServices {
         Some(stream)
     }
 
+    /// Songs stay loaded once played, so revisiting a level card never reloads one.
+    fn music_stream(&mut self, path: &str) -> Option<Gd<AudioStream>> {
+        if let Some(stream) = self.music_cache.get(path) {
+            return Some(stream.clone());
+        }
+        let stream = try_load::<AudioStream>(path).ok()?;
+        self.music_cache.insert(path.to_string(), stream.clone());
+        Some(stream)
+    }
+
+    fn cached_track_info(
+        &mut self,
+        path: &str,
+        bpm: f64,
+        offset: f64,
+        analysis_path: Option<&str>,
+    ) -> MusicTrack {
+        self.track_cache
+            .entry(path.to_string())
+            .or_insert_with(|| track_info(path, bpm, offset, analysis_path))
+            .clone()
+    }
+
     fn play_track(&mut self, track: MusicTrack, from: f64, volume_db: f32) {
         if self.track.as_ref().is_some_and(|t| t.path == track.path) {
             return;
@@ -347,7 +387,7 @@ impl UiServices {
             self.track = Some(track);
             return;
         }
-        let Ok(stream) = try_load::<AudioStream>(&track.path) else {
+        let Some(stream) = self.music_stream(&track.path) else {
             godot_warn!("Ui: missing music {}", track.path);
             return;
         };
@@ -477,7 +517,7 @@ fn track_info(path: &str, bpm: f64, offset: f64, analysis_path: Option<&str>) ->
                 .sections
                 .iter()
                 .find(|s| s.section_type == SectionType::Main)
-                .map(|s| analysis.beat_offset_seconds + s.start_beat as f64 * 60.0 / analysis.bpm)
+                .map(|s| analysis.timing().beat_to_seconds(s.start_beat as f64))
                 .unwrap_or(analysis.duration_seconds * 0.3);
             MusicTrack {
                 path: path.to_string(),

@@ -10,11 +10,13 @@
 //! root's `danger_shapes()` gathers for `DangerField`.
 //!
 //! - `health`: `HealthComponent` (life, colored shield layers, wards).
-//! - `movers`: chase, turn, hop, bounce and dash movement.
+//! - `movers`: chase, turn, hop, bounce, dash and orbit movement.
 //! - `shooters`: projectile attacks, rings, mines and the lance beam.
-//! - `special`: split on death, color cycling and the warden's wards.
+//! - `special`: split on death, color cycling, the warden's wards and fuses.
+//! - `areas`: self-drawn area attacks (shockwave rings, spinning blades).
 //! - `mine`: `Mine` and the inside-spawn `SpawnEffect`.
 
+pub mod areas;
 pub mod health;
 pub mod mine;
 pub mod movers;
@@ -25,8 +27,10 @@ use crate::conductor::Conductor;
 use crate::core::beat_motion::{Cadence, CadenceTracker};
 use crate::core::danger::{DangerShape, V2};
 use crate::core::timing::Timing;
+use crate::fx::{BurstStyle, with_fx};
 use crate::groups;
 use crate::hazards::{encode_shapes, to_v2};
+use crate::visuals::enemy_visual::ENEMY_METAL;
 use godot::classes::{
     Area2D, CircleShape2D, CollisionShape2D, IArea2D, IStaticBody2D, Node, Node2D, PackedScene,
     ResourceLoader, StaticBody2D,
@@ -41,18 +45,24 @@ pub const SPAWN_GRACE_BEATS: f64 = 1.0;
 /// Inset (px) from the arena edge that moving enemies keep to.
 pub const ARENA_MARGIN: f32 = 36.0;
 /// Beat grid used when no `Conductor` is in the tree (standalone enemies in tests).
-const FALLBACK_TIMING: Timing = Timing {
-    bpm: 120.0,
-    offset_seconds: 0.0,
-    beats_per_bar: 4,
-};
+const FALLBACK_TIMING: Timing = Timing::new(120.0, 0.0);
+
+/// Beats before leaving in which the enemy blinks.
+pub const LEAVE_WARNING_BEATS: f64 = 2.0;
 
 #[derive(GodotClass)]
 #[class(init, base = StaticBody2D)]
 pub struct BaseEnemy {
+    /// Beats after spawning before the enemy leaves on its own, without counting as a
+    /// kill (0 = stays until killed). Set from the chart's `SpawnEnemy` duration.
+    #[var]
+    lifetime_beats: f64,
+    clock: EnemyClock,
+    spawn_beat: Option<f64>,
     /// Contact-damage radius reported to `DangerField` (0 = no contact damage).
     contact_radius: f32,
     last_position: Vector2,
+    last_beat: f64,
     velocity: Vector2,
     /// Children that report `component_danger_shapes()`.
     danger_parts: Vec<Gd<Node>>,
@@ -63,6 +73,35 @@ pub struct BaseEnemy {
 impl BaseEnemy {
     #[signal]
     fn died();
+    /// Left on its own (lifetime over, or a fuse went off); not a kill.
+    #[signal]
+    fn left();
+
+    /// Beats until the enemy leaves; negative when it has no lifetime.
+    #[func]
+    pub fn get_beats_left(&self) -> f64 {
+        match self.spawn_beat {
+            Some(spawn) if self.lifetime_beats > 0.0 => {
+                spawn + self.lifetime_beats - self.clock_beat()
+            }
+            _ => -1.0,
+        }
+    }
+
+    /// Leaves the arena: a metal puff, no `died` signal, no kill credit.
+    #[func]
+    pub fn leave(&mut self) {
+        if self.base().is_queued_for_deletion() {
+            return;
+        }
+        let position = self.base().get_global_position();
+        with_fx(|fx| {
+            fx.burst_style(position, ENEMY_METAL, 10, BurstStyle::Dots as i32, 0.7);
+            fx.ring(position, ENEMY_METAL, 30.0, 0.25);
+        });
+        self.signals().left().emit();
+        self.base_mut().queue_free();
+    }
 
     #[func]
     fn take_damage(
@@ -130,6 +169,10 @@ impl BaseEnemy {
         radius
     }
 
+    fn clock_beat(&self) -> f64 {
+        self.last_beat
+    }
+
     fn on_died(&mut self) {
         self.signals().died().emit();
         self.base_mut().queue_free();
@@ -159,6 +202,15 @@ impl IStaticBody2D for BaseEnemy {
     }
 
     fn physics_process(&mut self, delta: f64) {
+        if self.lifetime_beats > 0.0 {
+            let node = self.to_gd().upcast::<Node>();
+            self.last_beat = self.clock.beat(&node, delta);
+            let spawn = *self.spawn_beat.get_or_insert(self.last_beat);
+            if self.last_beat - spawn >= self.lifetime_beats {
+                self.leave();
+                return;
+            }
+        }
         let position = self.base().get_global_position();
         if delta > 0.0 {
             self.velocity = (position - self.last_position) / delta as f32;
@@ -426,6 +478,11 @@ pub fn spawn_projectile(
     projectile.set("direction", &direction.to_variant());
     if speed > 0.0 {
         projectile.set("speed", &speed.to_variant());
+    }
+
+    let skin = StringName::from("projectile_skin");
+    if enemy.has_meta(&skin) {
+        projectile.set("skin", &enemy.get_meta(&skin));
     }
 
     let node = projectile.upcast::<Node>();

@@ -285,7 +285,7 @@ pub fn scene_tree() -> Option<Gd<SceneTree>> {
 /// The `Ui` autoload, if registered.
 pub fn services() -> Option<Gd<services::UiServices>> {
     scene_tree()?
-        .get_root()?
+        .get_root()
         .get_node_or_null(services::AUTOLOAD_PATH)?
         .try_cast::<services::UiServices>()
         .ok()
@@ -311,7 +311,7 @@ pub fn go_to(scene_path: &str) {
 /// Sets `GameConfig.gym`: whether the next level started from the lobby is the gym.
 pub fn set_gym_mode(gym: bool) {
     if let Some(mut config) = scene_tree()
-        .and_then(|tree| tree.get_root())
+        .map(|tree| tree.get_root())
         .and_then(|root| root.get_node_or_null("GameConfig"))
         .and_then(|node| node.try_cast::<crate::game_config::GameConfig>().ok())
     {
@@ -322,7 +322,7 @@ pub fn set_gym_mode(gym: bool) {
 /// `GameConfig.gym`.
 pub fn gym_mode() -> bool {
     scene_tree()
-        .and_then(|tree| tree.get_root())
+        .map(|tree| tree.get_root())
         .and_then(|root| root.get_node_or_null("GameConfig"))
         .and_then(|node| node.try_cast::<crate::game_config::GameConfig>().ok())
         .is_some_and(|config| config.bind().gym)

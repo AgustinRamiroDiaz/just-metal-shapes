@@ -18,7 +18,7 @@ file in the same commit.
 
 ## Runtime stack
 
-- Godot 4.6 API (runs on 4.7), GL Compatibility renderer, Web export without threads.
+- Godot 4.7 API, GL Compatibility renderer, Web export without threads.
 - Gameplay, UI and tooling nodes in Rust (`rust/`, gdext 0.5). GDScript is used only for
   tests under `godot/tests/`.
 - Viewport 1280x720, stretch `canvas_items`, aspect `keep`.

@@ -115,7 +115,7 @@ impl GameManager {
             return false;
         };
         let mut director = self.director();
-        enemy_spawn::spawn_at(&mut director.bind_mut(), scene, position, 1.0);
+        enemy_spawn::spawn_at(&mut director.bind_mut(), scene, position, 1.0, 0.0);
         true
     }
 

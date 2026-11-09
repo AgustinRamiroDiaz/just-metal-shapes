@@ -49,10 +49,11 @@ To create a new enemy type, you create a new `.tscn` scene with a `BaseEnemy` ro
 
 The full list, with each enemy type's rule and cadence, is in `docs/spec/enemies.md`.
 Movement: `ChaserComponent`, `ColorChaserComponent`, `TurnComponent`, `HopComponent`,
-`BounceComponent`, `DashComponent`. Attacks: `ShooterComponent`,
+`BounceComponent`, `DashComponent`, `OrbitComponent`. Attacks: `ShooterComponent`,
 `ShotgunShooterComponent`, `TurretShooterComponent`, `MineDropperComponent`,
-`RingEmitterComponent`, `LanceComponent`. Shields: `HealthComponent`, `SplitComponent`,
-`ChameleonComponent`, `WardComponent`. Contact: `ContactDamageComponent`.
+`RingEmitterComponent`, `LanceComponent`, `ShockwaveComponent`, `SpinBladeComponent`,
+`FuseComponent`. Shields: `HealthComponent`, `SplitComponent`, `ChameleonComponent`,
+`WardComponent`. Contact: `ContactDamageComponent`.
 
 ### Component Independence
 
@@ -117,8 +118,13 @@ godot/music/<id>.ogg --devtools/analyze_all.py--> <id>.analysis.json
    -> LevelDirector: registry EventKind -> SpawnFn
         hazards/*         (one node per hazard, group "hazards")
         enemy_spawn.rs    (SpawnEnemy: existing enemy scenes + spawn effect)
-        signals           (ArenaPulse, CameraKick, Flash, PaletteShift, Checkpoint, ShowHint)
+        signals           (ArenaPulse, CameraKick, Flash, PaletteShift, Checkpoint, ShowHint,
+                           Caption)
 ```
+
+Beat timing is fixed-tempo (`bpm`, `offset`) unless the analysis sets `variableTempo`:
+then `beatTimesSeconds` is a tracked tempo map, carried by the chart, and
+`core::timing::Timing` interpolates song time and beats between its entries.
 
 - `rust/src/core/` is pure Rust (no `godot`, threads or system clock) and holds every
   rule worth unit testing: analysis model, timing math, PRNG, chart generation, danger
@@ -195,7 +201,9 @@ the template, then add a `PatternEntry` for its `EventKind` to a level's `patter
 
 ### New song / level
 Drop `godot/music/<id>.ogg`, run `make analyze-music`, credit it in
-`godot/music/CREDITS.md`, and add a `LevelSpec` in `level_catalog.rs`.
+`godot/music/CREDITS.md`, and add a `LevelSpec` in `level_catalog.rs`. For a level
+scripted to its lyrics, write a `<id>.cues.json` and load it with `apply_cue_sheet`
+(see `docs/spec/levels.md`, "Las Huevas: lyric cues").
 
 ### New enemy component
 1. Add a Rust class in `rust/src/enemies/` extending `Node` (or `Node2D` if it draws)

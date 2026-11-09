@@ -7,6 +7,8 @@
 //!   optionally with a shockwave.
 //! - `BounceComponent`: steps one diagonal cell per beat, bouncing off the arena edges.
 //! - `DashComponent`: telegraphs a line for its wind-up, then dashes along it.
+//! - `OrbitComponent`: circles the arena center at a fixed radius, a fraction of a turn
+//!   per beat.
 
 use super::{
     BeatDriver, arena_bounds, clamp_to, lerp_angle, nearest_alive, nearest_mismatched_target,
@@ -955,5 +957,69 @@ impl INode2D for DashComponent {
                 .width(lane * 1.4 * (1.0 - t))
                 .done();
         }
+    }
+}
+
+/// Circles the arena center, `1 / beats_per_turn` of a turn per beat, at
+/// `radius_fraction` of the arena's shorter side. Glides onto the circle over
+/// `join_beats` from wherever it spawned. The direction comes from the instance.
+#[derive(GodotClass)]
+#[class(init, base = Node)]
+pub struct OrbitComponent {
+    #[var]
+    #[init(val = 0.38)]
+    radius_fraction: f32,
+    #[var]
+    #[init(val = 32.0)]
+    beats_per_turn: f64,
+    #[var]
+    #[init(val = 2.0)]
+    join_beats: f64,
+
+    driver: BeatDriver,
+    /// `(spawn beat, start angle, spawn position)`, set on the first frame.
+    start: Option<(f64, f32, V2)>,
+    direction: f32,
+    base: Base<Node>,
+}
+
+impl OrbitComponent {
+    fn angle_at(&self, spawn: f64, start_angle: f32) -> f32 {
+        let turns = (self.driver.beat - spawn) / self.beats_per_turn.max(1.0);
+        start_angle + self.direction * TAU * turns as f32
+    }
+}
+
+#[godot_api]
+impl INode for OrbitComponent {
+    fn ready(&mut self) {
+        self.driver.configure(1.0, 0.0, 0.0);
+        self.direction = if self.to_gd().instance_id().to_i64() % 2 == 0 {
+            1.0
+        } else {
+            -1.0
+        };
+    }
+
+    fn process(&mut self, delta: f64) {
+        let Some(mut parent) = parent_as_node2d(self.base().get_parent()) else {
+            return;
+        };
+        let node = self.to_gd().upcast::<Node>();
+        self.driver.tick(&node, delta);
+        let (lo, hi) = arena_bounds(&node);
+        let center = (lo + hi) * 0.5;
+        let radius = (hi.x - lo.x).min(hi.y - lo.y) * self.radius_fraction;
+        let position = to_v2(parent.get_global_position());
+        let beat = self.driver.beat;
+        let (spawn, start_angle, from) = *self.start.get_or_insert_with(|| {
+            let offset = position - center;
+            (beat, offset.y.atan2(offset.x), position)
+        });
+        let a = self.angle_at(spawn, start_angle);
+        let on_circle = center + V2::new(a.cos(), a.sin()) * radius;
+        let join =
+            ease_out_cubic(((beat - spawn) / self.join_beats.max(0.01)).clamp(0.0, 1.0) as f32);
+        parent.set_global_position(to_vector(from + (on_circle - from) * join));
     }
 }

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://boid2rjqlnafe"
+path="res://.godot/imported/Banzai FC - Las Huevas ft Wos.mp3-674a61c82d6ac1369d36b5732f9b9470.mp3str"
+
+[deps]
+
+source_file="res://music/Banzai FC - Las Huevas ft Wos.mp3"
+dest_files=["res://.godot/imported/Banzai FC - Las Huevas ft Wos.mp3-674a61c82d6ac1369d36b5732f9b9470.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

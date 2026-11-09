@@ -3,8 +3,9 @@
 ## - each beat-locked component acts on its cadence beats (within tolerance), after a
 ##   wind-up, and attacks report pending danger shapes before they land;
 ## - the wrong color cannot hurt it; the matching colors kill it;
-## - it frees cleanly (and a Splitter leaves two single-shield pieces).
-## Plus the Warden's ward and the Chameleon's color cycle.
+## - it frees cleanly (and a Splitter or Gota leaves single-shield pieces).
+## Plus the Warden's ward, the Chameleon's color cycle, the fuses (Huevo hatches chicks,
+## Limón bursts) and lifetimes (an enemy leaves on time without counting as a kill).
 extends RefCounted
 
 const E2EContext = preload("res://tests/e2e_context.gd")
@@ -33,7 +34,30 @@ const CASES := {
 	"res://scenes/splitter_mini_enemy.tscn": {"beats": 5.0, "telegraph": false},
 	"res://scenes/chameleon_enemy.tscn": {"beats": 18.0, "telegraph": false},
 	"res://scenes/warden_enemy.tscn": {"beats": 10.0, "telegraph": false},
+	"res://scenes/foco_enemy.tscn": {"beats": 10.0, "telegraph": true},
+	"res://scenes/papa_enemy.tscn": {"beats": 8.0, "telegraph": true},
+	"res://scenes/sable_enemy.tscn": {"beats": 6.0, "telegraph": false},
+	"res://scenes/birra_enemy.tscn": {"beats": 8.0, "telegraph": true},
+	"res://scenes/caja_enemy.tscn": {"beats": 8.0, "telegraph": true},
+	"res://scenes/corazon_enemy.tscn": {"beats": 8.0, "telegraph": true},
+	"res://scenes/fiera_enemy.tscn": {"beats": 8.0, "telegraph": true},
+	"res://scenes/pastilla_enemy.tscn": {"beats": 10.0, "telegraph": true},
+	"res://scenes/maestro_enemy.tscn": {"beats": 6.0, "telegraph": true},
+	"res://scenes/globo_enemy.tscn": {"beats": 10.0, "telegraph": false},
+	"res://scenes/pelota_enemy.tscn": {"beats": 6.0, "telegraph": true},
+	"res://scenes/mano_de_dios_enemy.tscn": {"beats": 12.0, "telegraph": true},
+	"res://scenes/pollito_enemy.tscn": {"beats": 5.0, "telegraph": false},
+	"res://scenes/jeringa_enemy.tscn": {"beats": 10.0, "telegraph": true},
+	"res://scenes/oveja_enemy.tscn": {"beats": 5.0, "telegraph": false},
+	"res://scenes/abeja_enemy.tscn": {"beats": 5.0, "telegraph": false},
+	"res://scenes/hermanos_enemy.tscn": {"beats": 10.0, "telegraph": false},
+	"res://scenes/cohete_enemy.tscn": {"beats": 5.0, "telegraph": false},
+	"res://scenes/microfono_enemy.tscn": {"beats": 10.0, "telegraph": true},
+	"res://scenes/gota_enemy.tscn": {"beats": 5.0, "telegraph": false},
+	"res://scenes/gotita_enemy.tscn": {"beats": 5.0, "telegraph": false},
 }
+## Scenes whose pieces appear on death, and how many.
+const PIECES := {"splitter_enemy": 2, "gota_enemy": 3}
 
 
 ## Stands in for a Player: has a team color and counts hits instead of losing lives.
@@ -75,6 +99,9 @@ func run(t: E2EContext) -> void:
 		await _check_scene(t, path, CASES[path])
 	await _check_warden(t)
 	await _check_chameleon(t)
+	await _check_hatch(t)
+	await _check_burst(t)
+	await _check_lifetime(t)
 
 	_arena.queue_free()
 	_conductor.queue_free()
@@ -155,8 +182,8 @@ func _check_scene(t: E2EContext, path: String, case: Dictionary) -> void:
 	t.note("%s: %d actions, pending danger %s" % [label, acts.size(), pending_seen])
 
 	await _kill(t, enemy, label)
-	if label == "splitter_enemy":
-		await _check_pieces(t)
+	if PIECES.has(label):
+		await _check_pieces(t, PIECES[label])
 	_clear_bullets()
 
 
@@ -165,14 +192,12 @@ func _kill(t: E2EContext, enemy: Node, label: String) -> void:
 	var health: Node = enemy.get_node("HealthComponent")
 	var layer: int = health.get_active_layer()
 	var life: float = health.life
-	t.check(
-		not enemy.take_damage(1000.0, WRONG_COLOR) or layer < 0,
-		"%s ignores the wrong color" % label
-	)
-	t.check_eq(
-		health.get_active_layer(), layer, "%s keeps its shield against the wrong color" % label
-	)
+	# Without shields any color hurts, so only shielded enemies can ignore one.
 	if layer >= 0:
+		t.check(not enemy.take_damage(1000.0, WRONG_COLOR), "%s ignores the wrong color" % label)
+		t.check_eq(
+			health.get_active_layer(), layer, "%s keeps its shield against the wrong color" % label
+		)
 		t.check_eq(health.life, life, "%s keeps its life against the wrong color" % label)
 	var died := {"count": 0}
 	enemy.died.connect(func() -> void: died.count += 1)
@@ -190,16 +215,16 @@ func _kill(t: E2EContext, enemy: Node, label: String) -> void:
 	t.check(not is_instance_id_valid(id), "%s freed" % label)
 
 
-func _check_pieces(t: E2EContext) -> void:
+func _check_pieces(t: E2EContext, count: int) -> void:
 	await t.frames(2)
 	var pieces := t.tree.get_nodes_in_group("enemies")
-	t.check_eq(pieces.size(), 2, "splitter leaves two pieces")
+	t.check_eq(pieces.size(), count, "splitting leaves %d pieces" % count)
 	var colors: Array[Color] = []
 	for piece in pieces:
 		var health: Node = piece.get_node("HealthComponent")
 		t.check_eq(health.get_layer_count(), 1, "piece has one shield")
 		colors.append(health.get_active_color())
-	if colors.size() == 2:
+	if colors.size() >= 2:
 		t.check(colors[0] != colors[1], "pieces wear different colors")
 	for piece in pieces:
 		await _kill(t, piece, "splitter piece")
@@ -244,6 +269,87 @@ func _check_chameleon(t: E2EContext) -> void:
 		t.check(COLORS.has(changes[0]), "chameleon changes to a player color")
 	await _kill(t, enemy, "chameleon")
 	_clear_bullets()
+
+
+## A Huevo left alone hatches three chicks on its fuse beat and leaves (not a kill);
+## the chicks inherit its death listeners.
+func _check_hatch(t: E2EContext) -> void:
+	var egg := _spawn("res://scenes/huevo_enemy.tscn", Vector2(640, 360))
+	await t.frames(1)
+	var fuse: Node = egg.get_node("FuseComponent")
+	var outcome := {"died": 0, "left": 0, "kills": 0}
+	egg.died.connect(func() -> void: outcome.died += 1)
+	egg.left.connect(func() -> void: outcome.left += 1)
+	egg.died.connect(func() -> void: outcome.kills += 1)
+	var popped := {"beat": -1.0, "song": -1.0}
+	fuse.acted.connect(
+		func(action: float, song: float) -> void:
+			popped.beat = action
+			popped.song = song
+	)
+	var spawn_beat: float = _conductor.song_beat()
+	var windup_seen := false
+	while popped.beat < 0.0 and _conductor.song_beat() < spawn_beat + 12.0:
+		windup_seen = windup_seen or egg.get_node("EnemyVisual").get_windup() > 0.3
+		await t.frames(1)
+	t.check(windup_seen, "the egg winds up before hatching")
+	t.check_near(popped.beat, ceilf(spawn_beat) + 8.0, 1.01, "the egg hatches 8 beats in")
+	t.check_near(popped.song, popped.beat, BEAT_TOLERANCE, "the egg hatches on its beat")
+	await t.frames(3)
+	t.check_eq(outcome.left, 1, "the hatched egg leaves")
+	t.check_eq(outcome.died, 0, "hatching is not a kill")
+	var chicks := t.tree.get_nodes_in_group("enemies")
+	t.check_eq(chicks.size(), 3, "three chicks hatch")
+	for chick in chicks:
+		t.check(chick.scene_file_path.ends_with("pollito_enemy.tscn"), "a chick hatched")
+		t.check_near(chick.lifetime_beats, 24.0, 0.001, "chicks have a lifetime")
+		await _kill(t, chick, "chick")
+	t.check_eq(outcome.kills, 3, "chick kills reach the egg's listeners")
+	_clear_bullets()
+
+
+## A Limón bursts into a ring of shots on its fuse beat, reported as pending first.
+func _check_burst(t: E2EContext) -> void:
+	var lemon := _spawn("res://scenes/limon_enemy.tscn", Vector2(640, 360))
+	await t.frames(1)
+	var fuse: Node = lemon.get_node("FuseComponent")
+	var popped := {"count": 0}
+	fuse.acted.connect(func(_a: float, _s: float) -> void: popped.count += 1)
+	var pending_seen := false
+	while popped.count == 0 and is_instance_valid(lemon):
+		var records: PackedFloat32Array = lemon.danger_shapes()
+		for i in range(0, records.size(), RECORD_LEN):
+			if _activates_in(records, i) > 0.0:
+				pending_seen = true
+		await t.frames(1)
+	t.check(pending_seen, "the burst is pending danger before it fires")
+	await t.frames(2)
+	var shots := t.tree.get_nodes_in_group("enemy_projectiles")
+	t.check_eq(shots.size(), 12, "the lemon bursts into 12 shots")
+	t.check(shots.size() > 0 and shots[0].skin != null, "the shots wear the juice skin")
+	t.check(not is_instance_valid(lemon), "the burst lemon is gone")
+	_clear_bullets()
+
+
+## An enemy given a lifetime blinks at the end, then leaves on time without dying.
+func _check_lifetime(t: E2EContext) -> void:
+	var enemy: Node2D = load("res://scenes/oveja_enemy.tscn").instantiate()
+	enemy.position = Vector2(640, 360)
+	enemy.lifetime_beats = 6.0
+	_arena.add_child(enemy)
+	var outcome := {"died": 0, "left": -1.0}
+	enemy.died.connect(func() -> void: outcome.died += 1)
+	enemy.left.connect(func() -> void: outcome.left = _conductor.song_beat())
+	var spawn_beat: float = _conductor.song_beat()
+	var blinked := false
+	while outcome.left < 0.0 and _conductor.song_beat() < spawn_beat + 10.0:
+		blinked = blinked or enemy.modulate.a < 0.9
+		await t.frames(1)
+	t.check(blinked, "the enemy blinks before leaving")
+	t.check_near(outcome.left - spawn_beat, 6.0, BEAT_TOLERANCE, "it leaves after its lifetime")
+	t.check_eq(outcome.died, 0, "leaving is not a kill")
+	await t.frames(2)
+	t.check_eq(t.tree.get_nodes_in_group("enemies").size(), 0, "the enemy is gone")
 
 
 func _clear_bullets() -> void:

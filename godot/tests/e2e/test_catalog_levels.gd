@@ -13,7 +13,11 @@ func run(t: E2EContext) -> void:
 		var info: Dictionary = LevelCatalog.get_level(i)
 		var id: String = info.id
 		t.check_eq(LevelCatalog.index_of(id), i, "index_of(%s)" % id)
-		t.check(info.difficulty > last_difficulty, "%s difficulty increases" % id)
+		# The campaign ramps up; the bonus level after it repeats the top difficulty.
+		t.check(
+			info.difficulty > last_difficulty or (info.difficulty == 5 and last_difficulty == 5),
+			"%s difficulty does not drop" % id
+		)
 		last_difficulty = info.difficulty
 		t.check(ResourceLoader.exists(info.music_path), "%s music exists" % id)
 		t.check(load(info.music_path) is AudioStream, "%s music loads" % id)

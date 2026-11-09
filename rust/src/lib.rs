@@ -1,3 +1,6 @@
+// Clippy 1.99 flags the `base` field that #[derive(GodotClass)] expands into `base: base`.
+#![allow(clippy::redundant_field_names)]
+
 use godot::prelude::*;
 
 pub mod core;

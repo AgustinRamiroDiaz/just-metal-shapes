@@ -26,10 +26,13 @@ pub enum EventKind {
     PaletteShift,
     Checkpoint,
     ShowHint,
+    /// A lyric word shown where a scripted cue happens (`variant` indexes the level's
+    /// `captions`).
+    Caption,
 }
 
 impl EventKind {
-    pub const ALL: [EventKind; 16] = [
+    pub const ALL: [EventKind; 17] = [
         EventKind::Laser,
         EventKind::LaserSweep,
         EventKind::BulletRing,
@@ -46,6 +49,7 @@ impl EventKind {
         EventKind::PaletteShift,
         EventKind::Checkpoint,
         EventKind::ShowHint,
+        EventKind::Caption,
     ];
 
     pub const HAZARDS: [EventKind; 9] = [
@@ -79,6 +83,7 @@ impl EventKind {
             EventKind::PaletteShift => "PaletteShift",
             EventKind::Checkpoint => "Checkpoint",
             EventKind::ShowHint => "ShowHint",
+            EventKind::Caption => "Caption",
         }
     }
 
@@ -107,7 +112,8 @@ impl EventKind {
 /// - `duration_beats`: how long the hazard stays dangerous after its hit beat.
 /// - `color_index`: index into the level palette / player colors (hazard decides).
 /// - `variant`: hazard-specific sub-pattern; for `SpawnEnemy` the `enemy_pool` index,
-///   for `Checkpoint` the section index, for `ShowHint` the `HINTS` index.
+///   for `Checkpoint` the section index, for `ShowHint` the `HINTS` index, for
+///   `Caption` the level's `captions` index.
 /// - `intensity`: musical strength of the hit (`0..=1`, from the beat accent or bar
 ///   intensity). Presentation events scale their effect by it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -175,13 +181,21 @@ pub struct Chart {
     pub bpm: f64,
     pub offset_seconds: f64,
     pub duration_seconds: f64,
+    /// Tempo map (seconds of each whole beat) for drifting songs; empty means a fixed
+    /// grid at `bpm` from `offset_seconds`.
+    #[serde(default)]
+    pub beat_times: Vec<f64>,
     /// Sorted by `beat` (hit beat).
     pub events: Vec<ChartEvent>,
 }
 
 impl Chart {
     pub fn timing(&self) -> Timing {
-        Timing::new(self.bpm, self.offset_seconds)
+        if self.beat_times.is_empty() {
+            Timing::new(self.bpm, self.offset_seconds)
+        } else {
+            Timing::with_beat_times(self.bpm, &self.beat_times)
+        }
     }
 
     /// Event indices ordered by spawn beat (`beat - telegraph_beats`), ties broken by
@@ -265,6 +279,7 @@ mod tests {
             bpm: 120.0,
             offset_seconds: 0.0,
             duration_seconds: 10.0,
+            beat_times: Vec::new(),
             events: vec![
                 event(4.0, 0.0, EventKind::ArenaPulse),
                 event(5.0, 2.0, EventKind::Pulse),
@@ -280,6 +295,7 @@ mod tests {
             bpm: 120.0,
             offset_seconds: 0.0,
             duration_seconds: 60.0,
+            beat_times: Vec::new(),
             events: vec![
                 event(0.0, 0.0, EventKind::Checkpoint),
                 event(16.0, 0.0, EventKind::Checkpoint),
@@ -299,6 +315,7 @@ mod tests {
             bpm: 120.0,
             offset_seconds: 0.0,
             duration_seconds: 60.0,
+            beat_times: Vec::new(),
             events: vec![
                 event(8.0, 4.0, EventKind::Laser),
                 event(16.0, 0.0, EventKind::Checkpoint),

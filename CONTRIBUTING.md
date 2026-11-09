@@ -4,8 +4,8 @@ Thanks for helping with Just Metal Shapes. The project is a Godot 4 game with ga
 
 ## Required Tools
 
-- Godot 4.6.2 for normal editor work.
-- A non-Mono/non-.NET Godot 4.6.2 editor for Web exports.
+- Godot 4.7.2 for normal editor work.
+- A non-Mono/non-.NET Godot 4.7.2 editor for Web exports.
 - Rust stable for native extension checks.
 - Rust `nightly-2026-06-02` for Web builds (later nightlies dropped `-Z emscripten-wasm-eh`).
 - Emscripten 3.1.74 through `emsdk` for Godot Rust Web builds.
@@ -13,7 +13,7 @@ Thanks for helping with Just Metal Shapes. The project is a Godot 4 game with ga
 
 Godot 4 cannot export Web builds from the Mono/.NET editor. If your `godot --version` includes `mono`, install the standard Godot editor too and use it for Web export commands.
 
-The Makefile will automatically use `/tmp/godot-4.6.2-standard/Godot_v4.6.2-stable_linux.x86_64` when that local standard editor exists. For a permanent setup, either put a standard Godot binary earlier on your `PATH` or pass `GODOT_EXPORT_BIN` explicitly.
+The Makefile will automatically use `/tmp/godot-4.7.2-standard/Godot_v4.7.2-stable_linux.x86_64` when that local standard editor exists. For a permanent setup, either put a standard Godot binary earlier on your `PATH` or pass `GODOT_EXPORT_BIN` explicitly.
 
 ## First-Time Web Setup
 
@@ -34,10 +34,10 @@ cd ~/opt/emsdk
 ./emsdk activate 3.1.74
 ```
 
-Install the Godot 4.6.2 export templates from the Godot editor, or place the official templates under:
+Install the Godot 4.7.2 export templates from the Godot editor, or place the official templates under:
 
 ```text
-~/.local/share/godot/export_templates/4.6.2.stable/
+~/.local/share/godot/export_templates/4.7.2.stable/
 ```
 
 ## Common Commands
@@ -51,7 +51,7 @@ make check
 Build and export the no-thread Web build:
 
 ```sh
-make web-build GODOT_EXPORT_BIN=/path/to/Godot_v4.6.2-stable_linux.x86_64 EMSDK=~/opt/emsdk
+make web-build GODOT_EXPORT_BIN=/path/to/Godot_v4.7.2-stable_linux.x86_64
 ```
 
 Serve the exported Web build locally:
@@ -63,7 +63,7 @@ make web-serve
 Build, export, and serve in one step:
 
 ```sh
-make web-run GODOT_EXPORT_BIN=/path/to/Godot_v4.6.2-stable_linux.x86_64 EMSDK=~/opt/emsdk
+make web-run GODOT_EXPORT_BIN=/path/to/Godot_v4.7.2-stable_linux.x86_64
 ```
 
 Then open:
