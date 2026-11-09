@@ -11,10 +11,15 @@ dependencies = [
 [project.optional-dependencies]
 # PyTorch models (GPU recommended): uv run --project devtools --extra ml ...
 ml = [
+    "audio-separator>=0.48",
+    "audioread>=3",  # imported by audio-separator but not declared
     "beat-this>=1.1",
+    "faster-whisper>=1.2",
     "muscriptor @ git+https://github.com/muscriptor/muscriptor.git",
 ]
 
 [tool.uv]
 # muscriptor pins numpy<2 on Intel macOS, which conflicts with numpy>=2.5.
 environments = ["sys_platform != 'darwin' or platform_machine != 'x86_64'"]
+# audio-separator pins beartype<0.19, which rejects Python 3.14 type hints when loading RoFormer.
+override-dependencies = ["beartype>=0.22"]

@@ -40,7 +40,7 @@ def robust_normalize(values: np.ndarray) -> np.ndarray:
     return np.clip((values - low) / (high - low), 0, 1)
 
 
-def decode_audio(path: Path) -> np.ndarray:
+def decode_audio(path: Path, sample_rate: int = SAMPLE_RATE) -> np.ndarray:
     result = subprocess.run(
         [
             os.environ.get("FFMPEG", "ffmpeg"),
@@ -51,7 +51,7 @@ def decode_audio(path: Path) -> np.ndarray:
             "-ac",
             "1",
             "-ar",
-            str(SAMPLE_RATE),
+            str(sample_rate),
             "-f",
             "f32le",
             "pipe:1",

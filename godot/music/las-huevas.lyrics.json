@@ -1,0 +1,2030 @@
+{
+ "source": "las-huevas.ogg",
+ "model": "vocals_mel_band_roformer.ckpt + whisper-large-v3",
+ "language": "es",
+ "words": [
+  {
+   "word": "¡Ya,",
+   "timeSeconds": 70.19,
+   "durationSeconds": 0.4,
+   "beat": 106.8573,
+   "probability": 0.182
+  },
+  {
+   "word": "ya,",
+   "timeSeconds": 70.65,
+   "durationSeconds": 0.18,
+   "beat": 107.59,
+   "probability": 0.922
+  },
+  {
+   "word": "ya!",
+   "timeSeconds": 70.87,
+   "durationSeconds": 0.08,
+   "beat": 107.9402,
+   "probability": 0.943
+  },
+  {
+   "word": "¡Dale,",
+   "timeSeconds": 71.15,
+   "durationSeconds": 0.28,
+   "beat": 108.3846,
+   "probability": 0.982
+  },
+  {
+   "word": "guacho!",
+   "timeSeconds": 71.51,
+   "durationSeconds": 0.28,
+   "beat": 108.9557,
+   "probability": 0.867
+  },
+  {
+   "word": "Vamos",
+   "timeSeconds": 74.88,
+   "durationSeconds": 0.44,
+   "beat": 114.2616,
+   "probability": 0.378
+  },
+  {
+   "word": "a",
+   "timeSeconds": 75.32,
+   "durationSeconds": 0.44,
+   "beat": 114.9507,
+   "probability": 1.0
+  },
+  {
+   "word": "improvisar",
+   "timeSeconds": 75.76,
+   "durationSeconds": 0.62,
+   "beat": 115.6391,
+   "probability": 1.0
+  },
+  {
+   "word": "un",
+   "timeSeconds": 76.38,
+   "durationSeconds": 0.16,
+   "beat": 116.6096,
+   "probability": 0.995
+  },
+  {
+   "word": "poquito.",
+   "timeSeconds": 76.54,
+   "durationSeconds": 0.3,
+   "beat": 116.8602,
+   "probability": 0.99
+  },
+  {
+   "word": "¡Vamos",
+   "timeSeconds": 77.22,
+   "durationSeconds": 0.44,
+   "beat": 117.9251,
+   "probability": 0.773
+  },
+  {
+   "word": "a",
+   "timeSeconds": 77.66,
+   "durationSeconds": 0.1,
+   "beat": 118.6142,
+   "probability": 1.0
+  },
+  {
+   "word": "improvisar!",
+   "timeSeconds": 77.76,
+   "durationSeconds": 0.66,
+   "beat": 118.7708,
+   "probability": 1.0
+  },
+  {
+   "word": "¡Vamos",
+   "timeSeconds": 78.54,
+   "durationSeconds": 0.44,
+   "beat": 119.9934,
+   "probability": 0.872
+  },
+  {
+   "word": "a",
+   "timeSeconds": 78.98,
+   "durationSeconds": 0.1,
+   "beat": 120.6839,
+   "probability": 1.0
+  },
+  {
+   "word": "improvisar",
+   "timeSeconds": 79.08,
+   "durationSeconds": 0.52,
+   "beat": 120.8408,
+   "probability": 0.999
+  },
+  {
+   "word": "un",
+   "timeSeconds": 79.6,
+   "durationSeconds": 0.16,
+   "beat": 121.6576,
+   "probability": 1.0
+  },
+  {
+   "word": "poco!",
+   "timeSeconds": 79.76,
+   "durationSeconds": 0.26,
+   "beat": 121.909,
+   "probability": 1.0
+  },
+  {
+   "word": "No",
+   "timeSeconds": 80.24,
+   "durationSeconds": 0.18,
+   "beat": 122.6639,
+   "probability": 0.986
+  },
+  {
+   "word": "sé",
+   "timeSeconds": 80.42,
+   "durationSeconds": 0.24,
+   "beat": 122.947,
+   "probability": 1.0
+  },
+  {
+   "word": "lo",
+   "timeSeconds": 80.66,
+   "durationSeconds": 0.16,
+   "beat": 123.3251,
+   "probability": 1.0
+  },
+  {
+   "word": "que",
+   "timeSeconds": 80.82,
+   "durationSeconds": 0.16,
+   "beat": 123.5773,
+   "probability": 1.0
+  },
+  {
+   "word": "estoy",
+   "timeSeconds": 80.98,
+   "durationSeconds": 0.18,
+   "beat": 123.8295,
+   "probability": 1.0
+  },
+  {
+   "word": "diciendo,",
+   "timeSeconds": 81.16,
+   "durationSeconds": 0.44,
+   "beat": 124.1134,
+   "probability": 1.0
+  },
+  {
+   "word": "pero",
+   "timeSeconds": 81.64,
+   "durationSeconds": 0.22,
+   "beat": 124.8716,
+   "probability": 0.999
+  },
+  {
+   "word": "que",
+   "timeSeconds": 81.86,
+   "durationSeconds": 0.18,
+   "beat": 125.2194,
+   "probability": 0.644
+  },
+  {
+   "word": "igualmente",
+   "timeSeconds": 82.04,
+   "durationSeconds": 0.46,
+   "beat": 125.504,
+   "probability": 1.0
+  },
+  {
+   "word": "prendo",
+   "timeSeconds": 82.5,
+   "durationSeconds": 0.42,
+   "beat": 126.2316,
+   "probability": 0.999
+  },
+  {
+   "word": "el",
+   "timeSeconds": 82.92,
+   "durationSeconds": 0.06,
+   "beat": 126.8965,
+   "probability": 1.0
+  },
+  {
+   "word": "foco.",
+   "timeSeconds": 82.98,
+   "durationSeconds": 0.32,
+   "beat": 126.9915,
+   "probability": 0.999
+  },
+  {
+   "word": "Me",
+   "timeSeconds": 83.36,
+   "durationSeconds": 0.24,
+   "beat": 127.593,
+   "probability": 0.997
+  },
+  {
+   "word": "pongo",
+   "timeSeconds": 83.6,
+   "durationSeconds": 0.26,
+   "beat": 127.9729,
+   "probability": 1.0
+  },
+  {
+   "word": "a",
+   "timeSeconds": 83.86,
+   "durationSeconds": 0.1,
+   "beat": 128.3845,
+   "probability": 1.0
+  },
+  {
+   "word": "vacilar,",
+   "timeSeconds": 83.96,
+   "durationSeconds": 0.52,
+   "beat": 128.5428,
+   "probability": 0.77
+  },
+  {
+   "word": "seguro",
+   "timeSeconds": 84.6,
+   "durationSeconds": 0.32,
+   "beat": 129.5571,
+   "probability": 1.0
+  },
+  {
+   "word": "con",
+   "timeSeconds": 84.92,
+   "durationSeconds": 0.34,
+   "beat": 130.0648,
+   "probability": 0.998
+  },
+  {
+   "word": "Banzai.",
+   "timeSeconds": 85.26,
+   "durationSeconds": 0.46,
+   "beat": 130.6041,
+   "probability": 0.769
+  },
+  {
+   "word": "Patatas",
+   "timeSeconds": 85.92,
+   "durationSeconds": 0.44,
+   "beat": 131.6519,
+   "probability": 0.986
+  },
+  {
+   "word": "en",
+   "timeSeconds": 86.36,
+   "durationSeconds": 0.2,
+   "beat": 132.351,
+   "probability": 1.0
+  },
+  {
+   "word": "tu",
+   "timeSeconds": 86.56,
+   "durationSeconds": 0.16,
+   "beat": 132.669,
+   "probability": 0.996
+  },
+  {
+   "word": "cara",
+   "timeSeconds": 86.72,
+   "durationSeconds": 0.24,
+   "beat": 132.9234,
+   "probability": 1.0
+  },
+  {
+   "word": "con",
+   "timeSeconds": 86.96,
+   "durationSeconds": 0.22,
+   "beat": 133.3053,
+   "probability": 0.971
+  },
+  {
+   "word": "la",
+   "timeSeconds": 87.18,
+   "durationSeconds": 0.12,
+   "beat": 133.6554,
+   "probability": 0.997
+  },
+  {
+   "word": "fuerza",
+   "timeSeconds": 87.3,
+   "durationSeconds": 0.32,
+   "beat": 133.8464,
+   "probability": 1.0
+  },
+  {
+   "word": "de",
+   "timeSeconds": 87.62,
+   "durationSeconds": 0.08,
+   "beat": 134.3561,
+   "probability": 0.995
+  },
+  {
+   "word": "un",
+   "timeSeconds": 87.7,
+   "durationSeconds": 0.14,
+   "beat": 134.4836,
+   "probability": 1.0
+  },
+  {
+   "word": "Jedi",
+   "timeSeconds": 87.84,
+   "durationSeconds": 0.24,
+   "beat": 134.7066,
+   "probability": 0.917
+  },
+  {
+   "word": "White.",
+   "timeSeconds": 88.08,
+   "durationSeconds": 0.62,
+   "beat": 135.089,
+   "probability": 0.101
+  },
+  {
+   "word": "Suena",
+   "timeSeconds": 89.42,
+   "durationSeconds": 0.44,
+   "beat": 137.223,
+   "probability": 0.995
+  },
+  {
+   "word": "pesado,",
+   "timeSeconds": 89.86,
+   "durationSeconds": 0.44,
+   "beat": 137.9241,
+   "probability": 1.0
+  },
+  {
+   "word": "tenemos",
+   "timeSeconds": 90.34,
+   "durationSeconds": 0.28,
+   "beat": 138.6888,
+   "probability": 0.999
+  },
+  {
+   "word": "el",
+   "timeSeconds": 90.62,
+   "durationSeconds": 0.36,
+   "beat": 139.135,
+   "probability": 1.0
+  },
+  {
+   "word": "estilo",
+   "timeSeconds": 90.98,
+   "durationSeconds": 0.4,
+   "beat": 139.7086,
+   "probability": 1.0
+  },
+  {
+   "word": "combinado.",
+   "timeSeconds": 91.38,
+   "durationSeconds": 0.76,
+   "beat": 140.3459,
+   "probability": 1.0
+  },
+  {
+   "word": "Una",
+   "timeSeconds": 92.18,
+   "durationSeconds": 0.14,
+   "beat": 141.6205,
+   "probability": 0.99
+  },
+  {
+   "word": "birra",
+   "timeSeconds": 92.32,
+   "durationSeconds": 0.28,
+   "beat": 141.8436,
+   "probability": 0.981
+  },
+  {
+   "word": "y",
+   "timeSeconds": 92.6,
+   "durationSeconds": 0.08,
+   "beat": 142.2897,
+   "probability": 1.0
+  },
+  {
+   "word": "un",
+   "timeSeconds": 92.68,
+   "durationSeconds": 0.12,
+   "beat": 142.4172,
+   "probability": 1.0
+  },
+  {
+   "word": "prensado",
+   "timeSeconds": 92.8,
+   "durationSeconds": 0.46,
+   "beat": 142.6084,
+   "probability": 0.993
+  },
+  {
+   "word": "mal",
+   "timeSeconds": 93.26,
+   "durationSeconds": 0.2,
+   "beat": 143.341,
+   "probability": 0.95
+  },
+  {
+   "word": "pensado.",
+   "timeSeconds": 93.46,
+   "durationSeconds": 0.56,
+   "beat": 143.6593,
+   "probability": 0.997
+  },
+  {
+   "word": "¿Crees",
+   "timeSeconds": 94.1,
+   "durationSeconds": 0.3,
+   "beat": 144.6764,
+   "probability": 0.717
+  },
+  {
+   "word": "que",
+   "timeSeconds": 94.4,
+   "durationSeconds": 0.14,
+   "beat": 145.1529,
+   "probability": 0.993
+  },
+  {
+   "word": "ya",
+   "timeSeconds": 94.54,
+   "durationSeconds": 0.1,
+   "beat": 145.3752,
+   "probability": 0.547
+  },
+  {
+   "word": "me",
+   "timeSeconds": 94.64,
+   "durationSeconds": 0.18,
+   "beat": 145.534,
+   "probability": 0.663
+  },
+  {
+   "word": "bajo",
+   "timeSeconds": 94.82,
+   "durationSeconds": 0.3,
+   "beat": 145.8199,
+   "probability": 0.996
+  },
+  {
+   "word": "sin",
+   "timeSeconds": 95.12,
+   "durationSeconds": 0.22,
+   "beat": 146.2957,
+   "probability": 1.0
+  },
+  {
+   "word": "improvisar?",
+   "timeSeconds": 95.34,
+   "durationSeconds": 0.62,
+   "beat": 146.6443,
+   "probability": 1.0
+  },
+  {
+   "word": "Me",
+   "timeSeconds": 96.08,
+   "durationSeconds": 0.32,
+   "beat": 147.817,
+   "probability": 0.979
+  },
+  {
+   "word": "muevo",
+   "timeSeconds": 96.4,
+   "durationSeconds": 0.28,
+   "beat": 148.3237,
+   "probability": 1.0
+  },
+  {
+   "word": "por",
+   "timeSeconds": 96.68,
+   "durationSeconds": 0.16,
+   "beat": 148.767,
+   "probability": 1.0
+  },
+  {
+   "word": "todo",
+   "timeSeconds": 96.84,
+   "durationSeconds": 0.26,
+   "beat": 149.0202,
+   "probability": 1.0
+  },
+  {
+   "word": "el",
+   "timeSeconds": 97.1,
+   "durationSeconds": 0.12,
+   "beat": 149.4314,
+   "probability": 0.999
+  },
+  {
+   "word": "lugar,",
+   "timeSeconds": 97.22,
+   "durationSeconds": 0.24,
+   "beat": 149.6211,
+   "probability": 1.0
+  },
+  {
+   "word": "yo",
+   "timeSeconds": 97.6,
+   "durationSeconds": 0.1,
+   "beat": 150.2218,
+   "probability": 0.999
+  },
+  {
+   "word": "vine",
+   "timeSeconds": 97.7,
+   "durationSeconds": 0.22,
+   "beat": 150.3797,
+   "probability": 0.999
+  },
+  {
+   "word": "acá",
+   "timeSeconds": 97.92,
+   "durationSeconds": 0.18,
+   "beat": 150.7272,
+   "probability": 0.705
+  },
+  {
+   "word": "a",
+   "timeSeconds": 98.1,
+   "durationSeconds": 0.08,
+   "beat": 151.0115,
+   "probability": 1.0
+  },
+  {
+   "word": "jugar.",
+   "timeSeconds": 98.18,
+   "durationSeconds": 0.26,
+   "beat": 151.1379,
+   "probability": 1.0
+  },
+  {
+   "word": "No",
+   "timeSeconds": 98.6,
+   "durationSeconds": 0.16,
+   "beat": 151.8013,
+   "probability": 0.803
+  },
+  {
+   "word": "a",
+   "timeSeconds": 98.76,
+   "durationSeconds": 0.1,
+   "beat": 152.054,
+   "probability": 0.992
+  },
+  {
+   "word": "catalogar,",
+   "timeSeconds": 98.86,
+   "durationSeconds": 0.78,
+   "beat": 152.2118,
+   "probability": 0.997
+  },
+  {
+   "word": "vengo",
+   "timeSeconds": 99.68,
+   "durationSeconds": 0.32,
+   "beat": 153.5056,
+   "probability": 1.0
+  },
+  {
+   "word": "a",
+   "timeSeconds": 100.0,
+   "durationSeconds": 0.14,
+   "beat": 154.0105,
+   "probability": 1.0
+  },
+  {
+   "word": "desfigurar.",
+   "timeSeconds": 100.14,
+   "durationSeconds": 0.54,
+   "beat": 154.2312,
+   "probability": 0.996
+  },
+  {
+   "word": "La",
+   "timeSeconds": 100.68,
+   "durationSeconds": 0.48,
+   "beat": 155.0823,
+   "probability": 0.209
+  },
+  {
+   "word": "base,",
+   "timeSeconds": 101.16,
+   "durationSeconds": 0.26,
+   "beat": 155.8389,
+   "probability": 0.954
+  },
+  {
+   "word": "tranquilo,",
+   "timeSeconds": 101.46,
+   "durationSeconds": 0.52,
+   "beat": 156.3117,
+   "probability": 0.987
+  },
+  {
+   "word": "mi",
+   "timeSeconds": 101.98,
+   "durationSeconds": 0.12,
+   "beat": 157.1315,
+   "probability": 0.975
+  },
+  {
+   "word": "amigo,",
+   "timeSeconds": 102.1,
+   "durationSeconds": 0.26,
+   "beat": 157.3208,
+   "probability": 1.0
+  },
+  {
+   "word": "yo",
+   "timeSeconds": 102.5,
+   "durationSeconds": 0.14,
+   "beat": 157.952,
+   "probability": 0.999
+  },
+  {
+   "word": "no",
+   "timeSeconds": 102.64,
+   "durationSeconds": 0.2,
+   "beat": 158.1731,
+   "probability": 1.0
+  },
+  {
+   "word": "le",
+   "timeSeconds": 102.84,
+   "durationSeconds": 0.08,
+   "beat": 158.489,
+   "probability": 0.989
+  },
+  {
+   "word": "pienso",
+   "timeSeconds": 102.92,
+   "durationSeconds": 0.36,
+   "beat": 158.6153,
+   "probability": 1.0
+  },
+  {
+   "word": "pegar.",
+   "timeSeconds": 103.28,
+   "durationSeconds": 0.22,
+   "beat": 159.1838,
+   "probability": 0.996
+  },
+  {
+   "word": "Solo",
+   "timeSeconds": 103.86,
+   "durationSeconds": 0.44,
+   "beat": 160.0988,
+   "probability": 0.957
+  },
+  {
+   "word": "me",
+   "timeSeconds": 104.3,
+   "durationSeconds": 0.18,
+   "beat": 160.7923,
+   "probability": 1.0
+  },
+  {
+   "word": "estoy",
+   "timeSeconds": 104.48,
+   "durationSeconds": 0.2,
+   "beat": 161.0761,
+   "probability": 1.0
+  },
+  {
+   "word": "divirtiendo",
+   "timeSeconds": 104.68,
+   "durationSeconds": 0.6,
+   "beat": 161.3917,
+   "probability": 1.0
+  },
+  {
+   "word": "con",
+   "timeSeconds": 105.28,
+   "durationSeconds": 0.2,
+   "beat": 162.3388,
+   "probability": 0.999
+  },
+  {
+   "word": "Bruno",
+   "timeSeconds": 105.48,
+   "durationSeconds": 0.24,
+   "beat": 162.6547,
+   "probability": 0.998
+  },
+  {
+   "word": "y",
+   "timeSeconds": 105.72,
+   "durationSeconds": 0.12,
+   "beat": 163.0339,
+   "probability": 0.792
+  },
+  {
+   "word": "Diego.",
+   "timeSeconds": 105.84,
+   "durationSeconds": 0.26,
+   "beat": 163.2238,
+   "probability": 0.997
+  },
+  {
+   "word": "Con",
+   "timeSeconds": 106.34,
+   "durationSeconds": 0.26,
+   "beat": 164.0153,
+   "probability": 0.96
+  },
+  {
+   "word": "Brani",
+   "timeSeconds": 106.6,
+   "durationSeconds": 0.22,
+   "beat": 164.4269,
+   "probability": 0.542
+  },
+  {
+   "word": "y",
+   "timeSeconds": 106.82,
+   "durationSeconds": 0.14,
+   "beat": 164.7752,
+   "probability": 0.904
+  },
+  {
+   "word": "Anibo",
+   "timeSeconds": 106.96,
+   "durationSeconds": 0.18,
+   "beat": 164.9968,
+   "probability": 0.687
+  },
+  {
+   "word": "cuando",
+   "timeSeconds": 107.14,
+   "durationSeconds": 0.28,
+   "beat": 165.282,
+   "probability": 0.749
+  },
+  {
+   "word": "a",
+   "timeSeconds": 107.42,
+   "durationSeconds": 0.2,
+   "beat": 165.7257,
+   "probability": 0.991
+  },
+  {
+   "word": "la",
+   "timeSeconds": 107.62,
+   "durationSeconds": 0.04,
+   "beat": 166.0427,
+   "probability": 0.997
+  },
+  {
+   "word": "caja",
+   "timeSeconds": 107.66,
+   "durationSeconds": 0.36,
+   "beat": 166.1062,
+   "probability": 0.999
+  },
+  {
+   "word": "le",
+   "timeSeconds": 108.02,
+   "durationSeconds": 0.08,
+   "beat": 166.6773,
+   "probability": 0.98
+  },
+  {
+   "word": "pego.",
+   "timeSeconds": 108.1,
+   "durationSeconds": 0.32,
+   "beat": 166.8042,
+   "probability": 0.999
+  },
+  {
+   "word": "Solo",
+   "timeSeconds": 108.46,
+   "durationSeconds": 0.24,
+   "beat": 167.3757,
+   "probability": 0.962
+  },
+  {
+   "word": "estoy",
+   "timeSeconds": 108.7,
+   "durationSeconds": 0.68,
+   "beat": 167.7569,
+   "probability": 0.997
+  },
+  {
+   "word": "con",
+   "timeSeconds": 109.38,
+   "durationSeconds": 0.44,
+   "beat": 168.8368,
+   "probability": 1.0
+  },
+  {
+   "word": "la",
+   "timeSeconds": 109.82,
+   "durationSeconds": 0.14,
+   "beat": 169.5356,
+   "probability": 1.0
+  },
+  {
+   "word": "percusión",
+   "timeSeconds": 109.96,
+   "durationSeconds": 0.7,
+   "beat": 169.7579,
+   "probability": 0.998
+  },
+  {
+   "word": "percutiendo",
+   "timeSeconds": 110.66,
+   "durationSeconds": 0.7,
+   "beat": 170.8687,
+   "probability": 0.916
+  },
+  {
+   "word": "mi",
+   "timeSeconds": 111.36,
+   "durationSeconds": 0.2,
+   "beat": 171.9791,
+   "probability": 0.982
+  },
+  {
+   "word": "corazón.",
+   "timeSeconds": 111.56,
+   "durationSeconds": 0.48,
+   "beat": 172.2964,
+   "probability": 1.0
+  },
+  {
+   "word": "Perdiendo",
+   "timeSeconds": 112.38,
+   "durationSeconds": 0.44,
+   "beat": 173.5973,
+   "probability": 0.906
+  },
+  {
+   "word": "la",
+   "timeSeconds": 112.82,
+   "durationSeconds": 0.18,
+   "beat": 174.2953,
+   "probability": 1.0
+  },
+  {
+   "word": "razón.",
+   "timeSeconds": 113.0,
+   "durationSeconds": 0.38,
+   "beat": 174.5809,
+   "probability": 1.0
+  },
+  {
+   "word": "Es",
+   "timeSeconds": 113.74,
+   "durationSeconds": 0.42,
+   "beat": 175.754,
+   "probability": 0.999
+  },
+  {
+   "word": "una",
+   "timeSeconds": 114.16,
+   "durationSeconds": 0.18,
+   "beat": 176.4196,
+   "probability": 0.999
+  },
+  {
+   "word": "sensación",
+   "timeSeconds": 114.34,
+   "durationSeconds": 0.56,
+   "beat": 176.7048,
+   "probability": 1.0
+  },
+  {
+   "word": "constante",
+   "timeSeconds": 114.9,
+   "durationSeconds": 0.42,
+   "beat": 177.5929,
+   "probability": 1.0
+  },
+  {
+   "word": "de",
+   "timeSeconds": 115.32,
+   "durationSeconds": 0.7,
+   "beat": 178.2592,
+   "probability": 0.599
+  },
+  {
+   "word": "que",
+   "timeSeconds": 116.02,
+   "durationSeconds": 0.16,
+   "beat": 179.3697,
+   "probability": 0.994
+  },
+  {
+   "word": "algo",
+   "timeSeconds": 116.18,
+   "durationSeconds": 0.18,
+   "beat": 179.6235,
+   "probability": 0.994
+  },
+  {
+   "word": "me",
+   "timeSeconds": 116.36,
+   "durationSeconds": 0.12,
+   "beat": 179.909,
+   "probability": 0.987
+  },
+  {
+   "word": "tira",
+   "timeSeconds": 116.48,
+   "durationSeconds": 0.3,
+   "beat": 180.0994,
+   "probability": 0.999
+  },
+  {
+   "word": "para",
+   "timeSeconds": 116.78,
+   "durationSeconds": 0.18,
+   "beat": 180.5753,
+   "probability": 0.99
+  },
+  {
+   "word": "atrás",
+   "timeSeconds": 116.96,
+   "durationSeconds": 0.22,
+   "beat": 180.8609,
+   "probability": 0.495
+  },
+  {
+   "word": "y",
+   "timeSeconds": 117.18,
+   "durationSeconds": 0.1,
+   "beat": 181.2101,
+   "probability": 0.896
+  },
+  {
+   "word": "la",
+   "timeSeconds": 117.28,
+   "durationSeconds": 0.04,
+   "beat": 181.3689,
+   "probability": 1.0
+  },
+  {
+   "word": "música",
+   "timeSeconds": 117.32,
+   "durationSeconds": 0.3,
+   "beat": 181.4325,
+   "probability": 1.0
+  },
+  {
+   "word": "para",
+   "timeSeconds": 117.62,
+   "durationSeconds": 0.34,
+   "beat": 181.9089,
+   "probability": 1.0
+  },
+  {
+   "word": "adelante.",
+   "timeSeconds": 117.96,
+   "durationSeconds": 0.44,
+   "beat": 182.4494,
+   "probability": 0.995
+  },
+  {
+   "word": "Solo",
+   "timeSeconds": 118.8,
+   "durationSeconds": 0.44,
+   "beat": 183.7857,
+   "probability": 1.0
+  },
+  {
+   "word": "reparto",
+   "timeSeconds": 119.24,
+   "durationSeconds": 0.52,
+   "beat": 184.4865,
+   "probability": 1.0
+  },
+  {
+   "word": "arte",
+   "timeSeconds": 119.76,
+   "durationSeconds": 0.32,
+   "beat": 185.3154,
+   "probability": 0.994
+  },
+  {
+   "word": "que",
+   "timeSeconds": 120.08,
+   "durationSeconds": 0.22,
+   "beat": 185.8258,
+   "probability": 1.0
+  },
+  {
+   "word": "tengo",
+   "timeSeconds": 120.3,
+   "durationSeconds": 0.22,
+   "beat": 186.1771,
+   "probability": 1.0
+  },
+  {
+   "word": "en",
+   "timeSeconds": 120.52,
+   "durationSeconds": 0.12,
+   "beat": 186.5288,
+   "probability": 1.0
+  },
+  {
+   "word": "el",
+   "timeSeconds": 120.64,
+   "durationSeconds": 0.12,
+   "beat": 186.7206,
+   "probability": 1.0
+  },
+  {
+   "word": "pecho.",
+   "timeSeconds": 120.76,
+   "durationSeconds": 0.46,
+   "beat": 186.9124,
+   "probability": 1.0
+  },
+  {
+   "word": "Aunque",
+   "timeSeconds": 121.32,
+   "durationSeconds": 0.44,
+   "beat": 187.8102,
+   "probability": 1.0
+  },
+  {
+   "word": "termine",
+   "timeSeconds": 121.76,
+   "durationSeconds": 0.56,
+   "beat": 188.5165,
+   "probability": 1.0
+  },
+  {
+   "word": "deshecho",
+   "timeSeconds": 122.32,
+   "durationSeconds": 0.48,
+   "beat": 189.4165,
+   "probability": 0.823
+  },
+  {
+   "word": "en",
+   "timeSeconds": 122.8,
+   "durationSeconds": 0.14,
+   "beat": 190.1893,
+   "probability": 0.596
+  },
+  {
+   "word": "todo",
+   "timeSeconds": 122.94,
+   "durationSeconds": 0.18,
+   "beat": 190.415,
+   "probability": 1.0
+  },
+  {
+   "word": "el",
+   "timeSeconds": 123.12,
+   "durationSeconds": 0.16,
+   "beat": 190.7053,
+   "probability": 1.0
+  },
+  {
+   "word": "pecho.",
+   "timeSeconds": 123.28,
+   "durationSeconds": 0.3,
+   "beat": 190.9633,
+   "probability": 0.832
+  },
+  {
+   "word": "Yo",
+   "timeSeconds": 123.62,
+   "durationSeconds": 0.1,
+   "beat": 191.5111,
+   "probability": 0.911
+  },
+  {
+   "word": "sigo",
+   "timeSeconds": 123.72,
+   "durationSeconds": 0.24,
+   "beat": 191.6721,
+   "probability": 0.994
+  },
+  {
+   "word": "aunque",
+   "timeSeconds": 123.96,
+   "durationSeconds": 0.16,
+   "beat": 192.0587,
+   "probability": 0.63
+  },
+  {
+   "word": "esté",
+   "timeSeconds": 124.12,
+   "durationSeconds": 0.22,
+   "beat": 192.3161,
+   "probability": 0.984
+  },
+  {
+   "word": "maltrecho,",
+   "timeSeconds": 124.34,
+   "durationSeconds": 0.44,
+   "beat": 192.6701,
+   "probability": 0.96
+  },
+  {
+   "word": "tengo",
+   "timeSeconds": 124.82,
+   "durationSeconds": 0.16,
+   "beat": 193.443,
+   "probability": 1.0
+  },
+  {
+   "word": "el",
+   "timeSeconds": 124.98,
+   "durationSeconds": 0.12,
+   "beat": 193.7007,
+   "probability": 1.0
+  },
+  {
+   "word": "pecho",
+   "timeSeconds": 125.1,
+   "durationSeconds": 0.32,
+   "beat": 193.894,
+   "probability": 1.0
+  },
+  {
+   "word": "para",
+   "timeSeconds": 125.42,
+   "durationSeconds": 0.18,
+   "beat": 194.4099,
+   "probability": 1.0
+  },
+  {
+   "word": "afuera.",
+   "timeSeconds": 125.6,
+   "durationSeconds": 0.32,
+   "beat": 194.7002,
+   "probability": 0.999
+  },
+  {
+   "word": "Porque",
+   "timeSeconds": 126.0,
+   "durationSeconds": 0.24,
+   "beat": 195.3456,
+   "probability": 0.993
+  },
+  {
+   "word": "si",
+   "timeSeconds": 126.24,
+   "durationSeconds": 0.22,
+   "beat": 195.7331,
+   "probability": 0.863
+  },
+  {
+   "word": "no",
+   "timeSeconds": 126.46,
+   "durationSeconds": 0.1,
+   "beat": 196.0883,
+   "probability": 0.577
+  },
+  {
+   "word": "para",
+   "timeSeconds": 126.56,
+   "durationSeconds": 0.2,
+   "beat": 196.2497,
+   "probability": 0.774
+  },
+  {
+   "word": "adelante",
+   "timeSeconds": 126.76,
+   "durationSeconds": 0.4,
+   "beat": 196.5726,
+   "probability": 0.998
+  },
+  {
+   "word": "tengo",
+   "timeSeconds": 127.16,
+   "durationSeconds": 0.34,
+   "beat": 197.2181,
+   "probability": 0.577
+  },
+  {
+   "word": "dientes",
+   "timeSeconds": 127.5,
+   "durationSeconds": 0.38,
+   "beat": 197.7664,
+   "probability": 0.997
+  },
+  {
+   "word": "de",
+   "timeSeconds": 127.88,
+   "durationSeconds": 0.1,
+   "beat": 198.3792,
+   "probability": 1.0
+  },
+  {
+   "word": "una",
+   "timeSeconds": 127.98,
+   "durationSeconds": 0.12,
+   "beat": 198.5404,
+   "probability": 1.0
+  },
+  {
+   "word": "fiera.",
+   "timeSeconds": 128.1,
+   "durationSeconds": 0.34,
+   "beat": 198.7339,
+   "probability": 0.982
+  },
+  {
+   "word": "No",
+   "timeSeconds": 128.7,
+   "durationSeconds": 0.44,
+   "beat": 199.7,
+   "probability": 0.821
+  },
+  {
+   "word": "cualquiera.",
+   "timeSeconds": 129.14,
+   "durationSeconds": 0.58,
+   "beat": 200.4075,
+   "probability": 0.991
+  },
+  {
+   "word": "Ahí",
+   "timeSeconds": 129.84,
+   "durationSeconds": 0.44,
+   "beat": 201.5321,
+   "probability": 0.991
+  },
+  {
+   "word": "está.",
+   "timeSeconds": 130.28,
+   "durationSeconds": 0.3,
+   "beat": 202.2382,
+   "probability": 0.968
+  },
+  {
+   "word": "El",
+   "timeSeconds": 130.68,
+   "durationSeconds": 0.08,
+   "beat": 202.8797,
+   "probability": 0.209
+  },
+  {
+   "word": "teo",
+   "timeSeconds": 130.76,
+   "durationSeconds": 0.36,
+   "beat": 203.008,
+   "probability": 0.674
+  },
+  {
+   "word": "que",
+   "timeSeconds": 131.12,
+   "durationSeconds": 0.2,
+   "beat": 203.5848,
+   "probability": 0.575
+  },
+  {
+   "word": "siempre",
+   "timeSeconds": 131.32,
+   "durationSeconds": 0.22,
+   "beat": 203.9052,
+   "probability": 0.998
+  },
+  {
+   "word": "está",
+   "timeSeconds": 131.54,
+   "durationSeconds": 0.22,
+   "beat": 204.2571,
+   "probability": 0.92
+  },
+  {
+   "word": "pasado.",
+   "timeSeconds": 131.76,
+   "durationSeconds": 0.38,
+   "beat": 204.6087,
+   "probability": 0.996
+  },
+  {
+   "word": "Corte",
+   "timeSeconds": 132.24,
+   "durationSeconds": 0.3,
+   "beat": 205.3756,
+   "probability": 0.917
+  },
+  {
+   "word": "pasta",
+   "timeSeconds": 132.54,
+   "durationSeconds": 0.24,
+   "beat": 205.8547,
+   "probability": 0.952
+  },
+  {
+   "word": "de",
+   "timeSeconds": 132.78,
+   "durationSeconds": 0.24,
+   "beat": 206.2376,
+   "probability": 0.998
+  },
+  {
+   "word": "Morfeo.",
+   "timeSeconds": 133.02,
+   "durationSeconds": 0.42,
+   "beat": 206.6205,
+   "probability": 0.774
+  },
+  {
+   "word": "Yo",
+   "timeSeconds": 133.52,
+   "durationSeconds": 0.12,
+   "beat": 207.418,
+   "probability": 0.996
+  },
+  {
+   "word": "me",
+   "timeSeconds": 133.64,
+   "durationSeconds": 0.14,
+   "beat": 207.6094,
+   "probability": 1.0
+  },
+  {
+   "word": "voy",
+   "timeSeconds": 133.78,
+   "durationSeconds": 0.22,
+   "beat": 207.8327,
+   "probability": 1.0
+  },
+  {
+   "word": "a",
+   "timeSeconds": 134.0,
+   "durationSeconds": 0.08,
+   "beat": 208.1838,
+   "probability": 0.999
+  },
+  {
+   "word": "la",
+   "timeSeconds": 134.08,
+   "durationSeconds": 0.1,
+   "beat": 208.3115,
+   "probability": 0.974
+  },
+  {
+   "word": "Matrix,",
+   "timeSeconds": 134.18,
+   "durationSeconds": 0.42,
+   "beat": 208.4712,
+   "probability": 0.973
+  },
+  {
+   "word": "te",
+   "timeSeconds": 134.76,
+   "durationSeconds": 0.22,
+   "beat": 209.3982,
+   "probability": 0.93
+  },
+  {
+   "word": "vacilo",
+   "timeSeconds": 134.98,
+   "durationSeconds": 0.4,
+   "beat": 209.7503,
+   "probability": 0.998
+  },
+  {
+   "word": "cual",
+   "timeSeconds": 135.38,
+   "durationSeconds": 0.18,
+   "beat": 210.3904,
+   "probability": 0.837
+  },
+  {
+   "word": "el",
+   "timeSeconds": 135.56,
+   "durationSeconds": 0.16,
+   "beat": 210.6785,
+   "probability": 0.88
+  },
+  {
+   "word": "neo.",
+   "timeSeconds": 135.72,
+   "durationSeconds": 0.18,
+   "beat": 210.9345,
+   "probability": 0.77
+  },
+  {
+   "word": "Está",
+   "timeSeconds": 136.16,
+   "durationSeconds": 0.4,
+   "beat": 211.6386,
+   "probability": 0.98
+  },
+  {
+   "word": "todo",
+   "timeSeconds": 136.56,
+   "durationSeconds": 0.26,
+   "beat": 212.279,
+   "probability": 1.0
+  },
+  {
+   "word": "oscuro",
+   "timeSeconds": 136.82,
+   "durationSeconds": 0.36,
+   "beat": 212.6956,
+   "probability": 1.0
+  },
+  {
+   "word": "y",
+   "timeSeconds": 137.18,
+   "durationSeconds": 0.1,
+   "beat": 213.2723,
+   "probability": 0.995
+  },
+  {
+   "word": "ni",
+   "timeSeconds": 137.28,
+   "durationSeconds": 0.1,
+   "beat": 213.4325,
+   "probability": 0.993
+  },
+  {
+   "word": "lo",
+   "timeSeconds": 137.38,
+   "durationSeconds": 0.14,
+   "beat": 213.5927,
+   "probability": 0.997
+  },
+  {
+   "word": "veo,",
+   "timeSeconds": 137.52,
+   "durationSeconds": 0.26,
+   "beat": 213.817,
+   "probability": 1.0
+  },
+  {
+   "word": "pero",
+   "timeSeconds": 137.88,
+   "durationSeconds": 0.22,
+   "beat": 214.3942,
+   "probability": 0.996
+  },
+  {
+   "word": "creo",
+   "timeSeconds": 138.1,
+   "durationSeconds": 0.28,
+   "beat": 214.747,
+   "probability": 0.982
+  },
+  {
+   "word": "que",
+   "timeSeconds": 138.38,
+   "durationSeconds": 0.28,
+   "beat": 215.1961,
+   "probability": 0.999
+  },
+  {
+   "word": "me",
+   "timeSeconds": 138.66,
+   "durationSeconds": 0.6,
+   "beat": 215.6451,
+   "probability": 0.963
+  },
+  {
+   "word": "conecto.",
+   "timeSeconds": 139.26,
+   "durationSeconds": 0.66,
+   "beat": 216.6081,
+   "probability": 0.999
+  },
+  {
+   "word": "Mi",
+   "timeSeconds": 140.0,
+   "durationSeconds": 0.4,
+   "beat": 217.7962,
+   "probability": 0.998
+  },
+  {
+   "word": "modo",
+   "timeSeconds": 140.4,
+   "durationSeconds": 0.2,
+   "beat": 218.4384,
+   "probability": 0.995
+  },
+  {
+   "word": "no",
+   "timeSeconds": 140.6,
+   "durationSeconds": 0.16,
+   "beat": 218.7595,
+   "probability": 1.0
+  },
+  {
+   "word": "es",
+   "timeSeconds": 140.76,
+   "durationSeconds": 0.12,
+   "beat": 219.0164,
+   "probability": 1.0
+  },
+  {
+   "word": "perfecto,",
+   "timeSeconds": 140.88,
+   "durationSeconds": 0.54,
+   "beat": 219.209,
+   "probability": 1.0
+  },
+  {
+   "word": "pero",
+   "timeSeconds": 141.42,
+   "durationSeconds": 0.12,
+   "beat": 220.0761,
+   "probability": 1.0
+  },
+  {
+   "word": "igual",
+   "timeSeconds": 141.54,
+   "durationSeconds": 0.2,
+   "beat": 220.269,
+   "probability": 0.999
+  },
+  {
+   "word": "me",
+   "timeSeconds": 141.74,
+   "durationSeconds": 0.18,
+   "beat": 220.5905,
+   "probability": 1.0
+  },
+  {
+   "word": "intercepto.",
+   "timeSeconds": 141.92,
+   "durationSeconds": 0.72,
+   "beat": 220.8798,
+   "probability": 1.0
+  },
+  {
+   "word": "No",
+   "timeSeconds": 142.66,
+   "durationSeconds": 0.2,
+   "beat": 222.0704,
+   "probability": 0.998
+  },
+  {
+   "word": "soy",
+   "timeSeconds": 142.86,
+   "durationSeconds": 0.2,
+   "beat": 222.3926,
+   "probability": 0.999
+  },
+  {
+   "word": "selecto,",
+   "timeSeconds": 143.06,
+   "durationSeconds": 0.48,
+   "beat": 222.7148,
+   "probability": 0.998
+  },
+  {
+   "word": "no",
+   "timeSeconds": 143.56,
+   "durationSeconds": 0.2,
+   "beat": 223.5202,
+   "probability": 0.995
+  },
+  {
+   "word": "importa",
+   "timeSeconds": 143.76,
+   "durationSeconds": 0.28,
+   "beat": 223.8424,
+   "probability": 0.995
+  },
+  {
+   "word": "si",
+   "timeSeconds": 144.04,
+   "durationSeconds": 0.22,
+   "beat": 224.2928,
+   "probability": 0.999
+  },
+  {
+   "word": "esta",
+   "timeSeconds": 144.26,
+   "durationSeconds": 0.16,
+   "beat": 224.6464,
+   "probability": 0.271
+  },
+  {
+   "word": "careta",
+   "timeSeconds": 144.42,
+   "durationSeconds": 0.6,
+   "beat": 224.9035,
+   "probability": 0.986
+  },
+  {
+   "word": "dudó",
+   "timeSeconds": 145.02,
+   "durationSeconds": 0.4,
+   "beat": 225.867,
+   "probability": 0.858
+  },
+  {
+   "word": "o",
+   "timeSeconds": 145.42,
+   "durationSeconds": 0.1,
+   "beat": 226.5086,
+   "probability": 0.979
+  },
+  {
+   "word": "derrola.",
+   "timeSeconds": 145.52,
+   "durationSeconds": 0.42,
+   "beat": 226.669,
+   "probability": 0.753
+  },
+  {
+   "word": "Porque",
+   "timeSeconds": 146.0,
+   "durationSeconds": 0.22,
+   "beat": 227.4388,
+   "probability": 0.973
+  },
+  {
+   "word": "voy",
+   "timeSeconds": 146.22,
+   "durationSeconds": 0.22,
+   "beat": 227.7917,
+   "probability": 0.645
+  },
+  {
+   "word": "toda",
+   "timeSeconds": 146.44,
+   "durationSeconds": 0.2,
+   "beat": 228.1443,
+   "probability": 0.524
+  },
+  {
+   "word": "la",
+   "timeSeconds": 146.64,
+   "durationSeconds": 0.2,
+   "beat": 228.4647,
+   "probability": 0.999
+  },
+  {
+   "word": "noche",
+   "timeSeconds": 146.84,
+   "durationSeconds": 0.28,
+   "beat": 228.7851,
+   "probability": 1.0
+  },
+  {
+   "word": "a",
+   "timeSeconds": 147.12,
+   "durationSeconds": 0.14,
+   "beat": 229.2335,
+   "probability": 0.891
+  },
+  {
+   "word": "pintar",
+   "timeSeconds": 147.26,
+   "durationSeconds": 0.36,
+   "beat": 229.4575,
+   "probability": 0.893
+  },
+  {
+   "word": "de",
+   "timeSeconds": 147.62,
+   "durationSeconds": 0.06,
+   "beat": 230.0336,
+   "probability": 0.892
+  },
+  {
+   "word": "contra",
+   "timeSeconds": 147.68,
+   "durationSeconds": 0.28,
+   "beat": 230.1296,
+   "probability": 0.865
+  },
+  {
+   "word": "esa",
+   "timeSeconds": 147.96,
+   "durationSeconds": 0.18,
+   "beat": 230.5777,
+   "probability": 0.66
+  },
+  {
+   "word": "coda.",
+   "timeSeconds": 148.14,
+   "durationSeconds": 0.32,
+   "beat": 230.8657,
+   "probability": 0.966
+  },
+  {
+   "word": "Eh,",
+   "timeSeconds": 148.56,
+   "durationSeconds": 0.08,
+   "beat": 231.5373,
+   "probability": 0.004
+  },
+  {
+   "word": "esto",
+   "timeSeconds": 148.74,
+   "durationSeconds": 0.58,
+   "beat": 231.825,
+   "probability": 0.987
+  },
+  {
+   "word": "no",
+   "timeSeconds": 149.32,
+   "durationSeconds": 0.2,
+   "beat": 232.7513,
+   "probability": 1.0
+  },
+  {
+   "word": "es",
+   "timeSeconds": 149.52,
+   "durationSeconds": 0.12,
+   "beat": 233.0706,
+   "probability": 0.96
+  },
+  {
+   "word": "rap",
+   "timeSeconds": 149.64,
+   "durationSeconds": 0.2,
+   "beat": 233.262,
+   "probability": 0.961
+  },
+  {
+   "word": "por",
+   "timeSeconds": 149.84,
+   "durationSeconds": 0.18,
+   "beat": 233.581,
+   "probability": 0.639
+  },
+  {
+   "word": "moda.",
+   "timeSeconds": 150.02,
+   "durationSeconds": 0.42,
+   "beat": 233.8681,
+   "probability": 1.0
+  },
+  {
+   "word": "Cierto",
+   "timeSeconds": 150.54,
+   "durationSeconds": 0.4,
+   "beat": 234.6976,
+   "probability": 0.77
+  },
+  {
+   "word": "los",
+   "timeSeconds": 150.94,
+   "durationSeconds": 0.18,
+   "beat": 235.3356,
+   "probability": 0.823
+  },
+  {
+   "word": "modales",
+   "timeSeconds": 151.12,
+   "durationSeconds": 0.52,
+   "beat": 235.6227,
+   "probability": 1.0
+  },
+  {
+   "word": "y",
+   "timeSeconds": 151.64,
+   "durationSeconds": 0.1,
+   "beat": 236.4521,
+   "probability": 0.937
+  },
+  {
+   "word": "no",
+   "timeSeconds": 151.74,
+   "durationSeconds": 0.12,
+   "beat": 236.6116,
+   "probability": 1.0
+  },
+  {
+   "word": "me",
+   "timeSeconds": 151.86,
+   "durationSeconds": 0.1,
+   "beat": 236.803,
+   "probability": 1.0
+  },
+  {
+   "word": "incomoda.",
+   "timeSeconds": 151.96,
+   "durationSeconds": 0.54,
+   "beat": 236.9625,
+   "probability": 1.0
+  },
+  {
+   "word": "Me",
+   "timeSeconds": 152.56,
+   "durationSeconds": 0.22,
+   "beat": 237.9196,
+   "probability": 1.0
+  },
+  {
+   "word": "siento",
+   "timeSeconds": 152.78,
+   "durationSeconds": 0.3,
+   "beat": 238.2702,
+   "probability": 1.0
+  },
+  {
+   "word": "shoda",
+   "timeSeconds": 153.08,
+   "durationSeconds": 0.36,
+   "beat": 238.7482,
+   "probability": 0.702
+  },
+  {
+   "word": "porque",
+   "timeSeconds": 153.44,
+   "durationSeconds": 0.48,
+   "beat": 239.3214,
+   "probability": 0.76
+  },
+  {
+   "word": "soy",
+   "timeSeconds": 153.92,
+   "durationSeconds": 0.32,
+   "beat": 240.0853,
+   "probability": 1.0
+  },
+  {
+   "word": "enano",
+   "timeSeconds": 154.24,
+   "durationSeconds": 0.38,
+   "beat": 240.5941,
+   "probability": 0.998
+  },
+  {
+   "word": "y",
+   "timeSeconds": 154.62,
+   "durationSeconds": 0.12,
+   "beat": 241.1984,
+   "probability": 1.0
+  },
+  {
+   "word": "verde.",
+   "timeSeconds": 154.74,
+   "durationSeconds": 0.24,
+   "beat": 241.3894,
+   "probability": 1.0
+  },
+  {
+   "word": "No",
+   "timeSeconds": 155.34,
+   "durationSeconds": 0.26,
+   "beat": 242.3447,
+   "probability": 0.999
+  },
+  {
+   "word": "hay",
+   "timeSeconds": 155.6,
+   "durationSeconds": 0.12,
+   "beat": 242.759,
+   "probability": 1.0
+  },
+  {
+   "word": "quien",
+   "timeSeconds": 155.72,
+   "durationSeconds": 0.12,
+   "beat": 242.9502,
+   "probability": 0.996
+  },
+  {
+   "word": "me",
+   "timeSeconds": 155.84,
+   "durationSeconds": 0.14,
+   "beat": 243.1415,
+   "probability": 0.999
+  },
+  {
+   "word": "enferme.",
+   "timeSeconds": 155.98,
+   "durationSeconds": 0.34,
+   "beat": 243.3649,
+   "probability": 0.911
+  },
+  {
+   "word": "Doy",
+   "timeSeconds": 156.34,
+   "durationSeconds": 0.12,
+   "beat": 243.9391,
+   "probability": 0.967
+  },
+  {
+   "word": "la",
+   "timeSeconds": 156.46,
+   "durationSeconds": 0.14,
+   "beat": 244.1306,
+   "probability": 1.0
+  },
+  {
+   "word": "vuelta",
+   "timeSeconds": 156.6,
+   "durationSeconds": 0.26,
+   "beat": 244.3542,
+   "probability": 1.0
+  },
+  {
+   "word": "al",
+   "timeSeconds": 156.86,
+   "durationSeconds": 0.14,
+   "beat": 244.7693,
+   "probability": 1.0
+  },
+  {
+   "word": "mundo",
+   "timeSeconds": 157.0,
+   "durationSeconds": 0.18,
+   "beat": 244.9929,
+   "probability": 1.0
+  },
+  {
+   "word": "como",
+   "timeSeconds": 157.18,
+   "durationSeconds": 0.26,
+   "beat": 245.2806,
+   "probability": 1.0
+  },
+  {
+   "word": "Julio",
+   "timeSeconds": 157.44,
+   "durationSeconds": 0.42,
+   "beat": 245.6962,
+   "probability": 0.966
+  },
+  {
+   "word": "Verne.",
+   "timeSeconds": 157.86,
+   "durationSeconds": 0.34,
+   "beat": 246.368,
+   "probability": 0.981
+  },
+  {
+   "word": "Papera,",
+   "timeSeconds": 204.91,
+   "durationSeconds": 0.4,
+   "beat": 322.6418,
+   "probability": 0.586
+  },
+  {
+   "word": "bebé.",
+   "timeSeconds": 205.31,
+   "durationSeconds": 0.34,
+   "beat": 323.282,
+   "probability": 0.814
+  },
+  {
+   "word": "No",
+   "timeSeconds": 206.21,
+   "durationSeconds": 0.76,
+   "beat": 324.7226,
+   "probability": 0.006
+  },
+  {
+   "word": "me",
+   "timeSeconds": 206.97,
+   "durationSeconds": 0.0,
+   "beat": 325.939,
+   "probability": 0.011
+  },
+  {
+   "word": "dejes",
+   "timeSeconds": 206.97,
+   "durationSeconds": 0.0,
+   "beat": 325.939,
+   "probability": 0.474
+  },
+  {
+   "word": "entonces",
+   "timeSeconds": 206.97,
+   "durationSeconds": 0.0,
+   "beat": 325.939,
+   "probability": 0.0
+  },
+  {
+   "word": "de",
+   "timeSeconds": 206.97,
+   "durationSeconds": 0.0,
+   "beat": 325.939,
+   "probability": 0.114
+  },
+  {
+   "word": "estar",
+   "timeSeconds": 206.97,
+   "durationSeconds": 0.0,
+   "beat": 325.939,
+   "probability": 0.027
+  },
+  {
+   "word": "en",
+   "timeSeconds": 206.97,
+   "durationSeconds": 0.0,
+   "beat": 325.939,
+   "probability": 0.13
+  },
+  {
+   "word": "el",
+   "timeSeconds": 206.97,
+   "durationSeconds": 0.0,
+   "beat": 325.939,
+   "probability": 0.153
+  },
+  {
+   "word": "varón.",
+   "timeSeconds": 206.97,
+   "durationSeconds": 0.0,
+   "beat": 325.939,
+   "probability": 0.448
+  }
+ ]
+}
