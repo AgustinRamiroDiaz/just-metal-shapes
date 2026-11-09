@@ -176,8 +176,7 @@ impl UiServices {
         let Some(spec) = level_catalog::find_level(&level_id.to_string()) else {
             return;
         };
-        let track =
-            self.cached_track_info(&spec.music_path, 120.0, 0.0, Some(&spec.analysis_path));
+        let track = self.cached_track_info(&spec.music_path, 120.0, 0.0, Some(&spec.analysis_path));
         let from = track.loop_from;
         self.play_track(track, from, PREVIEW_VOLUME_DB);
     }
